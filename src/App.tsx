@@ -4,6 +4,7 @@ import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
 import * as React from "react";
+import { VITE_BUNDLES } from './duckdbBundles';
 
 function App() {
   const [count, setCount] = useState(0)
@@ -36,19 +37,32 @@ function App() {
   }
 
   useEffect(() => {
-    if (loading || !db || error) {
-      return
+    if (loading || !db || error || !file) {
+      return;
     }
-    if(file) {
-        db.open(file).then(() => {
-            console.log("Database uploaded successfully.");
-
-        }).catch(error => {
-            console.error(error);
-        });
-    }
-
-  }, [loading, file, db, error])
+  
+    const loadAndQuery = async () => {
+      try {
+        // Open the DB
+        const arrayBuffer = await file.arrayBuffer();
+        await db.registerFileBuffer('/mydb.duckdb', new Uint8Array(arrayBuffer));
+        await db.open({ path: '/mydb.duckdb' });
+        console.log("Database uploaded successfully.");
+  
+        // Query the DB
+        const conn = await db.connect();
+        const result = await conn.query("SELECT * FROM var_flow LIMIT 10");
+        const rows = result.toArray().map(row => ({ ...row }));
+        console.log("var_flow rows:", rows);
+        await conn.close();       
+      } catch (err) {
+        console.error("Error opening or querying DB:", err);
+      }
+    };
+  
+    loadAndQuery();
+  }, [loading, file, db, error]);
+  
 
   return (
     <>
@@ -89,7 +103,7 @@ function App() {
 // Wraps App with DuckDB provider to provide context for DuckDB functionality.
 function WrappedApp() {
     return (
-        <DuckDB>
+        <DuckDB bundles={VITE_BUNDLES}>
             <App />
         </DuckDB>
     );
