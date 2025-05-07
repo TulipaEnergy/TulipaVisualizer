@@ -40,3 +40,16 @@
 .read-the-docs {
   color: #888;
 }
+
+#visualTable {
+  color: black;
+  background-color: white;
+  border-collapse: collapse;
+  width: 100%;
+}
+
+#visualTable td,
+#visualTable th {
+  border: 1px solid black;
+  padding: 4px;
+}
