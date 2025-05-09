@@ -7,12 +7,13 @@ static DUCKDB_PATH: Lazy<Mutex<Option<String>>> = Lazy::new(|| Mutex::new(None))
 #[tauri::command]
 pub fn set_path (path: String) -> Result<(), String> {
     if path.ends_with(".duckdb") {
-        return Err(String::from("Please upload a .duckdb file."))
+        let mut db_path = DUCKDB_PATH.lock().unwrap();
+        *db_path = Some(path);
+        Ok(())
     }
-
-    let mut db_path = DUCKDB_PATH.lock().unwrap();
-    *db_path = Some(path);
-    Ok(())
+    else {
+        Err(String::from("Please upload a .duckdb file."))
+    }
 }
 
 

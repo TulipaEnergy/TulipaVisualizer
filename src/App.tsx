@@ -1,20 +1,52 @@
 import { useState } from "react";
 import reactLogo from "./assets/react.svg";
 import { invoke } from "@tauri-apps/api/core";
+import { open } from "@tauri-apps/plugin-dialog";
 import "./App.css";
 
 function App() {
   const [greetMsg, setGreetMsg] = useState("");
   const [name, setName] = useState("");
+  const [selectedFile, setSelectedFile] = useState <String | null>(null);
 
   async function greet() {
     // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
     setGreetMsg(await invoke("greet", { name }));
   }
 
+  async function selectDuckDBFile() {
+    try {
+      const selected = await open({
+        multiple: false,
+        filters: [
+          {
+            name: "DuckDB Files",
+            extensions: ["duckdb"],
+          },
+        ],
+      });
+
+      if (typeof selected === "string") {
+        await invoke("set_path", { path: selected });
+        setSelectedFile(selected);
+        console.log("Selected file:", selected);
+      } else {
+        console.log("No file selected.");
+      }
+    } catch (error) {
+      console.error("Error selecting file:", error);
+    }
+  } 
+
+
   return (
     <main className="container">
       <h1>Welcome to Tauri + React</h1>
+
+      <h2> Select a DuckDB file</h2>
+
+      <button onClick={selectDuckDBFile}> Select file </button>
+      {selectedFile && <p>Selected file: {selectedFile}</p>}
 
       <div className="row">
         <a href="https://vitejs.dev" target="_blank">
