@@ -1,7 +1,8 @@
 use std::{io::Cursor, sync::Mutex, vec::Vec, };
 use once_cell::sync::Lazy;
 use std::option::Option;
-use duckdb::{ Connection, Statement, arrow::array::RecordBatch, };
+use tauri::ipc::Response;
+use duckdb::{ Connection, arrow::array::RecordBatch, };
 use arrow_ipc::{ writer::StreamWriter, };
 
 static DUCKDB_PATH: Lazy<Mutex<Option<String>>> = Lazy::new(|| Mutex::new(None));
@@ -33,7 +34,7 @@ pub fn get_path() -> Option<String> {
 // runs the given sql and returns the result as a serialized byte-array of the apache-table
 // https://docs.rs/arrow-ipc/55.0.0/arrow_ipc/writer/struct.StreamWriter.html
 #[tauri::command]
-pub fn run_serialize_query(q: String) -> Vec<u8> {
+pub fn run_serialize_query(q: String) -> Response {
     println!("parsing: '{}'", q);
 
     // parsing and running query
@@ -54,5 +55,5 @@ pub fn run_serialize_query(q: String) -> Vec<u8> {
     writer.finish().unwrap();
 
     println!("succesfully parsed query!");
-    vec_writer.into_inner()
+    Response::new(vec_writer.into_inner())
 }
