@@ -1,19 +1,20 @@
 import { invoke } from "@tauri-apps/api/core";
-import { tableFromIPC } from "apache-arrow"
+import { tableFromIPC, Table } from "apache-arrow"
 
-export async function runTest() {
-    // idk if these types will function correctly
-    console.log("test");
-
+export async function run_query(s: String): Promise<Table<any>> {
     let buffer = await invoke<ArrayBuffer>("run_serialize_query", { q: "SHOW TABLES" });
     let byteArr = new Uint8Array(buffer);
-    let table = tableFromIPC(byteArr);
+    let table: Table<any> = tableFromIPC(byteArr);
+    return table;
+}
 
-    console.log("byte-arr:", byteArr);
-    console.log("table:", table);
-    console.log("num rows:", table.numRows);
-
-    for (const row of table) {
-        console.log(row.toArray()); // view each row
-    }
+export function runTest() {
+    (async () => {
+        let t = await run_query("SHOW TABLES");
+        
+        console.log(t);
+        for (const row of t) {
+            console.log(row.toArray()); // view each row
+        }
+    })()
 }

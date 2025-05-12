@@ -17,8 +17,6 @@ pub fn set_path (path: String) -> Result<(), String> {
         *(DB_CONN.lock().unwrap()) = Some(conn);
         println!("database connection established!");
 
-        //test_query();
-
         Ok(())
     }
     else {
@@ -26,24 +24,9 @@ pub fn set_path (path: String) -> Result<(), String> {
     }
 }
 
-
 #[tauri::command]
 pub fn get_path() -> Option<String> {
     DUCKDB_PATH.lock().unwrap().clone()
-}
-
-// perhaps attach this to a test button later
-fn test_query() -> Result<(), String> {
-    let binding = DB_CONN.lock().unwrap();
-    let conn: &Connection = binding.as_ref().expect("DB connection missing!");
-    let mut stmt: Statement = conn.prepare("SHOW TABLES").expect("error parsing query");
-    let rows = stmt.query_map([], |row| row.get::<_, String>(0)).expect("no rows!");
-
-    for name_result in rows {
-        println!("{}", name_result.unwrap());
-    }
-
-    Ok(())
 }
 
 
