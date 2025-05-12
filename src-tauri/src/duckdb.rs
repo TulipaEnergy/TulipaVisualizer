@@ -17,7 +17,7 @@ pub fn set_path (path: String) -> Result<(), String> {
         *(DB_CONN.lock().unwrap()) = Some(conn);
         println!("database connection established!");
 
-        test_query();
+        //test_query();
 
         Ok(())
     }
@@ -66,9 +66,10 @@ pub fn run_serialize_query(q: String) -> Vec<u8> {
 
     let mut writer: StreamWriter<_> = StreamWriter::try_new(&mut vec_writer, &rec_batch[0].schema()).unwrap();
     for batch in rec_batch {
-        writer.write(&batch);
+        writer.write(&batch).expect("error writing to byte array");
     }
     writer.finish().unwrap();
 
+    println!("succesfully parsed query!");
     vec_writer.into_inner()
 }
