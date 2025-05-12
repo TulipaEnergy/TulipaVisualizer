@@ -16,7 +16,8 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             greet,
             duckdb::set_path,
-            duckdb::get_path])
+            duckdb::get_path,
+            duckdb::run_serialize_query])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
