@@ -2,6 +2,7 @@ import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import "./App.css";
+import { runTest } from "./dbConn"
 
 function App() {
   const [selectedFile, setSelectedFile] = useState <String | null>(null);
@@ -40,6 +41,7 @@ function App() {
       <button onClick={selectDuckDBFile}> Select file </button>
       {selectedFile && <p>Selected file: {selectedFile}</p>}
 
+      <button onClick={runTest}> Test Query </button>
 
     </main>
   );
