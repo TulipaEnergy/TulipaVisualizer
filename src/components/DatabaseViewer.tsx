@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import "./DatabaseViewer.css"; // We'll create this file later for styling
+import { tableFromIPC } from "apache-arrow";
 
 interface Table {
   name: string;
@@ -76,16 +77,40 @@ const DatabaseViewer = () => {
   async function fetchTables() {
     try {
       setIsLoading(true);
-      const result = await invoke<Table[]>("get_tables");
-      setTables(result);
+      const query = "SELECT table_name, column_name FROM information_schema.columns WHERE table_schema='main' ORDER BY table_name, ordinal_position";
+      const result = await invoke<Uint8Array>("run_serialize_query", { q: query });
+      
+      // Process the Arrow format data to extract tables
+      const table = tableFromIPC(result);
+      const tableData: { [key: string]: string[] } = {};
+      
+      // Process table data
+      for (let i = 0; i < table.numRows; i++) {
+        const tableName = table.get(i)?.["table_name"]?.toString() || "";
+        const columnName = table.get(i)?.["column_name"]?.toString() || "";
+        
+        if (!tableData[tableName]) {
+          tableData[tableName] = [];
+        }
+        tableData[tableName].push(columnName);
+      }
+      
+      // Convert to Tables array
+      const tablesArray: Table[] = Object.entries(tableData).map(([name, columns]) => ({
+        name,
+        columns
+      }));
+      
+      setTables(tablesArray);
       setError(null);
       
       // Select the first table by default if available
-      if (result.length > 0) {
-        setSelectedTable(result[0].name);
+      if (tablesArray.length > 0) {
+        setSelectedTable(tablesArray[0].name);
       }
     } catch (error: any) {
       setError(`Error fetching tables: ${error.message || error}`);
+      console.error("Error details:", error);
     } finally {
       setIsLoading(false);
     }
@@ -100,8 +125,26 @@ const DatabaseViewer = () => {
 
     try {
       setIsLoading(true);
-      const result = await invoke<QueryResult>("execute_query", { query: sqlQuery });
-      setQueryResult(result);
+      const result = await invoke<Uint8Array>("run_serialize_query", { q: sqlQuery });
+      
+      // Process the Arrow format data
+      const table = tableFromIPC(result);
+      
+      // Extract column names
+      const schema = table.schema;
+      const columns = schema.fields.map(field => field.name);
+      
+      // Extract rows
+      const rows: any[][] = [];
+      for (let i = 0; i < table.numRows; i++) {
+        const row = table.get(i);
+        if (row) {
+          const rowData = columns.map(col => row[col]);
+          rows.push(rowData);
+        }
+      }
+      
+      setQueryResult({ columns, rows });
       
       // Add query to history
       setQueryHistory(prev => [sqlQuery, ...prev.slice(0, 9)]);
@@ -109,6 +152,7 @@ const DatabaseViewer = () => {
       setError(null);
     } catch (error: any) {
       setError(`Query error: ${error.message || error}`);
+      console.error("Query error details:", error);
       setQueryResult(null);
     } finally {
       setIsLoading(false);
