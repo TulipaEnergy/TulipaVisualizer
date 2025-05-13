@@ -68,11 +68,20 @@
   grid-row: 2;
   display: flex;
   flex-direction: column;
+  max-height: 600px; /* Add max-height to the entire module */
 }
 
 .tables-list {
   overflow-y: auto;
   flex-grow: 1;
+  max-height: 500px; /* Fixed height for the table list */
+  scrollbar-width: thin; /* For Firefox */
+  scrollbar-color: #bbb #f0f0f0; /* For Firefox */
+}
+
+/* ableCustableom sablecrolablelbarable styablelingable forable forableKit browsers */
+.tables-list::-webkit-scrollbar {
+  width: 8px;
 }
 
 .table-item {
@@ -81,16 +90,10 @@
   border-bottom: 1px solid #eee;
   transition: background-color 0.2s;
   color: #000000; 
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-
-.table-item:hover {
-  background-color: #f5f5f5;
-}
-
-.table-item.selected {
-  background-color: #e3f2fd;
-  border-left: 4px solid #2196f3;
-  }
 
 /* SQL Query Module */
 .sql-query-module {
@@ -99,6 +102,8 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  max-height: 600px; /* Match the tables module max-height */
+  overflow-y: auto;
 }
 
 .query-editor {
