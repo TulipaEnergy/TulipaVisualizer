@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
+import DatabaseViewer from "./components/DatabaseViewer";
 import "./App.css";
 import { runTest } from "./dbConn"
 
-function App() {
+export default function App() {
   const [selectedFile, setSelectedFile] = useState <String | null>(null);
 
 
@@ -41,10 +42,11 @@ function App() {
       <button onClick={selectDuckDBFile}> Select file </button>
       {selectedFile && <p>Selected file: {selectedFile}</p>}
 
+      <h1>DuckDB Viewer</h1>
+      <DatabaseViewer />
+
       <button onClick={runTest}> Test Query </button>
 
     </main>
   );
 }
-
-export default App;
