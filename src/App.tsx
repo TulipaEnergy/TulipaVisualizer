@@ -3,11 +3,10 @@ import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import DatabaseViewer from "./components/DatabaseViewer";
 import "./App.css";
-import { runTest } from "./dbConn"
+import { runTest } from "./dbConn";
 
 export default function App() {
-  const [selectedFile, setSelectedFile] = useState <String | null>(null);
-
+  const [selectedFile, setSelectedFile] = useState<String | null>(null);
 
   async function selectDuckDBFile() {
     try {
@@ -31,13 +30,11 @@ export default function App() {
     } catch (error) {
       console.error("Error selecting file:", error);
     }
-  } 
-
+  }
 
   return (
     <main className="container">
-
-      <h2> Select a DuckDB file</h2>
+      <h2> Select a DuckDB file test v2</h2>
 
       <button onClick={selectDuckDBFile}> Select file </button>
       {selectedFile && <p>Selected file: {selectedFile}</p>}
@@ -46,7 +43,6 @@ export default function App() {
       <DatabaseViewer />
 
       <button onClick={runTest}> Test Query </button>
-
     </main>
   );
 }

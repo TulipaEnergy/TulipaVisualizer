@@ -59,7 +59,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 100%;
-  color: #000000; 
+  color: #000000;
 }
 
 /* Tables Preview Module */
@@ -89,7 +89,7 @@
   cursor: pointer;
   border-bottom: 1px solid #eee;
   transition: background-color 0.2s;
-  color: #000000; 
+  color: #000000;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -117,10 +117,10 @@
   padding: 12px;
   border: 1px solid #ccc;
   border-radius: 4px;
-  font-family: 'Courier New', monospace;
+  font-family: "Courier New", monospace;
   font-size: 14px;
   resize: vertical;
-  color: #000000; 
+  color: #000000;
 }
 
 .query-actions {
@@ -168,7 +168,7 @@
 .query-history h3 {
   font-size: 16px;
   margin-bottom: 10px;
-  color: #000000; 
+  color: #000000;
 }
 
 .query-history ul {
@@ -183,12 +183,12 @@
   padding: 8px;
   cursor: pointer;
   border-bottom: 1px solid #eee;
-  font-family: 'Courier New', monospace;
+  font-family: "Courier New", monospace;
   font-size: 12px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: #000000; 
+  color: #000000;
 }
 
 .query-history li:hover {
@@ -211,7 +211,7 @@
   width: 100%;
   border-collapse: collapse;
   font-size: 14px;
-  color: #000000; 
+  color: #000000;
 }
 
 .results-table th,
@@ -219,7 +219,7 @@
   padding: 8px 12px;
   text-align: left;
   border-bottom: 1px solid #ddd;
-  color: #000000; 
+  color: #000000;
 }
 
 .results-table th {
@@ -241,7 +241,7 @@
 .results-info {
   margin-top: 10px;
   font-size: 12px;
-  color: #000000; 
+  color: #000000;
   text-align: right;
 }
 
@@ -250,11 +250,22 @@
   padding: 10px;
   background-color: #ffebee;
   border-radius: 4px;
-  font-weight: bold; 
+  font-weight: bold;
 }
 
 /* Global text color defaults */
-h1, h2, h3, h4, h5, h6, p, span, div, td, th, li {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+span,
+div,
+td,
+th,
+li {
   color: #000000;
 }
 
