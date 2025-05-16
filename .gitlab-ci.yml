@@ -10,6 +10,11 @@ variables:
 
 build-n-lint-job:
   stage: build
+  rules:
+    - if: $CI_COMMIT_TITLE =~ /-draft$/
+      when: never
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
   script:
     - echo "Building Tauri app..."
     - apt-get update && apt-get install -y libwebkit2gtk-4.1-dev libssl-dev libappindicator3-dev librsvg2-dev patchelf curl xdg-utils
@@ -39,6 +44,8 @@ build-n-lint-job:
 
 format-job:
   stage: format
+  rules:
+    - when: always # Very light job
   script:
     - echo "Checking Prettier formatting..."
     - pwd
