@@ -18,3 +18,7 @@ export function runTest() {
     }
   })();
 }
+
+if (typeof window !== "undefined") {
+  (window as any).runTest = runTest;
+}

@@ -6,7 +6,7 @@ use duckdb::{ Connection, arrow::array::RecordBatch, };
 use arrow_ipc::{ writer::StreamWriter, };
 
 static DUCKDB_PATH: Lazy<Mutex<Option<String>>> = Lazy::new(|| Mutex::new(None));
-static DB_CONN: Mutex<Option<Connection>> = Mutex::new(None);
+pub static DB_CONN: Mutex<Option<Connection>> = Mutex::new(None);
 
 #[tauri::command]
 pub fn set_path (path: String) -> Result<(), String> {
@@ -47,6 +47,33 @@ pub fn run_serialize_query(q: String) -> Response {
 
     // serializing result
     let mut vec_writer = Cursor::new(Vec::new()); // creates a writer to save the result
+
+    let mut writer: StreamWriter<_> = StreamWriter::try_new(&mut vec_writer, &rec_batch[0].schema()).unwrap();
+    for batch in rec_batch {
+        writer.write(&batch).expect("error writing to byte array");
+    }
+    writer.finish().unwrap();
+
+    println!("succesfully parsed query!");
+    Response::new(vec_writer.into_inner())
+}
+
+// Connection as parameter allows running queries on multiple databases active
+pub fn run_specific_query(conn: &Connection, sql: &str) -> Response {
+    println!("parsing: '{}'", sql);
+
+    // parsing and running query
+    let mut res_stmt  = conn.prepare(sql).expect("error parsing query");
+
+    let rec_batch: Vec<RecordBatch> = res_stmt.query_arrow([]).expect("error executing query").collect();
+
+
+    // serializing result
+    let mut vec_writer = Cursor::new(Vec::new()); // creates a writer to save the result
+
+    if rec_batch.is_empty() {
+        return Response::new(vec_writer.into_inner());  // empty response instead of panicking
+    }
 
     let mut writer: StreamWriter<_> = StreamWriter::try_new(&mut vec_writer, &rec_batch[0].schema()).unwrap();
     for batch in rec_batch {
