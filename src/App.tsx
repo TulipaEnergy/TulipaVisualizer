@@ -3,7 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import DatabaseViewer from "./components/DatabaseViewer";
 import "./App.css";
-import { runTest } from "./dbConn";
+import "./debugtools/capacityQuery";
 
 export default function App() {
   const [selectedFile, setSelectedFile] = useState<String | null>(null);
@@ -41,8 +41,6 @@ export default function App() {
 
       <h1>DuckDB Viewer</h1>
       <DatabaseViewer />
-
-      <button onClick={runTest}> Test Query </button>
     </main>
   );
 }
