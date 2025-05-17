@@ -10,12 +10,22 @@
     "tauri": "tauri"
   },
   "dependencies": {
+    "@mantine/core": "^8.0.1",
+    "@mantine/dates": "^8.0.1",
+    "@mantine/hooks": "^8.0.1",
+    "@tabler/icons-react": "^3.31.0",
     "@tauri-apps/api": "^2.5.0",
     "@tauri-apps/plugin-dialog": "^2.2.1",
     "@tauri-apps/plugin-opener": "^2",
+    "@types/react-datepicker": "^6.2.0",
     "apache-arrow": "^19.0.1",
+    "dayjs": "^1.11.13",
+    "echarts": "^5.6.0",
+    "echarts-for-react": "^3.0.2",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-datepicker": "^8.3.0",
+    "react-dom": "^18.3.1",
+    "zustand": "^5.0.4"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2",

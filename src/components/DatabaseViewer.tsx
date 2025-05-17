@@ -1,13 +1,7 @@
 import { useState, useEffect } from "react";
-import { invoke } from "@tauri-apps/api/core";
-import { open } from "@tauri-apps/plugin-dialog";
-import "./DatabaseViewer.css"; // We'll create this file later for styling
-import { tableFromIPC } from "apache-arrow";
-
-interface Table {
-  name: string;
-  columns: string[];
-}
+import "./DatabaseViewer.css";
+import useVisualizationStore from "../store/visualizationStore";
+import { run_query } from "../debugtools/generalQuery";
 
 interface QueryResult {
   columns: string[];
@@ -15,13 +9,16 @@ interface QueryResult {
 }
 
 const DatabaseViewer = () => {
-  // File handling state
-  const [selectedFile, setSelectedFile] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const {
+    dbFilePath,
+    tables,
+    selectedTable,
+    setSelectedTable,
+    isLoading: storeIsLoading,
+  } = useVisualizationStore();
 
-  // Tables state
-  const [tables, setTables] = useState<Table[]>([]);
-  const [selectedTable, setSelectedTable] = useState<string | null>(null);
+  // Local loading state for query operations
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   // Query state
   const [sqlQuery, setSqlQuery] = useState<string>("");
@@ -31,117 +28,35 @@ const DatabaseViewer = () => {
   const [queryResult, setQueryResult] = useState<QueryResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Load tables when a file is selected
-  useEffect(() => {
-    if (selectedFile) {
-      fetchTables();
-    }
-  }, [selectedFile]);
-
   // Update query when a table is selected
   useEffect(() => {
     if (selectedTable) {
-      setSqlQuery(`SELECT * FROM ${selectedTable} LIMIT 100;`);
+      const query = `SELECT * FROM ${selectedTable} LIMIT 100;`;
+      setSqlQuery(query);
     }
   }, [selectedTable]);
 
-  // File selection handler
-  async function handleFileSelect() {
-    try {
-      setIsLoading(true);
-      const selected = await open({
-        multiple: false,
-        filters: [
-          {
-            name: "DuckDB Files",
-            extensions: ["duckdb"],
-          },
-        ],
-      });
-
-      if (typeof selected === "string") {
-        await invoke("set_path", { path: selected });
-        setSelectedFile(selected);
-        setError(null);
-      } else {
-        console.log("No file selected.");
-      }
-    } catch (error: any) {
-      setError(`Error selecting file: ${error.message || error}`);
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  // Fetch available tables
-  async function fetchTables() {
-    try {
-      setIsLoading(true);
-      const query =
-        "SELECT table_name, column_name FROM information_schema.columns WHERE table_schema='main' ORDER BY table_name, ordinal_position";
-      const result = await invoke<Uint8Array>("run_serialize_query", {
-        q: query,
-      });
-
-      // Process the Arrow format data to extract tables
-      const table = tableFromIPC(result);
-      const tableData: { [key: string]: string[] } = {};
-
-      // Process table data
-      for (let i = 0; i < table.numRows; i++) {
-        const tableName = table.get(i)?.["table_name"]?.toString() || "";
-        const columnName = table.get(i)?.["column_name"]?.toString() || "";
-
-        if (!tableData[tableName]) {
-          tableData[tableName] = [];
-        }
-        tableData[tableName].push(columnName);
-      }
-
-      // Convert to Tables array
-      const tablesArray: Table[] = Object.entries(tableData).map(
-        ([name, columns]) => ({
-          name,
-          columns,
-        }),
-      );
-
-      setTables(tablesArray);
-      setError(null);
-
-      // Select the first table by default if available
-      if (tablesArray.length > 0) {
-        setSelectedTable(tablesArray[0].name);
-      }
-    } catch (error: any) {
-      setError(`Error fetching tables: ${error.message || error}`);
-      console.error("Error details:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  // Execute SQL query
+  // Execute SQL query with the current SQL text in state
   async function executeQuery() {
-    if (!sqlQuery.trim()) {
+    executeQueryWithText(sqlQuery);
+  }
+
+  // Execute SQL query with provided text
+  async function executeQueryWithText(query: string) {
+    if (!query.trim()) {
       setError("Query cannot be empty");
       return;
     }
 
     try {
       setIsLoading(true);
-      const result = await invoke<Uint8Array>("run_serialize_query", {
-        q: sqlQuery,
-      });
+      // Use the run_query utility from dbConn.ts
+      const table = await run_query(query);
 
-      // Process the Arrow format data
-      const table = tableFromIPC(result);
+      // Extract column names from table schema
+      const columns = table.schema.fields.map((field) => field.name);
 
-      // Extract column names
-      const schema = table.schema;
-      const columns = schema.fields.map((field) => field.name);
-
-      // Extract rows
+      // Extract rows from table
       const rows: any[][] = [];
       for (let i = 0; i < table.numRows; i++) {
         const row = table.get(i);
@@ -153,8 +68,10 @@ const DatabaseViewer = () => {
 
       setQueryResult({ columns, rows });
 
-      // Add query to history
-      setQueryHistory((prev) => [sqlQuery, ...prev.slice(0, 9)]);
+      // Add query to history if it's not already the latest
+      if (queryHistory.length === 0 || queryHistory[0] !== query) {
+        setQueryHistory((prev) => [query, ...prev.slice(0, 9)]);
+      }
 
       setError(null);
     } catch (error: any) {
@@ -176,17 +93,25 @@ const DatabaseViewer = () => {
     setSqlQuery(query);
   };
 
+  // Show table schema when requested
+  const showTableSchema = (tableName: string) => {
+    const query = `PRAGMA table_info('${tableName}');`;
+    setSqlQuery(query);
+    executeQueryWithText(query);
+  };
+
   return (
     <div className="database-viewer">
-      {/* File Upload Module */}
+      {/* Database Connection Info */}
       <section className="module file-upload-module">
         <h2>Database Connection</h2>
         <div className="file-selection">
-          <button onClick={handleFileSelect} disabled={isLoading}>
-            {isLoading ? "Loading..." : "Select DuckDB File"}
-          </button>
-          {selectedFile && (
-            <p className="selected-file">File: {selectedFile}</p>
+          {dbFilePath ? (
+            <p className="selected-file">File: {dbFilePath}</p>
+          ) : (
+            <p className="no-file-message">
+              No database file loaded. Please load a file from the toolbar.
+            </p>
           )}
         </div>
       </section>
@@ -196,18 +121,31 @@ const DatabaseViewer = () => {
         <h2>Tables</h2>
         {tables.length > 0 ? (
           <div className="tables-list">
-            {tables.map((table) => (
+            {tables.map((tableName) => (
               <div
-                key={table.name}
-                className={`table-item ${selectedTable === table.name ? "selected" : ""}`}
-                onClick={() => handleTableSelect(table.name)}
+                key={tableName}
+                className={`table-item ${selectedTable === tableName ? "selected" : ""}`}
               >
-                {table.name}
+                <span onClick={() => handleTableSelect(tableName)}>
+                  {tableName}
+                </span>
+                <button
+                  className="schema-button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    showTableSchema(tableName);
+                  }}
+                  title="Show schema"
+                >
+                  ℹ️
+                </button>
               </div>
             ))}
           </div>
         ) : (
-          <p>No tables found. Please select a valid DuckDB file.</p>
+          <p>
+            No tables found. Please select a valid DuckDB file from the toolbar.
+          </p>
         )}
       </section>
 
@@ -224,9 +162,9 @@ const DatabaseViewer = () => {
           <div className="query-actions">
             <button
               onClick={executeQuery}
-              disabled={isLoading || !selectedFile}
+              disabled={isLoading || storeIsLoading || !dbFilePath}
             >
-              {isLoading ? "Executing..." : "Run Query"}
+              {isLoading || storeIsLoading ? "Executing..." : "Run Query"}
             </button>
             <button onClick={() => setSqlQuery("")} disabled={!sqlQuery}>
               Clear
@@ -254,6 +192,8 @@ const DatabaseViewer = () => {
         <h2>Results</h2>
         {error ? (
           <div className="error-message">{error}</div>
+        ) : isLoading || storeIsLoading ? (
+          <div className="loading-message">Loading results...</div>
         ) : queryResult ? (
           <div className="results-table-container">
             <table className="results-table">
@@ -268,7 +208,9 @@ const DatabaseViewer = () => {
                 {queryResult.rows.map((row, rowIndex) => (
                   <tr key={rowIndex}>
                     {row.map((cell, cellIndex) => (
-                      <td key={cellIndex}>{String(cell)}</td>
+                      <td key={cellIndex}>
+                        {String(cell !== null ? cell : "NULL")}
+                      </td>
                     ))}
                   </tr>
                 ))}
