@@ -1,0 +1,13 @@
+/* Global styles compatible with Mantine */
+:root {
+  /* Mantine compatibility variables - only keep these */
+  --mantine-color-primary: #646cff;
+  --mantine-color-primary-light: #8388ff;
+  --mantine-color-primary-dark: #535bf2;
+}
+
+/* Container styles */
+#root {
+  width: 100%;
+  min-height: 100vh;
+}

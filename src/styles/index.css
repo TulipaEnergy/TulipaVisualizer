@@ -1,0 +1,7 @@
+/* Import global styles */
+@import "./global/global.css";
+
+/* This ensures that Mantine components inherit the global font family */
+:root {
+  --mantine-font-family: inherit;
+}
