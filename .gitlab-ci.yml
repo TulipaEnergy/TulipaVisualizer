@@ -17,7 +17,8 @@ format-job:
   script:
     - echo "Checking Prettier formatting..."
     - pwd
-    - npx prettier . --check # To fix automatically, use: npx prettier . --write
+    - ls -a
+    - npx prettier . --check --ignore-path /builds/cse2000-software-project/2024-2025/cluster-k/11c/11c/.prettierignore # To fix automatically, use: npx prettier . --write
 
 docker-build-job:
   image: docker:latest
