@@ -1,52 +1,55 @@
-image: node:22
-
 stages:
-  - format
-  - build
+  - format # Always runs
+  - docker-build # Runs iff -build-docker
+  - build # Runs on main and in MR, but can be skipped with -draft, uses custom docker image
 
 variables:
-  CARGO_HOME: "$CI_PROJECT_DIR/.cargo"
-  RUSTUP_HOME: "$CI_PROJECT_DIR/.rustup"
+  CARGO_HOME: "/root/.cargo"
+  RUSTUP_HOME: "/root/.rustup"
+  DOCKER_IMAGE: "gitlab.ewi.tudelft.nl:4242/cse2000-software-project/2024-2025/cluster-k/11c/11c"
+  GIT_CLEAN_FLAGS: "-ffdx -e .rustup/ -e src-tauri/target/"
+
+format-job:
+  stage: format
+  image: node:22
+  rules:
+    - when: always
+  script:
+    - echo "Checking Prettier formatting..."
+    - pwd
+    - npx prettier . --check # To fix automatically, use: npx prettier . --write
+
+docker-build-job:
+  image: docker:latest
+  stage: docker-build
+  services:
+    - docker:dind
+  rules:
+    - if: $CI_COMMIT_TITLE =~ /-build-docker$/
+      when: always
+    - when: never
+  script:
+    - echo $CI_REGISTRY_PASSWORD | docker login -u "$CI_REGISTRY_USER" "$CI_REGISTRY" --password-stdin
+    - docker build -f Dockerfile-tauri -t $DOCKER_IMAGE .
+    - docker push $DOCKER_IMAGE
 
 build-n-lint-job:
   stage: build
+  image: $DOCKER_IMAGE:latest
   rules:
     - if: $CI_COMMIT_TITLE =~ /-draft$/
       when: never
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
   script:
+    - pwd
     - echo "Building Tauri app..."
-    - apt-get update && apt-get install -y libwebkit2gtk-4.1-dev libssl-dev libappindicator3-dev librsvg2-dev patchelf curl xdg-utils
-    - curl https://sh.rustup.rs -sSf | sh -s -- -y
     - export PATH="$CARGO_HOME/bin:$PATH"
     - rustup show
+    - rustup default stable
     - echo "Versions:"
     - node -v
-    - rustc -V
     - rustup -V
+    - rustc -V
     - npm ci --cache .npm --prefer-offline
     - npm run tauri build
-  # artifacts:
-  #   paths:
-  #     - src-tauri/target/release/bundle/tauri-app.exe
-  #   expire_in: 1 day
-  cache:
-    key: ${CI_COMMIT_REF_SLUG}
-    paths:
-      - node_modules/
-      - dist/
-      - src-tauri/target/
-      - .cargo/
-      - .rustup/
-      - .npm/
-    policy: pull-push
-
-format-job:
-  stage: format
-  rules:
-    - when: always # Very light job
-  script:
-    - echo "Checking Prettier formatting..."
-    - pwd
-    - npx prettier . --check

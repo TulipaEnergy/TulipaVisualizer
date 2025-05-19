@@ -1,0 +1,23 @@
+# Runs iff -build-docker
+FROM node:22
+
+# Install system-level dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    libwebkit2gtk-4.1-dev \
+    libssl-dev \
+    libappindicator3-dev \
+    librsvg2-dev \
+    patchelf \
+    xdg-utils \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/*
+
+# Install Rust
+RUN curl https://sh.rustup.rs -sSf | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+RUN node -v && rustc -V && rustup -V
+RUN rustup show
+
+WORKDIR /app
