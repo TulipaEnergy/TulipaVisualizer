@@ -13,8 +13,8 @@ import {
 } from "@mantine/core";
 import useVisualizationStore, { ChartType } from "../store/visualizationStore";
 import useVisualization from "../hooks/useVisualization";
-import DatabaseViewer from "./DatabaseViewer";
-import { run_query } from "../debugtools/generalQuery";
+import DatabaseViewer from "./database-viewer/DatabaseViewer";
+import { run_query } from "../services/generalQuery";
 
 interface GraphCardProps {
   graphId: string;
@@ -164,7 +164,7 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
         }
       } else {
         // For database views, set taller height
-        setHeight(1500);
+        setHeight(1200);
       }
     }
   }, [isLoading, graph?.data, graph?.type]);
