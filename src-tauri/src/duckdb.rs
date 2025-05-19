@@ -34,53 +34,59 @@ pub fn get_path() -> Option<String> {
 // runs the given sql and returns the result as a serialized byte-array of the apache-table
 // https://docs.rs/arrow-ipc/55.0.0/arrow_ipc/writer/struct.StreamWriter.html
 #[tauri::command]
-pub fn run_serialize_query(q: String) -> Response {
+pub fn run_serialize_query(q: String) -> Result<Response, String> {
     println!("parsing: '{}'", q);
 
     // parsing and running query
     let binding = DB_CONN.lock().unwrap();
-    let conn: &Connection = binding.as_ref().expect("DB connection missing!");
-    let mut res_stmt  = conn.prepare(&q).expect("error parsing query");
+    let conn: &Connection = binding.as_ref().ok_or_else(|| "No database open. Please select a DuckDB file first.".to_string())?; 
+    let mut res_stmt = conn.prepare(&q).map_err(|e| format!("Error parsing query: {}", e))?;
 
     let rec_batch: Vec<RecordBatch> = res_stmt.query_arrow([]).expect("error executing query").collect();
-
-
-    // serializing result
-    let mut vec_writer = Cursor::new(Vec::new()); // creates a writer to save the result
-
-    let mut writer: StreamWriter<_> = StreamWriter::try_new(&mut vec_writer, &rec_batch[0].schema()).unwrap();
-    for batch in rec_batch {
-        writer.write(&batch).expect("error writing to byte array");
-    }
-    writer.finish().unwrap();
-
-    println!("succesfully parsed query!");
-    Response::new(vec_writer.into_inner())
-}
-
-// Connection as parameter allows running queries on multiple databases active
-pub fn run_specific_query(conn: &Connection, sql: &str) -> Response {
-    println!("parsing: '{}'", sql);
-
-    // parsing and running query
-    let mut res_stmt  = conn.prepare(sql).expect("error parsing query");
-
-    let rec_batch: Vec<RecordBatch> = res_stmt.query_arrow([]).expect("error executing query").collect();
-
 
     // serializing result
     let mut vec_writer = Cursor::new(Vec::new()); // creates a writer to save the result
 
     if rec_batch.is_empty() {
-        return Response::new(vec_writer.into_inner());  // empty response instead of panicking
+        println!("no rows returned for query, returning empty result");
+        return Ok(Response::new(vec_writer.into_inner()));
     }
 
-    let mut writer: StreamWriter<_> = StreamWriter::try_new(&mut vec_writer, &rec_batch[0].schema()).unwrap();
+    let mut writer: StreamWriter<_> = StreamWriter::try_new(&mut vec_writer, &rec_batch[0].schema())
+        .map_err(|e| format!("write error: {}", e))?;
     for batch in rec_batch {
-        writer.write(&batch).expect("error writing to byte array");
+        writer.write(&batch).map_err(|e| format!("write error: {}", e))?;
     }
-    writer.finish().unwrap();
+    writer.finish().map_err(|e| format!("finish error: {}", e))?;
 
     println!("succesfully parsed query!");
-    Response::new(vec_writer.into_inner())
+    Ok(Response::new(vec_writer.into_inner()))
+}
+
+// Connection as parameter allows running queries on multiple databases active
+pub fn run_specific_query(conn: &Connection, sql: &str) -> Result<Response, String> {
+    println!("parsing: '{}'", sql);
+
+    // parsing and running query
+    let mut res_stmt  = conn.prepare(sql).map_err(|e| format!("Error parsing query: {}", e))?;
+
+    let rec_batch: Vec<RecordBatch> = res_stmt.query_arrow([]).expect("error executing query").collect();
+
+    // serializing result
+    let mut vec_writer = Cursor::new(Vec::new()); // creates a writer to save the result
+
+    if rec_batch.is_empty() {
+        println!("no rows returned for query, returning empty result");
+        return Ok(Response::new(vec_writer.into_inner()));  // empty response instead of panicking
+    }
+
+    let mut writer: StreamWriter<_> = StreamWriter::try_new(&mut vec_writer, &rec_batch[0].schema())
+        .map_err(|e| format!("write error: {}", e))?;
+    for batch in rec_batch {
+        writer.write(&batch).map_err(|e| format!("write error: {}", e))?;
+    }
+    writer.finish().map_err(|e| format!("finish error: {}", e))?;
+
+    println!("succesfully parsed query!");
+    Ok(Response::new(vec_writer.into_inner()))
 }

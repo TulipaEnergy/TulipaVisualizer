@@ -5,7 +5,7 @@ use crate::duckdb::{ DB_CONN, run_specific_query };
 #[tauri::command]
 pub fn get_capacity_over_period(asset: String, start_year: i32, end_year: i32) -> Result<Response, String> {
     let binding = DB_CONN.lock().unwrap();
-    let conn: &Connection = binding.as_ref().expect("DB connection missing!");
+    let conn: &Connection = binding.as_ref().ok_or_else(|| "No database open. Please select a DuckDB file first.".to_string())?; 
     let sql = format!(r#"
     WITH years AS (
     SELECT generate_series AS year FROM generate_series({start_year}, {end_year})
@@ -36,13 +36,13 @@ pub fn get_capacity_over_period(asset: String, start_year: i32, end_year: i32) -
     WHERE ai.commission_year <= y.year
     ORDER BY y.year;
     "#);
-    Ok(run_specific_query(conn, &sql))
+    run_specific_query(conn, &sql)
 }
 
 #[tauri::command]
 pub fn get_capacity_at_year(asset: String, year: i32) -> Result<Response, String> {
     let binding = DB_CONN.lock().unwrap();
-    let conn: &Connection = binding.as_ref().expect("DB connection missing!");
+    let conn = binding.as_ref().ok_or_else(|| "No database open. Please select a DuckDB file first.".to_string())?; 
     let sql = format!(r#"
     WITH cum_inv AS (
     SELECT COALESCE(SUM(solution), 0) AS total_invest
@@ -62,5 +62,5 @@ pub fn get_capacity_at_year(asset: String, year: i32) -> Result<Response, String
         cum_dec cd
     WHERE a.asset = '{asset}' AND a.commission_year <= {year};
     "#);
-    Ok(run_specific_query(conn, &sql))
+    run_specific_query(conn, &sql)  
 }
