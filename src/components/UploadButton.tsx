@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { open } from "@tauri-apps/plugin-dialog";
-import { invoke } from "@tauri-apps/api/core";
 import useVisualizationStore from "../store/visualizationStore";
+import { uploadDatabaseFile } from "../services/databaseOperations";
 
 const UploadButton: React.FC = () => {
   const { setDbFilePath, setIsLoading, setError } = useVisualizationStore();
@@ -12,18 +11,9 @@ const UploadButton: React.FC = () => {
       setIsUploading(true);
       setIsLoading(true);
 
-      const selected = await open({
-        multiple: false,
-        filters: [
-          {
-            name: "DuckDB Files",
-            extensions: ["duckdb"],
-          },
-        ],
-      });
+      const selected = await uploadDatabaseFile();
 
-      if (typeof selected === "string") {
-        await invoke("set_path", { path: selected });
+      if (selected) {
         setDbFilePath(selected);
         setError(null);
         console.log("Selected file:", selected);

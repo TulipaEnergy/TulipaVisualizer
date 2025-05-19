@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Table } from "apache-arrow";
-import { run_query } from "../debugtools/generalQuery";
 import useVisualizationStore, {
   ChartType,
   GraphConfig,
 } from "../store/visualizationStore";
 import { getDefaultChartData } from "../data/mock/graphMock";
+import { fetchGraphData } from "../services/databaseOperations";
 
 /**
  * Custom hook for handling visualization data fetching and processing
@@ -29,7 +29,7 @@ export const useVisualization = () => {
   /**
    * Fetch data for a specific graph
    */
-  const fetchGraphData = async (graphId: string) => {
+  const fetchGraphDataForVisualization = async (graphId: string) => {
     const graph = graphs.find((g) => g.id === graphId);
     if (!graph || !selectedTable) return;
 
@@ -45,17 +45,15 @@ export const useVisualization = () => {
         ? dateRange.endDate.toISOString().split("T")[0]
         : null;
 
-      // Build the query based on the current visualization settings
-      const query = buildQuery(
-        graph,
-        selectedTable,
-        resolution,
-        startDate,
-        endDate,
-      );
-
       try {
-        const result = await run_query(query);
+        const result = await fetchGraphData(
+          selectedTable,
+          graph.systemVariable,
+          resolution,
+          startDate,
+          endDate,
+        );
+
         setQueryResult(graph.id, result);
 
         // Process the data for the chart
@@ -70,29 +68,6 @@ export const useVisualization = () => {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  /**
-   * Build a SQL query based on the graph configuration
-   */
-  const buildQuery = (
-    graph: GraphConfig,
-    tableName: string,
-    resolution: string,
-    startDate: string | null,
-    endDate: string | null,
-  ): string => {
-    return `
-      SELECT 
-        ${graph.systemVariable},
-        COUNT(*) as count,
-        DATE_TRUNC('${resolution}', timestamp_column) as time_bucket
-      FROM ${tableName}
-      ${startDate ? `WHERE timestamp_column >= '${startDate}'` : ""}
-      ${startDate && endDate ? `AND timestamp_column <= '${endDate}'` : ""}
-      GROUP BY time_bucket, ${graph.systemVariable}
-      ORDER BY time_bucket
-    `;
   };
 
   /**
@@ -152,7 +127,7 @@ export const useVisualization = () => {
     error,
     graphs,
     systemVariables,
-    fetchGraphData,
+    fetchGraphData: fetchGraphDataForVisualization,
     processDataForChart,
     createGraph,
     updateGraphConfig,
