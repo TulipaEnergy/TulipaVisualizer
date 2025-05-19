@@ -4,5 +4,5 @@ coverage
 target
 dist
 node_modules
-rustup
+.rustup
 cargo
