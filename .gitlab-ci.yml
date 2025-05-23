@@ -2,6 +2,7 @@ stages:
   - format # Always runs
   - docker-build # Runs iff -build-docker
   - build # Runs on main and in MR, but can be skipped with -draft, uses custom docker image
+  - test # Any tests go here
 
 variables:
   CARGO_HOME: "/root/.cargo"
@@ -54,3 +55,23 @@ build-n-lint-job:
     - rustc -V
     - npm ci --cache .npm --prefer-offline
     - npm run tauri build
+
+test-backend-job:
+  stage: test
+  image: $DOCKER_IMAGE:latest
+  rules:
+    - !reference [build-n-lint-job, rules]
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: cargo-coverage.xml
+  coverage: '/TOTAL\s+\d+\s+\d+\s+\d+.\d+%\s+\d+\s+\d+\s+\d+.\d+%\s+\d+\s+\d+\s+(\d+.\d+%)/'
+  script:
+    - echo "Running tests..."
+    - export PATH="$CARGO_HOME/bin:$PATH"
+    - rustup default stable
+    - rustup component add llvm-tools-preview
+    - cargo install cargo-llvm-cov # for code coverage
+    - npm run tauri:test
+    - cargo llvm-cov report --summary-only --manifest-path src-tauri/Cargo.toml

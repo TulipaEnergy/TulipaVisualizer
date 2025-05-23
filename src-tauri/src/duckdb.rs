@@ -4,9 +4,26 @@ use std::option::Option;
 use tauri::ipc::Response;
 use duckdb::{ Connection, arrow::array::RecordBatch, };
 use arrow_ipc::{ writer::StreamWriter, };
+use mockall::{ automock, mock, predicate::* };
 
 static DUCKDB_PATH: Lazy<Mutex<Option<String>>> = Lazy::new(|| Mutex::new(None));
 pub static DB_CONN: Mutex<Option<Connection>> = Mutex::new(None);
+
+// to allow for test-mocking:
+//#[cfg_attr(test, automock)]
+#[automock]
+pub trait ConnectionFactory {
+    fn open(&self, path: String) -> Connection;
+}
+
+pub struct RealConnectionFactory;
+
+impl ConnectionFactory for RealConnectionFactory {
+    fn open(&self, path: String) -> Connection {
+        Connection::open(path).expect("Unable to open provided.duckDB file!")
+    }
+}
+
 
 #[tauri::command]
 pub fn set_path (path: String) -> Result<(), String> {
@@ -14,7 +31,8 @@ pub fn set_path (path: String) -> Result<(), String> {
         let mut db_path = DUCKDB_PATH.lock().unwrap();
         *db_path = Some(path.clone());
 
-        let conn: Connection = Connection::open(path).expect("Unable to open provided .duckDB file!");
+        let conn_fact = RealConnectionFactory;
+        let conn: Connection = conn_fact.open(path);
         *(DB_CONN.lock().unwrap()) = Some(conn);
         println!("database connection established!");
 
@@ -89,4 +107,45 @@ pub fn run_specific_query(conn: &Connection, sql: &str) -> Result<Response, Stri
 
     println!("succesfully parsed query!");
     Ok(Response::new(vec_writer.into_inner()))
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // example tests
+    #[test]
+    fn it_works() {
+        let result = 4;
+        assert_eq!(result, 4, "result was not 4!");
+    }
+
+    #[test]
+    #[should_panic(expected = "WHA")]
+    fn panic_test() {
+        panic!("WHA AAAAA!")
+    }
+
+    // this test fails intentionally
+    // #[test]
+    // #[should_panic(expected = "WHA")]
+    // fn panic_fail_test() {
+    //     panic!("nothing's up")
+    // }
+
+    // real tests
+    #[test]
+    fn set_path_test_pass() {
+        let mut mock: MockConnectionFactory = MockConnectionFactory::new();
+        mock.expect_open()
+            .returning(|_| {Connection::open_in_memory().unwrap()});
+
+        assert!(set_path("fake_path.duckdb".to_string()).is_ok());
+    }
+
+    #[test]
+    fn run_serialize_query_test_no_db_open() {
+        assert!(run_serialize_query("SHOW TABLES;".to_string()).is_err(), "DB was open! (impossible)");
+    }
 }
