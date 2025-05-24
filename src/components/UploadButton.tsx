@@ -1,6 +1,7 @@
 import { useState } from "react";
 import useVisualizationStore from "../store/visualizationStore";
 import { uploadDatabaseFile } from "../services/databaseOperations";
+import { Button } from "@mantine/core";
 
 const UploadButton: React.FC = () => {
   const { setDbFilePath, setIsLoading, setError } = useVisualizationStore();
@@ -30,13 +31,13 @@ const UploadButton: React.FC = () => {
   }
 
   return (
-    <button
+    <Button
       className="upload-button"
       onClick={handleFileSelect}
       disabled={isUploading}
     >
       {isUploading ? "Uploading..." : "Upload Database File"}
-    </button>
+    </Button>
   );
 };
 

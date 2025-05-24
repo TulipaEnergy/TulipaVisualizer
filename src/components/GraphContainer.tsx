@@ -15,9 +15,10 @@ import {
 
 interface GraphContainerProps {
   id: number;
+  dbFile: string;
 }
 
-const GraphContainer: React.FC<GraphContainerProps> = ({ id }) => {
+const GraphContainer: React.FC<GraphContainerProps> = ({ id, dbFile }) => {
   const { graphs, createGraph } = useVisualization();
   const [opened, setOpened] = useState(false);
 
@@ -65,7 +66,7 @@ const GraphContainer: React.FC<GraphContainerProps> = ({ id }) => {
           }}
         >
           {containerGraphs.map((graph) => (
-            <GraphCard key={graph.id} graphId={graph.id} />
+            <GraphCard key={graph.id} graphId={graph.id} dbFile={dbFile} />
           ))}
         </SimpleGrid>
       </Box>

@@ -1,23 +1,14 @@
-import { invoke } from "@tauri-apps/api/core";
-import { open } from "@tauri-apps/plugin-dialog";
+import { setDbFilePath, triggerDuckDBFileDialog } from "../gateway/io";
+import { runQuery } from "../gateway/db";
 import { Table } from "apache-arrow";
-import { run_query } from "./generalQuery";
 
 // File upload operations
 export async function uploadDatabaseFile(): Promise<string | null> {
   try {
-    const selected = await open({
-      multiple: false,
-      filters: [
-        {
-          name: "DuckDB Files",
-          extensions: ["duckdb"],
-        },
-      ],
-    });
+    const selected = await triggerDuckDBFileDialog();
 
     if (typeof selected === "string") {
-      await invoke("set_path", { path: selected });
+      setDbFilePath(selected);
       return selected;
     }
     return null;
@@ -33,7 +24,7 @@ export async function fetchDatabaseTables(): Promise<{
 }> {
   try {
     // Query to get all tables from the database
-    const tablesResult = await run_query("SHOW TABLES");
+    const tablesResult = await executeCustomQuery("SHOW TABLES");
     const tableNames: string[] = [];
     const schema = tablesResult.schema;
     const tableNameColumn = schema.fields[0].name;
@@ -50,7 +41,7 @@ export async function fetchDatabaseTables(): Promise<{
     const columnsMap: Record<string, string[]> = {};
     for (const tableName of tableNames) {
       try {
-        const columnsResult = await run_query(
+        const columnsResult = await executeCustomQuery(
           `PRAGMA table_info('${tableName}')`,
         );
         const columnNames: string[] = [];
@@ -96,7 +87,7 @@ export async function fetchGraphData(
     LIMIT 100;
   `;
 
-  return await run_query(query);
+  return await executeCustomQuery(query);
 }
 
 // Execute custom SQL query
@@ -104,5 +95,25 @@ export async function executeCustomQuery(query: string): Promise<Table<any>> {
   if (!query.trim()) {
     throw new Error("Query cannot be empty");
   }
-  return await run_query(query);
+  return await runQuery(query);
+}
+
+// Utility function to get column names and provide lazy access to table data
+export function extractTableData(table: Table<any>): {
+  columns: string[];
+  getRow: (index: number) => any[] | null;
+  numRows: number;
+} {
+  // Extract column names
+  const columns = table.schema.fields.map((field) => field.name);
+
+  // Return an object with column names and a function to lazily access rows
+  return {
+    columns,
+    getRow: (index: number) => {
+      const row = table.get(index);
+      return row ? columns.map((col) => row[col]) : null;
+    },
+    numRows: table.numRows,
+  };
 }

@@ -128,7 +128,7 @@ export default function App() {
                         X
                       </Button>
                       <Box style={{ flexGrow: 1, width: "100%" }}>
-                        <GraphContainer id={id} />
+                        <GraphContainer id={id} dbFile={dbFilePath} />
                       </Box>
                     </Box>
                   ))}

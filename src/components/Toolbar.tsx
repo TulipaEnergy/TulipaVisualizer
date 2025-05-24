@@ -9,7 +9,7 @@ const Toolbar: React.FC = () => {
 
   return (
     <Paper p="md" radius="md" withBorder shadow="xs">
-      <Group wrap="wrap" justify="flex-start" gap="md">
+      <Group wrap="wrap" justify="flex-start" gap="md" align="center">
         <UploadButton />
 
         {dbFilePath && (
@@ -21,7 +21,7 @@ const Toolbar: React.FC = () => {
             <TimeFramePicker />
 
             <Divider orientation="vertical" />
-            <Group>
+            <Group align="center">
               <Text size="sm" fw={500}>
                 Database:
               </Text>

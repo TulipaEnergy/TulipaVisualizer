@@ -18,7 +18,7 @@ const ResolutionSelector: React.FC<ResolutionSelectorProps> = ({
   };
 
   return (
-    <Group className={className} align="flex-end">
+    <Group className={className} align="center">
       <Text size="sm" fw={500}>
         Resolution:
       </Text>

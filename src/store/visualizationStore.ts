@@ -9,7 +9,8 @@ export type ChartType =
   | "pie"
   | "scatter"
   | "area"
-  | "database";
+  | "database"
+  | "system-costs";
 
 export interface DateRange {
   startDate: Date | null;

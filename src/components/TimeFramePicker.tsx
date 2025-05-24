@@ -42,11 +42,11 @@ const TimeFramePicker: React.FC<TimeFramePickerProps> = ({ className }) => {
   };
 
   return (
-    <Group className={className} align="flex-end">
+    <Group className={className} align="center">
       <Text size="sm" fw={500}>
         Time Frame:
       </Text>
-      <Group gap="xs">
+      <Group gap="xs" align="center">
         <DatePickerInput
           label="From"
           placeholder="Select date"
@@ -71,7 +71,7 @@ const TimeFramePicker: React.FC<TimeFramePickerProps> = ({ className }) => {
         <Button
           onClick={() => setDateRange({ startDate, endDate })}
           size="sm"
-          style={{ marginTop: "auto" }}
+          // style={{ marginTop: "auto" }}
         >
           Apply
         </Button>

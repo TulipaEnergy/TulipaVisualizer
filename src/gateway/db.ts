@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { tableFromIPC, Table } from "apache-arrow";
 
-export async function run_query(s: String): Promise<Table<any>> {
+export async function runQuery(s: String): Promise<Table<any>> {
   try {
     let buffer = await invoke<ArrayBuffer>("run_serialize_query", { q: s });
     let byteArr = new Uint8Array(buffer);
@@ -13,29 +13,9 @@ export async function run_query(s: String): Promise<Table<any>> {
   }
 }
 
-// Utility function to get column names and provide lazy access to table data
-export function extractTableData(table: Table<any>): {
-  columns: string[];
-  getRow: (index: number) => any[] | null;
-  numRows: number;
-} {
-  // Extract column names
-  const columns = table.schema.fields.map((field) => field.name);
-
-  // Return an object with column names and a function to lazily access rows
-  return {
-    columns,
-    getRow: (index: number) => {
-      const row = table.get(index);
-      return row ? columns.map((col) => row[col]) : null;
-    },
-    numRows: table.numRows,
-  };
-}
-
 export function runTest() {
   (async () => {
-    let t = await run_query("SHOW TABLES");
+    let t = await runQuery("SHOW TABLES");
 
     console.log(t);
     for (const row of t) {
