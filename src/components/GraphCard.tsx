@@ -14,13 +14,15 @@ import {
 import useVisualizationStore, { ChartType } from "../store/visualizationStore";
 import useVisualization from "../hooks/useVisualization";
 import DatabaseViewer from "./database-viewer/DatabaseViewer";
-import { run_query } from "../services/generalQuery";
+import SystemCosts from "./SystemCosts";
+import { executeCustomQuery } from "../services/databaseOperations";
 
 interface GraphCardProps {
   graphId: string;
+  dbFile: string;
 }
 
-const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
+const GraphCard: React.FC<GraphCardProps> = ({ graphId, dbFile }) => {
   const {
     isLoading,
     error,
@@ -54,6 +56,7 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
     { value: "scatter", label: "Scatter Plot" },
     { value: "area", label: "Area Chart" },
     { value: "database", label: "Database View" },
+    { value: "system-costs", label: "System Costs" },
   ];
 
   // Fetch database tables when the graph type is "database"
@@ -62,7 +65,7 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
       setStoreIsLoading(true);
 
       // Query to get all tables from the database
-      const tablesResult = await run_query("SHOW TABLES");
+      const tablesResult = await executeCustomQuery("SHOW TABLES");
 
       // Extract table names from the result
       const tableNames: string[] = [];
@@ -86,7 +89,7 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
       const columnsMap: Record<string, string[]> = {};
       for (const tableName of tableNames) {
         try {
-          const columnsResult = await run_query(
+          const columnsResult = await executeCustomQuery(
             `PRAGMA table_info('${tableName}')`,
           );
           const columnNames: string[] = [];
@@ -258,9 +261,10 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
       shadow="sm"
       style={{
         position: "relative",
-        height: `${height}px`,
         gridColumn: isFullWidth ? "1 / -1" : "span 1",
         width: "100%",
+        flexGrow: 1,
+        minHeight: `${height}px`,
       }}
     >
       <Stack gap="sm" h="100%">
@@ -272,7 +276,7 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
             }
             placeholder="Chart Title"
             size="sm"
-            style={{ flexGrow: 1 }}
+            style={{ flexGrow: 1, fontWeight: 700 }}
           />
 
           <Group wrap="nowrap" gap="xs">
@@ -324,6 +328,8 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
             </Flex>
           ) : graph.type === "database" ? (
             <DatabaseViewer />
+          ) : graph.type === "system-costs" ? (
+            <SystemCosts dbFile={dbFile} />
           ) : (
             <ReactECharts
               ref={chartRef}

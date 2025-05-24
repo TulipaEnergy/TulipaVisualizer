@@ -128,6 +128,7 @@ const DatabaseViewer = () => {
         </Grid.Col>
 
         <Grid.Col span={12}>
+          {dbFilePath}
           <ResultsTable
             result={queryResult}
             isLoading={isLoading || storeIsLoading}
