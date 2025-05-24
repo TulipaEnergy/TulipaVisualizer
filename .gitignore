@@ -13,6 +13,7 @@ dist-ssr
 *.local
 *.duckdb
 *.xml
+coverage
 
 # Editor directories and files
 .vscode/*
