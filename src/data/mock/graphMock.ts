@@ -99,7 +99,7 @@ const generateScatterData = (count: number): [number, number][] => {
 };
 
 // Main function to get default chart data
-export const getDefaultChartData = (type: ChartType) => {
+export const getDefaultChartData = async (type: ChartType) => {
   const DATA_POINTS = 100; // Number of data points to generate
   const dateLabels = generateDateSeries(DATA_POINTS);
 
