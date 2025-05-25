@@ -14,6 +14,7 @@ import {
 import useVisualizationStore, { ChartType } from "../store/visualizationStore";
 import useVisualization from "../hooks/useVisualization";
 import DatabaseViewer from "./database-viewer/DatabaseViewer";
+import Capacity from "./Capacity";
 import SystemCosts from "./SystemCosts";
 import { executeCustomQuery } from "../services/databaseOperations";
 
@@ -50,6 +51,7 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId, dbFile }) => {
   const chartRef = useRef<ReactECharts>(null);
 
   const chartTypes: { value: ChartType; label: string }[] = [
+    { value: "capacity", label: "Capacity Chart" },
     { value: "bar", label: "Bar Chart" },
     { value: "line", label: "Line Chart" },
     { value: "pie", label: "Pie Chart" },
@@ -226,8 +228,8 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId, dbFile }) => {
 
   const handleTypeChange = (value: string | null) => {
     if (graph && value) {
-      updateGraphConfig(graph.id, { type: value as ChartType });
       // The hook will handle updating the data structure
+      updateGraphConfig(graph.id, { type: value as ChartType });
     }
   };
 
@@ -287,6 +289,10 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId, dbFile }) => {
               size="xs"
               style={{ width: 130 }}
             />
+
+            {graph?.type === "capacity" && ( // shows the capacity UI
+              <Capacity key={dbFile} graphId={graph.id} dbFile={dbFile} />
+            )}
 
             <Select
               value={graph.systemVariable}

@@ -66,7 +66,11 @@ const GraphContainer: React.FC<GraphContainerProps> = ({ id, dbFile }) => {
           }}
         >
           {containerGraphs.map((graph) => (
-            <GraphCard key={graph.id} graphId={graph.id} dbFile={dbFile} />
+            <GraphCard
+              key={`${graph.id}-${dbFile}`}
+              graphId={graph.id}
+              dbFile={dbFile}
+            />
           ))}
         </SimpleGrid>
       </Box>

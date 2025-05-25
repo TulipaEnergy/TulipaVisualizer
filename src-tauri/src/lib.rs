@@ -1,5 +1,4 @@
 mod duckdb;
-mod queries;
 use tauri_plugin_dialog;
 
 
@@ -18,9 +17,7 @@ pub fn run() {
             greet,
             duckdb::set_path,
             duckdb::get_path,
-            duckdb::run_serialize_query,
-            queries::capacity::get_capacity_over_period,
-            queries::capacity::get_capacity_at_year])
+            duckdb::run_serialize_query])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

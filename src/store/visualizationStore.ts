@@ -4,6 +4,7 @@ import { getDefaultChartData } from "../data/mock/graphMock";
 
 export type Resolution = "hour" | "day" | "week" | "month" | "year";
 export type ChartType =
+  | "capacity"
   | "bar"
   | "line"
   | "pie"
@@ -22,6 +23,9 @@ export interface GraphConfig {
   type: ChartType;
   containerId: number; // Add containerId to track which container this graph belongs to
   title: string;
+  asset?: string;
+  startYear?: number;
+  endYear?: number;
   systemVariable: string;
   data: any;
   options: any;
@@ -113,11 +117,12 @@ const useVisualizationStore = create<VisualizationState>((set, get) => ({
   setResolution: (resolution) => set({ resolution }),
   setDateRange: (dateRange) => set({ dateRange }),
 
-  addGraph: (type, containerId) =>
-    set((state) => {
-      // Get default data from the mock data file
-      const defaultData = getDefaultChartData(type);
+  addGraph: async (type, containerId) => {
+    // Get default data from the mock data file
+    console.log("addGraph used.");
+    const defaultData = await getDefaultChartData(type);
 
+    set((state) => {
       return {
         graphs: [
           ...state.graphs,
@@ -134,7 +139,8 @@ const useVisualizationStore = create<VisualizationState>((set, get) => ({
           },
         ],
       };
-    }),
+    });
+  },
 
   removeGraph: (id) =>
     set((state) => ({

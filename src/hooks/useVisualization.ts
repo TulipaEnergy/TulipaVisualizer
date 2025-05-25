@@ -6,6 +6,7 @@ import useVisualizationStore, {
 } from "../store/visualizationStore";
 import { getDefaultChartData } from "../data/mock/graphMock";
 import { fetchGraphData } from "../services/databaseOperations";
+import { capacityGraph } from "../components/Capacity";
 
 /**
  * Custom hook for handling visualization data fetching and processing
@@ -30,6 +31,7 @@ export const useVisualization = () => {
    * Fetch data for a specific graph
    */
   const fetchGraphDataForVisualization = async (graphId: string) => {
+    console.log("Method fetchGraphDataForVisualization is called.");
     const graph = graphs.find((g) => g.id === graphId);
     if (!graph || !selectedTable) return;
 
@@ -77,6 +79,7 @@ export const useVisualization = () => {
     result: Table<any> | null,
     chartType: ChartType,
   ) => {
+    console.log("Method processDataForChart is called.");
     if (!result) return getDefaultChartData(chartType);
 
     // In a real implementation, this would transform data from the Arrow Table
@@ -94,25 +97,28 @@ export const useVisualization = () => {
   /**
    * Update a graph's properties
    */
-  const updateGraphConfig = (id: string, updates: Partial<GraphConfig>) => {
-    // Check if we're updating the chart type
-    if (updates.type) {
-      // When changing chart type, we need to update the data structure
-      const newChartType = updates.type;
-      // Get default data for this chart type
-      const defaultData = getDefaultChartData(newChartType);
+  const updateGraphConfig = async (
+    id: string,
+    updates: Partial<GraphConfig>,
+  ) => {
+    const graph = graphs.find((g) => g.id === id);
+    var defaultData = graph?.data;
 
-      // Update both the type and data structure
-      updateGraph(id, {
-        ...updates,
-        data: defaultData,
-      });
+    const type = updates.type ?? graph?.type;
+    const asset = updates.asset ?? graph?.asset;
+    const startYear = updates.startYear ?? graph?.startYear;
+    const endYear = updates.endYear ?? graph?.endYear;
 
-      // No need to call fetchGraphData explicitly since the useEffect
-      // in GraphCard will trigger due to the type change
-    } else {
-      updateGraph(id, updates);
+    if (type === "capacity") {
+      defaultData = await capacityGraph(asset, startYear, endYear);
+    } else if (updates.type) {
+      defaultData = await getDefaultChartData(updates.type);
     }
+
+    updateGraph(id, {
+      ...updates,
+      data: defaultData,
+    });
   };
 
   /**
