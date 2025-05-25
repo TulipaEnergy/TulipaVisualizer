@@ -10,7 +10,8 @@ export type ChartType =
   | "scatter"
   | "area"
   | "database"
-  | "system-costs";
+  | "system-costs"
+  | "production-costs";
 
 export interface DateRange {
   startDate: Date | null;

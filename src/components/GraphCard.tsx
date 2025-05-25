@@ -15,6 +15,7 @@ import useVisualizationStore, { ChartType } from "../store/visualizationStore";
 import useVisualization from "../hooks/useVisualization";
 import DatabaseViewer from "./database-viewer/DatabaseViewer";
 import SystemCosts from "./SystemCosts";
+import ProductionCosts from "./ProductionCosts";
 import { executeCustomQuery } from "../services/databaseOperations";
 
 interface GraphCardProps {
@@ -57,6 +58,7 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId, dbFile }) => {
     { value: "area", label: "Area Chart" },
     { value: "database", label: "Database View" },
     { value: "system-costs", label: "System Costs" },
+    { value: "production-costs", label: "Production Costs" },
   ];
 
   // Fetch database tables when the graph type is "database"
@@ -330,6 +332,8 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId, dbFile }) => {
             <DatabaseViewer />
           ) : graph.type === "system-costs" ? (
             <SystemCosts dbFile={dbFile} />
+          ) : graph.type === "production-costs" ? (
+            <ProductionCosts dbFile={dbFile} />
           ) : (
             <ReactECharts
               ref={chartRef}
