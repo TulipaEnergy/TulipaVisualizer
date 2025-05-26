@@ -74,6 +74,12 @@ const SystemCosts: React.FC<SystemCostsProps> = ({ dbFile }) => {
             type: "category",
             data: years,
             name: "Milestone Year",
+            nameLocation: "end",
+            nameTextStyle: {
+              align: "right",
+              verticalAlign: "top",
+              padding: [20, 10, 0, 0],
+            },
             axisLabel: {
               rotate: 45,
             },

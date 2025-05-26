@@ -53,14 +53,14 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId, dbFile }) => {
 
   const chartTypes: { value: ChartType; label: string }[] = [
     { value: "capacity", label: "Capacity Chart" },
-    { value: "bar", label: "Bar Chart" },
-    { value: "line", label: "Line Chart" },
-    { value: "pie", label: "Pie Chart" },
-    { value: "scatter", label: "Scatter Plot" },
-    { value: "area", label: "Area Chart" },
-    { value: "database", label: "Database View" },
+    // { value: "bar", label: "Bar Chart" },
+    // { value: "line", label: "Line Chart" },
+    // { value: "pie", label: "Pie Chart" },
+    // { value: "scatter", label: "Scatter Plot" },
+    // { value: "area", label: "Area Chart" },
     { value: "system-costs", label: "System Costs" },
     { value: "production-costs", label: "Production Costs" },
+    { value: "database", label: "Database View" },
   ];
 
   // Fetch database tables when the graph type is "database"

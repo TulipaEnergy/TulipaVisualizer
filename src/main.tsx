@@ -9,6 +9,9 @@ import "./styles/index.css";
 // Create a custom theme (optional)
 const theme = createTheme({
   primaryColor: "blue",
+  fontFamily: "Outfit, sans-serif",
+  fontFamilyMonospace: "Monaco, Courier, monospace",
+  headings: { fontFamily: "Outfit, sans-serif" },
 });
 
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(

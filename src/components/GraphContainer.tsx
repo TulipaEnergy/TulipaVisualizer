@@ -52,7 +52,7 @@ const GraphContainer: React.FC<GraphContainerProps> = ({ id, dbFile }) => {
           position="bottom-end"
           closeOnClickOutside={true}
         >
-          <Button onClick={() => handleAddGraph("bar")}>Add Graph</Button>
+          <Button onClick={() => handleAddGraph("capacity")}>Add Graph</Button>
         </Menu>
       </Group>
 

@@ -62,7 +62,7 @@ const ProductionCosts: React.FC<ProductionCostsProps> = ({ dbFile }) => {
                 totalCost += item.value as number;
                 tooltipContent +=
                   `<span style="display:inline-block;margin-right:4px;border-radius:10px;width:10px;height:10px;background-color:${item.color};"></span>` +
-                  `${item.seriesName}: ${Number(item.value).toFixed(2)}<br/>`;
+                  `${item.seriesName}: ${item.value ? Number(item.value).toFixed(2) : 0}<br/>`;
               });
               tooltipContent += `<hr style="margin: 5px 0;"/><strong>Total: ${totalCost.toFixed(2)}</strong>`;
               return tooltipContent;
@@ -77,6 +77,12 @@ const ProductionCosts: React.FC<ProductionCostsProps> = ({ dbFile }) => {
             type: "category",
             data: years,
             name: "Milestone Year",
+            nameLocation: "end",
+            nameTextStyle: {
+              align: "right",
+              verticalAlign: "top",
+              padding: [20, 10, 0, 0],
+            },
             axisLabel: {
               rotate: 45,
             },
