@@ -15,7 +15,7 @@ import useVisualizationStore, { ChartType } from "../store/visualizationStore";
 import DatabaseViewer from "./database-viewer/DatabaseViewer";
 import Capacity from "./kpis/Capacity";
 import SystemCosts from "./kpis/SystemCosts";
-import ProductionCosts from "./kpis/ProductionCosts";
+import ProductionPrices from "./kpis/ProductionPrices";
 
 interface GraphCardProps {
   graphId: string;
@@ -34,7 +34,7 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
   const chartTypes: { value: ChartType; label: string }[] = [
     { value: "capacity", label: "Capacity Chart" },
     { value: "system-costs", label: "System Costs" },
-    { value: "production-costs", label: "Production Costs" },
+    { value: "production-prices", label: "Production Prices" },
     { value: "database", label: "Database View" },
   ];
 
@@ -190,8 +190,8 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
             <DatabaseViewer />
           ) : graph.type === "system-costs" ? (
             <SystemCosts />
-          ) : graph.type === "production-costs" ? (
-            <ProductionCosts />
+          ) : graph.type === "production-prices" ? (
+            <ProductionPrices />
           ) : (
             <Capacity graphId={graphId} />
           )}
