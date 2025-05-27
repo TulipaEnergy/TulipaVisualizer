@@ -16,6 +16,7 @@ import DatabaseViewer from "./database-viewer/DatabaseViewer";
 import Capacity from "./kpis/Capacity";
 import SystemCosts from "./kpis/SystemCosts";
 import ProductionPrices from "./kpis/ProductionPrices";
+import StoragePrices from "./kpis/Storage Prices";
 
 interface GraphCardProps {
   graphId: string;
@@ -35,6 +36,7 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
     { value: "capacity", label: "Capacity Chart" },
     { value: "system-costs", label: "System Costs" },
     { value: "production-prices", label: "Production Prices" },
+    { value: "storage-prices", label: "Storage Prices" },
     { value: "database", label: "Database View" },
   ];
 
@@ -192,6 +194,8 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
             <SystemCosts />
           ) : graph.type === "production-prices" ? (
             <ProductionPrices />
+          ) : graph.type === "storage-prices" ? (
+            <StoragePrices />
           ) : (
             <Capacity graphId={graphId} />
           )}
