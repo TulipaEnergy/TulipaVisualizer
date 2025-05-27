@@ -4,7 +4,8 @@ import { uploadDatabaseFile } from "../services/databaseOperations";
 import { Button } from "@mantine/core";
 
 const UploadButton: React.FC = () => {
-  const { setDbFilePath, setIsLoading, setError } = useVisualizationStore();
+  const { graphs, updateGraph, setGlobalDBFilePath, setIsLoading, setError } =
+    useVisualizationStore();
   const [isUploading, setIsUploading] = useState(false);
 
   async function handleFileSelect() {
@@ -15,8 +16,11 @@ const UploadButton: React.FC = () => {
       const selected = await uploadDatabaseFile();
 
       if (selected) {
-        setDbFilePath(selected);
+        setGlobalDBFilePath(selected);
         setError(null);
+        graphs.forEach((g) => {
+          updateGraph(g.id, { options: null });
+        });
         console.log("Selected file:", selected);
       } else {
         console.log("No file selected.");

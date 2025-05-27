@@ -12,37 +12,17 @@ import {
   Flex,
 } from "@mantine/core";
 import useVisualizationStore, { ChartType } from "../store/visualizationStore";
-import useVisualization from "../hooks/useVisualization";
 import DatabaseViewer from "./database-viewer/DatabaseViewer";
-import Capacity from "./Capacity";
-import SystemCosts from "./SystemCosts";
-import ProductionCosts from "./ProductionCosts";
-import { executeCustomQuery } from "../services/databaseOperations";
+import Capacity from "./kpis/Capacity";
+import SystemCosts from "./kpis/SystemCosts";
+import ProductionCosts from "./kpis/ProductionCosts";
 
 interface GraphCardProps {
   graphId: string;
-  dbFile: string;
 }
 
-const GraphCard: React.FC<GraphCardProps> = ({ graphId, dbFile }) => {
-  const {
-    isLoading,
-    error,
-    graphs,
-    systemVariables,
-    fetchGraphData,
-    updateGraphConfig,
-    deleteGraph,
-  } = useVisualization();
-
-  const {
-    dateRange,
-    resolution,
-    selectedTable,
-    setTables,
-    setColumns,
-    setIsLoading: setStoreIsLoading,
-  } = useVisualizationStore();
+const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
+  const { graphs, updateGraph, removeGraph } = useVisualizationStore();
 
   const graph = graphs.find((g) => g.id === graphId);
 
@@ -53,128 +33,16 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId, dbFile }) => {
 
   const chartTypes: { value: ChartType; label: string }[] = [
     { value: "capacity", label: "Capacity Chart" },
-    // { value: "bar", label: "Bar Chart" },
-    // { value: "line", label: "Line Chart" },
-    // { value: "pie", label: "Pie Chart" },
-    // { value: "scatter", label: "Scatter Plot" },
-    // { value: "area", label: "Area Chart" },
     { value: "system-costs", label: "System Costs" },
     { value: "production-costs", label: "Production Costs" },
     { value: "database", label: "Database View" },
   ];
 
-  // Fetch database tables when the graph type is "database"
-  const fetchDatabaseTables = async () => {
-    try {
-      setStoreIsLoading(true);
-
-      // Query to get all tables from the database
-      const tablesResult = await executeCustomQuery("SHOW TABLES");
-
-      // Extract table names from the result
-      const tableNames: string[] = [];
-
-      // Get the column name that contains the table names
-      const schema = tablesResult.schema;
-      const tableNameColumn = schema.fields[0].name; // Typically "name" or "table_name"
-
-      // Extract table names
-      for (let i = 0; i < tablesResult.numRows; i++) {
-        const row = tablesResult.get(i);
-        if (row && row[tableNameColumn]) {
-          tableNames.push(row[tableNameColumn]);
-        }
-      }
-
-      // Update tables in the store
-      setTables(tableNames);
-
-      // Fetch columns for each table
-      const columnsMap: Record<string, string[]> = {};
-      for (const tableName of tableNames) {
-        try {
-          const columnsResult = await executeCustomQuery(
-            `PRAGMA table_info('${tableName}')`,
-          );
-          const columnNames: string[] = [];
-
-          for (let i = 0; i < columnsResult.numRows; i++) {
-            const row = columnsResult.get(i);
-            if (row && row.name) {
-              columnNames.push(row.name);
-            }
-          }
-
-          columnsMap[tableName] = columnNames;
-        } catch (error) {
-          console.error(
-            `Error fetching columns for table ${tableName}:`,
-            error,
-          );
-        }
-      }
-
-      // Update columns in the store
-      setColumns(columnsMap);
-
-      console.log("Loaded tables:", tableNames);
-    } catch (error) {
-      console.error("Error fetching database tables:", error);
-    } finally {
-      setStoreIsLoading(false);
-    }
-  };
-
-  // Fetch graph data when relevant parameters change
   useEffect(() => {
-    if (graph && selectedTable) {
-      // Add a small delay before fetching data when changing chart type
-      // This ensures the component has time to update its state
-      if (graph.type) {
-        fetchGraphData(graphId);
-      }
-    }
-  }, [
-    graph?.type,
-    graph?.systemVariable,
-    dateRange,
-    resolution,
-    selectedTable,
-  ]);
-
-  // Load tables when the graph type changes to "database"
-  useEffect(() => {
-    if (graph && graph.type === "database") {
-      fetchDatabaseTables();
+    if (graph?.type == "database") {
+      setHeight(1200);
     }
   }, [graph?.type]);
-
-  // Adjust height based on content after data loads
-  useEffect(() => {
-    if (!isLoading && graph && graph.data) {
-      // For charts, we try to estimate a good starting height
-      if (graph.type !== "database") {
-        // Start with a base height
-        const baseHeight = 300;
-
-        // For pie charts, we can use a more compact height
-        if (graph.type === "pie") {
-          setHeight(350);
-        } else if (graph.type === "bar" || graph.type === "line") {
-          // For bar and line charts, try to adjust based on data complexity
-          const dataPoints = graph.data?.series?.[0]?.data?.length || 0;
-          const estimatedHeight = Math.max(
-            350,
-            Math.min(600, baseHeight + (dataPoints > 10 ? 100 : 0)),
-          );
-          setHeight(estimatedHeight);
-        }
-      } else {
-        // For database views, set taller height
-        setHeight(1200);
-      }
-    }
-  }, [isLoading, graph?.data, graph?.type]);
 
   // Handle resize functionality
   useEffect(() => {
@@ -231,18 +99,12 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId, dbFile }) => {
   const handleTypeChange = (value: string | null) => {
     if (graph && value) {
       // The hook will handle updating the data structure
-      updateGraphConfig(graph.id, { type: value as ChartType });
-    }
-  };
-
-  const handleVariableChange = (value: string | null) => {
-    if (graph && value) {
-      updateGraphConfig(graph.id, { systemVariable: value });
+      updateGraph(graph.id, { type: value as ChartType, options: null });
     }
   };
 
   const handleRemove = () => {
-    deleteGraph(graphId);
+    removeGraph(graphId);
   };
 
   const handleWidthToggle = () => {
@@ -275,9 +137,7 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId, dbFile }) => {
         <Group justify="space-between" wrap="nowrap">
           <TextInput
             value={graph.title}
-            onChange={(e) =>
-              updateGraphConfig(graph.id, { title: e.target.value })
-            }
+            onChange={(e) => updateGraph(graph.id, { title: e.target.value })}
             placeholder="Chart Title"
             size="sm"
             style={{ flexGrow: 1, fontWeight: 700 }}
@@ -292,17 +152,9 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId, dbFile }) => {
               style={{ width: 130 }}
             />
 
-            {graph?.type === "capacity" && ( // shows the capacity UI
-              <Capacity key={dbFile} graphId={graph.id} dbFile={dbFile} />
-            )}
-
-            <Select
-              value={graph.systemVariable}
-              onChange={handleVariableChange}
-              data={systemVariables.map((v) => ({ value: v, label: v }))}
-              size="xs"
-              style={{ width: 130 }}
-            />
+            {/* {graph?.type === "capacity" && ( // shows the capacity UI
+              <Capacity key={globalDBFilePath} graphId={graph.id} dbFile={globalDBFilePath ?? "somepath"} />
+            )} */}
 
             <ActionIcon
               variant="subtle"
@@ -326,27 +178,22 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId, dbFile }) => {
         </Group>
 
         <div style={{ flexGrow: 1, position: "relative" }}>
-          {isLoading ? (
+          {graph.isLoading ? (
             <Flex h="100%" justify="center" align="center">
               <Loader size="md" />
             </Flex>
-          ) : error ? (
+          ) : graph.error ? (
             <Flex h="100%" justify="center" align="center">
-              <Text c="red">{error}</Text>
+              <Text c="red">{graph.error}</Text>
             </Flex>
           ) : graph.type === "database" ? (
             <DatabaseViewer />
           ) : graph.type === "system-costs" ? (
-            <SystemCosts dbFile={dbFile} />
+            <SystemCosts />
           ) : graph.type === "production-costs" ? (
-            <ProductionCosts dbFile={dbFile} />
+            <ProductionCosts />
           ) : (
-            <ReactECharts
-              ref={chartRef}
-              option={graph.data}
-              style={{ height: "100%", width: "100%" }}
-              notMerge={true}
-            />
+            <Capacity graphId={graphId} />
           )}
         </div>
 

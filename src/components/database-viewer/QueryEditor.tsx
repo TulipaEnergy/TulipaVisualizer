@@ -7,7 +7,6 @@ import {
   ScrollArea,
   Stack,
 } from "@mantine/core";
-import { useState } from "react";
 
 interface QueryEditorProps {
   sqlQuery: string;
@@ -15,6 +14,8 @@ interface QueryEditorProps {
   onExecute: () => void;
   isLoading: boolean;
   isDisabled: boolean;
+  queryHistory: string[];
+  setQueryHistory: any;
 }
 
 export const QueryEditor = ({
@@ -23,15 +24,15 @@ export const QueryEditor = ({
   onExecute,
   isLoading,
   isDisabled,
+  queryHistory,
+  setQueryHistory,
 }: QueryEditorProps) => {
-  const [queryHistory, setQueryHistory] = useState<string[]>([]);
-
   const handleExecute = () => {
     if (sqlQuery.trim()) {
       onExecute();
       // Add to history if not already the latest
       if (queryHistory.length === 0 || queryHistory[0] !== sqlQuery) {
-        setQueryHistory((prev) => [sqlQuery, ...prev.slice(0, 9)]);
+        setQueryHistory((prev: string[]) => [sqlQuery, ...prev.slice(0, 9)]);
       }
     }
   };
@@ -70,7 +71,14 @@ export const QueryEditor = ({
             onClick={() => onQueryChange("")}
             disabled={!sqlQuery}
           >
-            Clear
+            Clear Query
+          </Button>
+          <Button
+            color="red"
+            onClick={() => setQueryHistory([])}
+            disabled={queryHistory.length === 0}
+          >
+            Clear History
           </Button>
         </Group>
 
