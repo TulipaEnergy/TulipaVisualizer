@@ -5,7 +5,7 @@ export type ChartType =
   | "capacity"
   | "database"
   | "system-costs"
-  | "production-costs";
+  | "production-prices";
 
 export interface DateRange {
   startDate: Date | null;

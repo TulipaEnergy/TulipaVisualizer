@@ -2,14 +2,13 @@ import { Text, Container, Loader, Paper, Stack } from "@mantine/core";
 import { useState, useEffect } from "react";
 import ReactECharts from "echarts-for-react";
 import {
-  getProductionCost,
-  ProductionCostRow,
-} from "../../services/productionCostsQuery";
+  getProductionPrice,
+  ProductionPriceRow,
+} from "../../services/productionPriceQuery";
 import useVisualizationStore from "../../store/visualizationStore";
 
-const ProductionCosts: React.FC = () => {
+const ProductionPrices: React.FC = () => {
   const { globalDBFilePath } = useVisualizationStore();
-
   const [loadingData, setLoadingData] = useState<boolean>(true);
   const [errorData, setErrorData] = useState<string | null>(null);
 
@@ -19,7 +18,8 @@ const ProductionCosts: React.FC = () => {
     const fetchDataAndConfigureChart = async () => {
       try {
         setLoadingData(true);
-        const transformedData: ProductionCostRow[] = await getProductionCost();
+        const transformedData: ProductionPriceRow[] =
+          await getProductionPrice();
 
         const years: number[] = [
           ...new Set(transformedData.map((item) => item.milestone_year)),
@@ -37,16 +37,16 @@ const ProductionCosts: React.FC = () => {
           },
           data: years.map((year: number) => {
             const item = transformedData.find(
-              (d: ProductionCostRow) =>
+              (d: ProductionPriceRow) =>
                 d.milestone_year === year && d.asset === assetName,
             );
-            return item ? item.assets_production_cost : 0;
+            return item ? item.assets_production_price : 0;
           }),
         }));
 
         const option = {
           title: {
-            text: "Assets Production Cost by Milestone Year",
+            text: "Assets Production Price by Milestone Year",
             left: "center",
           },
           tooltip: {
@@ -55,15 +55,15 @@ const ProductionCosts: React.FC = () => {
               type: "shadow",
             },
             formatter: function (params: any[]) {
-              let totalCost = 0;
+              let totalPrice = 0;
               let tooltipContent = `<strong>${params[0].name}</strong><br/>`;
               params.forEach((item) => {
-                totalCost += item.value as number;
+                totalPrice += item.value as number;
                 tooltipContent +=
                   `<span style="display:inline-block;margin-right:4px;border-radius:10px;width:10px;height:10px;background-color:${item.color};"></span>` +
                   `${item.seriesName}: ${item.value ? Number(item.value).toFixed(2) : 0}<br/>`;
               });
-              tooltipContent += `<hr style="margin: 5px 0;"/><strong>Total: ${totalCost.toFixed(2)}</strong>`;
+              tooltipContent += `<hr style="margin: 5px 0;"/><strong>Total: ${totalPrice.toFixed(2)}</strong>`;
               return tooltipContent;
             },
           },
@@ -88,7 +88,7 @@ const ProductionCosts: React.FC = () => {
           },
           yAxis: {
             type: "value",
-            name: "Production Cost",
+            name: "Production Price",
             axisLabel: {
               formatter: "{value}",
             },
@@ -106,7 +106,7 @@ const ProductionCosts: React.FC = () => {
         setChartOptions(option);
       } catch (err) {
         console.error("Error fetching or processing data for chart:", err);
-        setErrorData("Failed to load production cost data.");
+        setErrorData(`Failed to load production price data: ${err}`);
       } finally {
         setLoadingData(false);
       }
@@ -182,4 +182,4 @@ const ProductionCosts: React.FC = () => {
   );
 };
 
-export default ProductionCosts;
+export default ProductionPrices;
