@@ -13,7 +13,7 @@ GROUP BY
 	st.year,
 	st.asset;`;
 
-export async function getStoragePice(): Promise<StoragePriceRow[]> {
+export async function getStoragePrice(): Promise<StoragePriceRow[]> {
   const raw_table = await executeCustomQuery(STORAGE_PRICE_QUERY);
   const { columns, getRow, numRows } = extractTableData(raw_table);
   const data: StoragePriceRow[] = [];
