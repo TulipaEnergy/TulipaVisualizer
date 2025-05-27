@@ -5,14 +5,14 @@ import useVisualizationStore from "../store/visualizationStore";
 import { Paper, Group, Divider, Text, Badge } from "@mantine/core";
 
 const Toolbar: React.FC = () => {
-  const { dbFilePath, isLoading } = useVisualizationStore();
+  const { globalDBFilePath, isLoading } = useVisualizationStore();
 
   return (
     <Paper p="md" radius="md" withBorder shadow="xs">
       <Group wrap="wrap" justify="flex-start" gap="md" align="center">
         <UploadButton />
 
-        {dbFilePath && (
+        {globalDBFilePath && (
           <>
             <Divider orientation="vertical" />
             <ResolutionSelector />
@@ -25,8 +25,8 @@ const Toolbar: React.FC = () => {
               <Text size="sm" fw={500}>
                 Database:
               </Text>
-              <Badge variant="light" color="blue" title={dbFilePath}>
-                {dbFilePath.split("/").pop()}
+              <Badge variant="light" color="blue" title={globalDBFilePath}>
+                {globalDBFilePath.split("/").pop()}
               </Badge>
             </Group>
           </>

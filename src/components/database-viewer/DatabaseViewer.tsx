@@ -5,7 +5,6 @@ import {
   executeCustomQuery,
   fetchDatabaseTables,
 } from "../../services/databaseOperations";
-import { DatabaseConnection } from "./DatabaseConnection";
 import { TablesList } from "./TablesList";
 import { QueryEditor } from "./QueryEditor";
 import { ResultsTable } from "./ResultsTable";
@@ -16,28 +15,19 @@ interface QueryResult {
 }
 
 const DatabaseViewer = () => {
-  const {
-    dbFilePath,
-    tables,
-    selectedTable,
-    setSelectedTable,
-    isLoading: storeIsLoading,
-    setTables,
-    setColumns,
-  } = useVisualizationStore();
+  const { globalDBFilePath, isLoading: storeIsLoading } =
+    useVisualizationStore();
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [sqlQuery, setSqlQuery] = useState<string>("");
   const [queryResult, setQueryResult] = useState<QueryResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  // Update query when a table is selected
-  useEffect(() => {
-    if (selectedTable) {
-      const query = `SELECT * FROM ${selectedTable} LIMIT 100;`;
-      setSqlQuery(query);
-    }
-  }, [selectedTable]);
+  const [tables, setTables] = useState<string[]>([]);
+  const [selectedTable, setSelectedTable] = useState<string | null>(null);
+  const [queryHistory, setQueryHistory] = useState<string[]>(() => {
+    const saved = localStorage.getItem("queryHistory");
+    return saved ? JSON.parse(saved) : [];
+  });
 
   // Execute SQL query
   const executeQuery = async () => {
@@ -77,6 +67,7 @@ const DatabaseViewer = () => {
   // Handle table selection
   const handleTableSelect = (tableName: string) => {
     setSelectedTable(tableName);
+    setSqlQuery(`SELECT * FROM ${tableName} LIMIT 100;`);
   };
 
   // Show table schema
@@ -88,26 +79,26 @@ const DatabaseViewer = () => {
 
   // Fetch database tables when component mounts
   useEffect(() => {
-    if (dbFilePath) {
+    if (globalDBFilePath) {
       fetchDatabaseTables()
-        .then(({ tables, columns }) => {
+        .then(({ tables }) => {
           setTables(tables);
-          setColumns(columns);
         })
         .catch((error) => {
           console.error("Error fetching database tables:", error);
           setError("Failed to fetch database tables");
         });
     }
-  }, [dbFilePath]);
+  }, [globalDBFilePath]);
+
+  // Persist queryHistory to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem("queryHistory", JSON.stringify(queryHistory));
+  }, [queryHistory]);
 
   return (
     <Container size="xl" h="100%">
       <Grid h="100%" gutter="md">
-        <Grid.Col span={12}>
-          <DatabaseConnection dbFilePath={dbFilePath} />
-        </Grid.Col>
-
         <Grid.Col span={3}>
           <TablesList
             tables={tables}
@@ -123,13 +114,15 @@ const DatabaseViewer = () => {
             onQueryChange={setSqlQuery}
             onExecute={executeQuery}
             isLoading={isLoading || storeIsLoading}
-            isDisabled={!dbFilePath}
+            isDisabled={!globalDBFilePath}
+            queryHistory={queryHistory}
+            setQueryHistory={setQueryHistory}
           />
         </Grid.Col>
 
         <Grid.Col span={12}>
-          {dbFilePath}
           <ResultsTable
+            dbFile={globalDBFilePath ?? "unknown file how did you do this"}
             result={queryResult}
             isLoading={isLoading || storeIsLoading}
             error={error}

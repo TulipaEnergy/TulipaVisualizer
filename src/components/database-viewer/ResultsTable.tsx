@@ -1,4 +1,12 @@
-import { Paper, Text, ScrollArea, Table, Alert, Stack } from "@mantine/core";
+import {
+  Paper,
+  Text,
+  ScrollArea,
+  Table,
+  Alert,
+  Stack,
+  Title,
+} from "@mantine/core";
 import { IconAlertCircle } from "@tabler/icons-react";
 
 interface QueryResult {
@@ -10,18 +18,22 @@ interface ResultsTableProps {
   result: QueryResult | null;
   isLoading: boolean;
   error: string | null;
+  dbFile: string;
 }
 
 export const ResultsTable = ({
   result,
   isLoading,
   error,
+  dbFile,
 }: ResultsTableProps) => {
   return (
     <Paper p="md" radius="md" withBorder shadow="sm">
-      <Text fw={500} size="lg" mb="md">
-        Results
-      </Text>
+      {result && (
+        <Title order={5} mb="md">
+          Results from {dbFile}
+        </Title>
+      )}
 
       {error ? (
         <Alert

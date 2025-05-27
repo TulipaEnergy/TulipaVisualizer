@@ -1,13 +1,15 @@
 import { Text, Container, Loader, Paper, Stack } from "@mantine/core";
 import { useState, useEffect } from "react";
 import ReactECharts from "echarts-for-react";
-import { getSystemCost, FixedAssetCostRow } from "../services/systemCostsQuery";
+import {
+  getProductionCost,
+  ProductionCostRow,
+} from "../../services/productionCostsQuery";
+import useVisualizationStore from "../../store/visualizationStore";
 
-interface SystemCostsProps {
-  dbFile: string;
-}
+const ProductionCosts: React.FC = () => {
+  const { globalDBFilePath } = useVisualizationStore();
 
-const SystemCosts: React.FC<SystemCostsProps> = ({ dbFile }) => {
   const [loadingData, setLoadingData] = useState<boolean>(true);
   const [errorData, setErrorData] = useState<string | null>(null);
 
@@ -17,7 +19,7 @@ const SystemCosts: React.FC<SystemCostsProps> = ({ dbFile }) => {
     const fetchDataAndConfigureChart = async () => {
       try {
         setLoadingData(true);
-        const transformedData: FixedAssetCostRow[] = await getSystemCost();
+        const transformedData: ProductionCostRow[] = await getProductionCost();
 
         const years: number[] = [
           ...new Set(transformedData.map((item) => item.milestone_year)),
@@ -35,16 +37,16 @@ const SystemCosts: React.FC<SystemCostsProps> = ({ dbFile }) => {
           },
           data: years.map((year: number) => {
             const item = transformedData.find(
-              (d: FixedAssetCostRow) =>
+              (d: ProductionCostRow) =>
                 d.milestone_year === year && d.asset === assetName,
             );
-            return item ? item.assets_fixed_cost : 0;
+            return item ? item.assets_production_cost : 0;
           }),
         }));
 
         const option = {
           title: {
-            text: "Assets Fixed Cost by Milestone Year",
+            text: "Assets Production Cost by Milestone Year",
             left: "center",
           },
           tooltip: {
@@ -59,7 +61,7 @@ const SystemCosts: React.FC<SystemCostsProps> = ({ dbFile }) => {
                 totalCost += item.value as number;
                 tooltipContent +=
                   `<span style="display:inline-block;margin-right:4px;border-radius:10px;width:10px;height:10px;background-color:${item.color};"></span>` +
-                  `${item.seriesName}: ${Number(item.value).toFixed(2)}<br/>`;
+                  `${item.seriesName}: ${item.value ? Number(item.value).toFixed(2) : 0}<br/>`;
               });
               tooltipContent += `<hr style="margin: 5px 0;"/><strong>Total: ${totalCost.toFixed(2)}</strong>`;
               return tooltipContent;
@@ -86,7 +88,7 @@ const SystemCosts: React.FC<SystemCostsProps> = ({ dbFile }) => {
           },
           yAxis: {
             type: "value",
-            name: "Fixed Cost",
+            name: "Production Cost",
             axisLabel: {
               formatter: "{value}",
             },
@@ -104,14 +106,14 @@ const SystemCosts: React.FC<SystemCostsProps> = ({ dbFile }) => {
         setChartOptions(option);
       } catch (err) {
         console.error("Error fetching or processing data for chart:", err);
-        setErrorData("Failed to load system cost data.");
+        setErrorData("Failed to load production cost data.");
       } finally {
         setLoadingData(false);
       }
     };
 
     fetchDataAndConfigureChart();
-  }, [dbFile]); // Refreshes whenever you select a diff db file
+  }, [globalDBFilePath]); // Refreshes whenever you select a diff db file
 
   if (loadingData) {
     return (
@@ -180,4 +182,4 @@ const SystemCosts: React.FC<SystemCostsProps> = ({ dbFile }) => {
   );
 };
 
-export default SystemCosts;
+export default ProductionCosts;

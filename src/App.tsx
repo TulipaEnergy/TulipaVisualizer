@@ -52,7 +52,7 @@ const VisualizationStateLogger = () => {
 };
 
 export default function App() {
-  const { dbFilePath } = useVisualizationStore();
+  const { globalDBFilePath } = useVisualizationStore();
   const [graphIds, setGraphIds] = useState<number[]>([]);
 
   // Function to add a new graph container
@@ -81,7 +81,7 @@ export default function App() {
         }}
       >
         {/* Show visualization section when a file is selected via toolbar */}
-        {dbFilePath && (
+        {globalDBFilePath && (
           <>
             <Stack gap="md" align="center" style={{ width: "100%" }}>
               <Box
@@ -119,7 +119,7 @@ export default function App() {
                       X
                     </Button>
                     <Box style={{ flexGrow: 1, width: "100%" }}>
-                      <GraphContainer id={id} dbFile={dbFilePath} />
+                      <GraphContainer id={id} />
                     </Box>
                   </Box>
                 ))}
@@ -128,7 +128,7 @@ export default function App() {
           </>
         )}
 
-        {!dbFilePath && (
+        {!globalDBFilePath && (
           <Stack align="center" justify="center" h="100%">
             <Text>
               Please connect to a database using the toolbar above to start

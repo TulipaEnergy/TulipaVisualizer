@@ -20,7 +20,6 @@ export async function uploadDatabaseFile(): Promise<string | null> {
 // Database viewer operations
 export async function fetchDatabaseTables(): Promise<{
   tables: string[];
-  columns: Record<string, string[]>;
 }> {
   try {
     // Query to get all tables from the database
@@ -37,29 +36,7 @@ export async function fetchDatabaseTables(): Promise<{
       }
     }
 
-    // Fetch columns for each table
-    const columnsMap: Record<string, string[]> = {};
-    for (const tableName of tableNames) {
-      try {
-        const columnsResult = await executeCustomQuery(
-          `PRAGMA table_info('${tableName}')`,
-        );
-        const columnNames: string[] = [];
-
-        for (let i = 0; i < columnsResult.numRows; i++) {
-          const row = columnsResult.get(i);
-          if (row && row.name) {
-            columnNames.push(row.name);
-          }
-        }
-
-        columnsMap[tableName] = columnNames;
-      } catch (error) {
-        console.error(`Error fetching columns for table ${tableName}:`, error);
-      }
-    }
-
-    return { tables: tableNames, columns: columnsMap };
+    return { tables: tableNames };
   } catch (error) {
     console.error("Error fetching database tables:", error);
     throw error;

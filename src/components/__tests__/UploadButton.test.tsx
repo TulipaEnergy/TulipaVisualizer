@@ -30,7 +30,7 @@ describe("UploadButton Component", () => {
     (
       useVisualizationStore as unknown as ReturnType<typeof vi.fn>
     ).mockReturnValue({
-      setDbFilePath: mockSetDbFilePath,
+      setGlobalDBFilePath: mockSetDbFilePath,
       setIsLoading: mockSetIsLoading,
       setError: mockSetError,
     });

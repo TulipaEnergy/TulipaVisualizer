@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { ChartType } from "../store/visualizationStore";
+import useVisualizationStore from "../store/visualizationStore";
 import GraphCard from "./GraphCard";
-import useVisualization from "../hooks/useVisualization";
 import {
   Paper,
   Title,
@@ -15,19 +15,19 @@ import {
 
 interface GraphContainerProps {
   id: number;
-  dbFile: string;
 }
 
-const GraphContainer: React.FC<GraphContainerProps> = ({ id, dbFile }) => {
-  const { graphs, createGraph } = useVisualization();
+const GraphContainer: React.FC<GraphContainerProps> = ({ id }) => {
   const [opened, setOpened] = useState(false);
+
+  const { globalDBFilePath, graphs, addGraph } = useVisualizationStore();
 
   // Filter graphs to show only those associated with this container ID
   const containerGraphs = graphs.filter((graph) => graph.containerId === id);
 
   const handleAddGraph = (type: ChartType) => {
     // Pass the container ID when adding a new graph
-    createGraph(type, id);
+    addGraph(type, id);
     setOpened(false);
   };
 
@@ -67,9 +67,8 @@ const GraphContainer: React.FC<GraphContainerProps> = ({ id, dbFile }) => {
         >
           {containerGraphs.map((graph) => (
             <GraphCard
-              key={`${graph.id}-${dbFile}`}
+              key={`${graph.id}-${globalDBFilePath}`}
               graphId={graph.id}
-              dbFile={dbFile}
             />
           ))}
         </SimpleGrid>
