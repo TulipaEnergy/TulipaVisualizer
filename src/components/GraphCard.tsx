@@ -99,7 +99,7 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
   const handleTypeChange = (value: string | null) => {
     if (graph && value) {
       // The hook will handle updating the data structure
-      updateGraph(graph.id, { type: value as ChartType, options: null });
+      updateGraph(graph.id, { type: value as ChartType });
     }
   };
 
