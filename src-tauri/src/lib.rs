@@ -1,4 +1,5 @@
 mod duckdb;
+mod import;
 use tauri_plugin_dialog;
 
 
@@ -17,7 +18,9 @@ pub fn run() {
             greet,
             duckdb::set_path,
             duckdb::get_path,
-            duckdb::run_serialize_query])
+            duckdb::run_serialize_query,
+            import::get_import,
+            import::get_export])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

@@ -1,9 +1,25 @@
-import { invoke } from "@tauri-apps/api/core";
+import { invoke, InvokeArgs } from "@tauri-apps/api/core";
 import { tableFromIPC, Table } from "apache-arrow";
 
 export async function runQuery(s: String): Promise<Table<any>> {
+  return apacheIPC("run_serialize_query", { q: s });
+}
+
+export async function getImport(name: string): Promise<Table<any>> {
+  return apacheIPC("get_import", { catName: name });
+}
+
+export async function getExport(name: string): Promise<Table<any>> {
+  return apacheIPC("get_export", { catName: name });
+}
+
+(window as any).getImport = getImport;
+(window as any).getExport = getExport;
+
+// helper to abstract from invoke and IPC
+async function apacheIPC(cmd: string, args?: InvokeArgs): Promise<Table<any>> {
   try {
-    let buffer = await invoke<ArrayBuffer>("run_serialize_query", { q: s });
+    let buffer = await invoke<ArrayBuffer>(cmd, args);
     let byteArr = new Uint8Array(buffer);
     let table: Table<any> = tableFromIPC(byteArr);
     return table;
