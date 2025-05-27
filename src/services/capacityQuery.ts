@@ -7,33 +7,46 @@ const capacityQuery = (
 ): string => {
   return `
     WITH years AS (
-        SELECT generate_series AS year FROM generate_series(${startYear}, ${endYear})
-    ),
-    cum_inv AS (
-        SELECT milestone_year, solution
+    SELECT DISTINCT year
+    FROM (
+      SELECT commission_year AS year
+      FROM asset_both
+      WHERE asset = '${asset}'
+      UNION
+      SELECT milestone_year AS year
+      FROM var_assets_investment
+      WHERE asset = '${asset}'
+      UNION
+      SELECT milestone_year AS year
+      FROM var_assets_decommission
+      WHERE asset = '${asset}'
+    ) t
+    WHERE year BETWEEN ${startYear} AND ${endYear}
+  )
+  SELECT y.year, COALESCE(i.solution, -1) AS investment, COALESCE(d.solution, -1) AS decommission,
+    (
+      (SELECT COALESCE(SUM(initial_units), 0)
+      FROM asset_both
+      WHERE asset = '${asset}'
+        AND commission_year <= y.year)
+      + (SELECT COALESCE(SUM(solution), 0)
         FROM var_assets_investment
         WHERE asset = '${asset}'
-    ),
-    cum_dec AS (
-        SELECT milestone_year, solution
+          AND milestone_year <= y.year)
+      - (SELECT COALESCE(SUM(solution), 0)
         FROM var_assets_decommission
         WHERE asset = '${asset}'
-    ),
-    asset_init AS (
-        SELECT initial_units, commission_year FROM asset_both WHERE asset = '${asset}'
-    ),
-    asset_cap AS (
-        SELECT capacity FROM asset WHERE asset = '${asset}'
-    )
-    SELECT
-        y.year,
-        (ai.initial_units
-        + COALESCE((SELECT SUM(solution) FROM cum_inv iv WHERE iv.milestone_year <= y.year), 0)
-        - COALESCE((SELECT SUM(solution) FROM cum_dec dc WHERE dc.milestone_year <= y.year), 0))
-        * ac.capacity AS installed_capacity
-    FROM years y, asset_init ai, asset_cap ac
-    WHERE ai.commission_year <= y.year
-    ORDER BY y.year;
+          AND milestone_year <= y.year)
+    ) * (SELECT capacity
+        FROM asset
+        WHERE asset = '${asset}'
+        ) AS installed_capacity
+  FROM years y
+  LEFT JOIN var_assets_investment AS i
+    ON i.asset = '${asset}' AND i.milestone_year = y.year
+  LEFT JOIN var_assets_decommission AS d
+    ON d.asset = '${asset}' AND d.milestone_year = y.year
+  ORDER BY y.year;
   `;
 };
 
@@ -41,7 +54,14 @@ export async function fetchCapacityData(
   assetName: string,
   startYear: number,
   endYear: number,
-): Promise<{ year: number; installed_capacity: number }[]> {
+): Promise<
+  {
+    year: number;
+    investment: number;
+    decommission: number;
+    installed_capacity: number;
+  }[]
+> {
   try {
     const table = await executeCustomQuery(
       capacityQuery(assetName, startYear, endYear),
@@ -50,11 +70,15 @@ export async function fetchCapacityData(
     // Convert Apache Arrow Table into JS array
     const rows = table.toArray() as Array<{
       year: number;
+      investment: number;
+      decommission: number;
       installed_capacity: number;
     }>;
 
     return rows.map((r) => ({
       year: r.year,
+      investment: r.investment,
+      decommission: r.decommission,
       installed_capacity: r.installed_capacity,
     }));
   } catch (err) {
@@ -112,95 +136,32 @@ export async function fetchAssets(): Promise<string[]> {
   }
 }
 
-const minYearQuery = (asset?: string): string => {
+const availableYearsQuery = (asset?: string): string => {
   return `
-    WITH
-    min_inv AS (
-        SELECT MIN(milestone_year) AS year
-        FROM var_assets_investment
-        WHERE asset = '${asset}'
-    ),
-    min_dec AS (
-        SELECT MIN(milestone_year) AS year
-        FROM var_assets_decommission
-        WHERE asset = '${asset}'
-    ),
-    comm AS (
-        SELECT commission_year AS year
-        FROM asset_both
-        WHERE asset = '${asset}'
-    )
-    SELECT
-    LEAST(
-        comm.year,
-        COALESCE(min_inv.year, comm.year),
-        COALESCE(min_dec.year, comm.year)
-    ) AS earliest_year
-    FROM comm, min_inv, min_dec;
+    SELECT DISTINCT year FROM (
+      SELECT commission_year AS year, asset FROM asset_both
+      UNION
+      SELECT milestone_year AS year, asset FROM var_assets_investment
+      UNION
+      SELECT milestone_year AS year, asset FROM var_assets_decommission
+    ) t
+    ${asset ? `WHERE asset = '${asset}'` : ""}
+    ORDER BY year;
   `;
 };
 
-export async function fetchMinYear(asset?: string): Promise<number> {
+export async function fetchAvailableYears(asset?: string): Promise<number[]> {
   try {
-    const table = await executeCustomQuery(minYearQuery(asset));
-    const col = table.getChild("earliest_year");
-    if (!col || col.length == 0) {
-      throw new Error("No 'earliest_year' column in response");
+    const query = availableYearsQuery(asset);
+    const table = await executeCustomQuery(query);
+    const yearColumn = table.getChild("year");
+    if (!yearColumn) {
+      throw new Error("No 'year' column in available years response");
     }
-    const year = col.get(0);
-    if (typeof year !== "number") {
-      throw new Error(`Unexpected type for earliest_year: ${typeof year}`);
-    }
-    return year;
+    return yearColumn.toArray() as number[];
   } catch (err: any) {
-    console.error("Failed to fetch min year:", err);
-    return 10000;
-  }
-}
-
-const maxYearQuery = (asset?: string): string => {
-  return `
-    WITH
-    max_inv AS (
-        SELECT MAX(milestone_year) AS year
-        FROM var_assets_investment
-        WHERE asset = '${asset}'
-    ),
-    max_dec AS (
-        SELECT MAX(milestone_year) AS year
-        FROM var_assets_decommission
-        WHERE asset = '${asset}'
-    ),
-    comm AS (
-        SELECT commission_year AS year
-        FROM asset_both
-        WHERE asset = '${asset}'
-    )
-    SELECT
-    GREATEST(
-        comm.year,
-        COALESCE(max_inv.year, comm.year),
-        COALESCE(max_dec.year, comm.year)
-    ) AS latest_year
-    FROM comm, max_inv, max_dec;
-  `;
-};
-
-export async function fetchMaxYear(asset?: string): Promise<number> {
-  try {
-    const table = await executeCustomQuery(maxYearQuery(asset));
-    const col = table.getChild("latest_year");
-    if (!col || col.length == 0) {
-      throw new Error("No 'latest_year' column in response");
-    }
-    const year = col.get(0);
-    if (typeof year !== "number") {
-      throw new Error(`Unexpected type for latest_year: ${typeof year}`);
-    }
-    return year;
-  } catch (err: any) {
-    console.error("Failed to fetch max year:", err);
-    return 0;
+    console.error("Failed to fetch available years:", err);
+    return [];
   }
 }
 

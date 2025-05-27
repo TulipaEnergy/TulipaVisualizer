@@ -13,9 +13,9 @@ export interface DateRange {
 }
 
 export interface CapacityOptions {
-  asset: string;
-  startYear: number;
-  endYear: number;
+  asset?: string;
+  startYear?: number;
+  endYear?: number;
 }
 
 export interface GraphConfig {
