@@ -1,0 +1,70 @@
+import React from "react";
+import { Stack, Card, Text, Group, ActionIcon, Tooltip } from "@mantine/core";
+import { IconDatabase, IconTrash } from "@tabler/icons-react";
+import UploadButton from "./UploadButton";
+import useVisualizationStore from "../store/visualizationStore";
+
+const DatabaseList: React.FC = () => {
+  const { databases, removeDatabase } = useVisualizationStore();
+  return (
+    <Stack gap="md">
+      <UploadButton />
+
+      {databases.length === 0 ? (
+        <Card withBorder radius="md" p="md">
+          <Text size="sm" c="dimmed" ta="center">
+            No databases loaded. Upload a .duckdb file to get started.
+          </Text>
+        </Card>
+      ) : (
+        <>
+          <Text size="sm" fw={500}>
+            Loaded Databases ({databases.length})
+          </Text>
+          {databases.map((db) => (
+            <Card key={db} withBorder radius="sm" p="sm">
+              <Group justify="space-between" wrap="nowrap">
+                <IconDatabase
+                  size={16}
+                  color="var(--mantine-color-blue-6)"
+                  style={{ flexShrink: 0 }}
+                />
+                <Text size="sm" fw={500}>
+                  {db}
+                </Text>
+                <Tooltip
+                  label="Remove database"
+                  style={{
+                    width: 40,
+                    flexShrink: 0,
+                    justifyContent: "center",
+                  }}
+                >
+                  <ActionIcon
+                    size="sm"
+                    variant="subtle"
+                    color="red"
+                    style={{
+                      width: 32,
+                      height: 32,
+                      minWidth: 32,
+                      minHeight: 32,
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeDatabase(db);
+                    }}
+                  >
+                    <IconTrash size={14} />
+                  </ActionIcon>
+                </Tooltip>
+              </Group>
+            </Card>
+          ))}
+        </>
+      )}
+    </Stack>
+  );
+};
+
+export default DatabaseList;

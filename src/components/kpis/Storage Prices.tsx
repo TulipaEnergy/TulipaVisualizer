@@ -7,18 +7,35 @@ import {
 } from "../../services/storagePriceQuery";
 import useVisualizationStore from "../../store/visualizationStore";
 
-const StoragePrices: React.FC = () => {
-  const { globalDBFilePath } = useVisualizationStore();
+interface StoragePricesProps {
+  graphId: string;
+}
+
+const StoragePrices: React.FC<StoragePricesProps> = ({ graphId }) => {
+  const { getGraphDatabase } = useVisualizationStore();
   const [loadingData, setLoadingData] = useState<boolean>(true);
   const [errorData, setErrorData] = useState<string | null>(null);
-
   const [chartOptions, setChartOptions] = useState<any>(null);
+
+  const dbFilePath = getGraphDatabase(graphId);
 
   useEffect(() => {
     const fetchDataAndConfigureChart = async () => {
+      // Reset states at the beginning of each fetch
+      setLoadingData(true);
+      setErrorData(null);
+
+      // DB File should always be provided - see assertion in GraphCard
+      if (!dbFilePath) {
+        setErrorData("No database selected");
+        setLoadingData(false);
+        return;
+      }
+
       try {
         setLoadingData(true);
-        const transformedData: StoragePriceRow[] = await getStoragePrice();
+        const transformedData: StoragePriceRow[] =
+          await getStoragePrice(dbFilePath);
 
         const years: number[] = [
           ...new Set(transformedData.map((item) => item.milestone_year)),
@@ -112,7 +129,7 @@ const StoragePrices: React.FC = () => {
     };
 
     fetchDataAndConfigureChart();
-  }, [globalDBFilePath]); // Refreshes whenever you select a diff db file
+  }, [dbFilePath]); // Refreshes whenever you select a diff db file
 
   if (loadingData) {
     return (

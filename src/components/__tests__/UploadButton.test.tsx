@@ -9,7 +9,7 @@ import { MantineProvider } from "@mantine/core"; // Import MantineProvider
 // Mock the database operations module
 vi.mock("../../services/databaseOperations");
 
-// Mock Zustand store
+// Mock Zustand stores
 vi.mock("../../store/visualizationStore");
 
 // Helper function to render with MantineProvider
@@ -18,22 +18,22 @@ const renderWithMantine = (component: React.ReactElement) => {
 };
 
 describe("UploadButton Component", () => {
-  const mockSetDbFilePath = vi.fn();
-  const mockSetIsLoading = vi.fn();
   const mockSetError = vi.fn();
+  const mockAddDatabase = vi.fn();
 
   beforeEach(() => {
     // Reset mocks
     vi.resetAllMocks();
 
-    // Setup store mock
+    // Setup store mocks
     (
       useVisualizationStore as unknown as ReturnType<typeof vi.fn>
     ).mockReturnValue({
-      setGlobalDBFilePath: mockSetDbFilePath,
-      setIsLoading: mockSetIsLoading,
+      addDatabase: mockAddDatabase,
       setError: mockSetError,
     });
+
+    mockAddDatabase.mockResolvedValue("db-123");
   });
 
   it("renders the upload button correctly", () => {
@@ -61,15 +61,8 @@ describe("UploadButton Component", () => {
     // Click the button to trigger file upload
     await fireEvent.click(button);
 
-    // Check that loading state was managed properly
-    expect(mockSetIsLoading).toHaveBeenCalledWith(true);
-    expect(mockSetIsLoading).toHaveBeenLastCalledWith(false);
-
-    // Check that file path was set
-    expect(mockSetDbFilePath).toHaveBeenCalledWith(mockFilePath);
-
-    // Check that error was cleared
-    expect(mockSetError).toHaveBeenCalledWith(null);
+    // Check that file path was added to database store
+    expect(mockAddDatabase).toHaveBeenCalledWith(mockFilePath);
   });
 
   it("handles cancelled file upload", async () => {
@@ -88,12 +81,8 @@ describe("UploadButton Component", () => {
     // Click the button to trigger file upload
     await fireEvent.click(button);
 
-    // Check that loading state was managed properly
-    expect(mockSetIsLoading).toHaveBeenCalledWith(true);
-    expect(mockSetIsLoading).toHaveBeenLastCalledWith(false);
-
-    // Check that file path was not set
-    expect(mockSetDbFilePath).not.toHaveBeenCalled();
+    // Check that database was not added
+    expect(mockAddDatabase).not.toHaveBeenCalled();
   });
 
   it("handles upload errors", async () => {
@@ -113,17 +102,13 @@ describe("UploadButton Component", () => {
     // Click the button to trigger file upload
     await fireEvent.click(button);
 
-    // Check that loading state was managed properly
-    expect(mockSetIsLoading).toHaveBeenCalledWith(true);
-    expect(mockSetIsLoading).toHaveBeenLastCalledWith(false);
-
     // Check that error was set
     expect(mockSetError).toHaveBeenCalledWith(
       `Error selecting file: ${mockError.message}`,
     );
 
-    // Check that file path was not set
-    expect(mockSetDbFilePath).not.toHaveBeenCalled();
+    // Check that database was not added
+    expect(mockAddDatabase).not.toHaveBeenCalled();
   });
 
   it("displays uploading text when in progress", async () => {

@@ -123,7 +123,7 @@ src-tauri/
 
 ### Code Quality
 
-- `npx prettier . --write` - Format code using Prettier
+- `npx prettier . --write --end-of-line auto` - Format code using Prettier
 
 ---
 

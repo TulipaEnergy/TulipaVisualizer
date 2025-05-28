@@ -1,4 +1,7 @@
-import { executeCustomQuery, extractTableData } from "./databaseOperations";
+import {
+  executeCustomQueryOnDatabase,
+  extractTableData,
+} from "./databaseOperations";
 
 const FIXED_ASSET_COSTS_QUERY = `SELECT
     yd.year AS milestone_year,
@@ -29,8 +32,14 @@ GROUP BY
     a.asset;
 `;
 
-export async function getSystemCost(): Promise<FixedAssetCostRow[]> {
-  const raw_table = await executeCustomQuery(FIXED_ASSET_COSTS_QUERY);
+export async function getSystemCost(
+  databasePath: string,
+): Promise<FixedAssetCostRow[]> {
+  const raw_table = await executeCustomQueryOnDatabase(
+    databasePath,
+    FIXED_ASSET_COSTS_QUERY,
+  );
+
   const { columns, getRow, numRows } = extractTableData(raw_table);
   const data: FixedAssetCostRow[] = [];
 

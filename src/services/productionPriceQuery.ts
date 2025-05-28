@@ -1,4 +1,7 @@
-import { executeCustomQuery, extractTableData } from "./databaseOperations";
+import {
+  executeCustomQueryOnDatabase,
+  extractTableData,
+} from "./databaseOperations";
 
 const PRODUCTION_PRICE_QUERY = `SELECT
 bc.asset,
@@ -16,8 +19,13 @@ GROUP BY
 	bc.year,
 	bc.asset;`;
 
-export async function getProductionPrice(): Promise<ProductionPriceRow[]> {
-  const raw_table = await executeCustomQuery(PRODUCTION_PRICE_QUERY);
+export async function getProductionPrice(
+  db: string,
+): Promise<ProductionPriceRow[]> {
+  const raw_table = await executeCustomQueryOnDatabase(
+    db,
+    PRODUCTION_PRICE_QUERY,
+  );
   const { columns, getRow, numRows } = extractTableData(raw_table);
   const data: ProductionPriceRow[] = [];
 

@@ -6,7 +6,8 @@ export type ChartType =
   | "database"
   | "system-costs"
   | "production-prices"
-  | "storage-prices";
+  | "storage-prices"
+  | "default";
 
 export interface DateRange {
   startDate: Date | null;
@@ -22,7 +23,6 @@ export interface CapacityOptions {
 export interface GraphConfig {
   id: string;
   type: ChartType;
-  containerId: number; // Add containerId to track which container this graph belongs to
   title: string;
   error: string | null;
   isLoading: boolean;
@@ -30,16 +30,9 @@ export interface GraphConfig {
   graphDBFilePath: string | null; // For when each graph has its own DB file
 }
 
-export interface ConfigToSave {
-  resolution: Resolution;
-  dateRange: DateRange;
-  graphs: GraphConfig[];
-  globalDBFilePath: string | null;
-}
-
 export interface VisualizationState {
-  // Database connection
-  globalDBFilePath: string | null;
+  // Database registry
+  databases: string[]; // file paths
   isLoading: boolean;
   error: string | null;
 
@@ -49,26 +42,32 @@ export interface VisualizationState {
   graphs: GraphConfig[];
 
   // Actions
-  setGlobalDBFilePath: (path: string | null) => void;
   setIsLoading: (isLoading: boolean) => void;
   setError: (error: string | null) => void;
 
   setResolution: (resolution: Resolution) => void;
   setDateRange: (dateRange: DateRange) => void;
 
-  addGraph: (type: ChartType, containerId: number) => void;
+  addGraph: (type: ChartType) => void;
+  mustGetGraph: (id: string) => GraphConfig;
   removeGraph: (id: string) => void;
   updateGraph: (id: string, updates: Partial<GraphConfig>) => void;
 
-  saveConfig: () => string;
-  loadConfig: (config: string) => void;
+  // saveConfig: () => string;
+  // loadConfig: (config: string) => void;
+
+  addDatabase: (filePath: string) => void;
+  removeDatabase: (dbId: string) => void;
+  setGraphDatabase: (graphId: string, dbId: string) => void;
+  getGraphDatabase: (graphId: string) => string | null;
+  hasAnyDatabase: () => boolean;
 }
 
 const useVisualizationStore = create<VisualizationState>((set, get) => ({
   // Database connection
-  globalDBFilePath: null,
   isLoading: false,
   error: null,
+  databases: [],
 
   // Visualization settings
   resolution: "day",
@@ -76,14 +75,12 @@ const useVisualizationStore = create<VisualizationState>((set, get) => ({
   graphs: [],
 
   // Actions
-  setGlobalDBFilePath: (path: string | null) => set({ globalDBFilePath: path }),
   setIsLoading: (isLoading: boolean) => set({ isLoading }),
   setError: (error: string | null) => set({ error }),
-
   setResolution: (resolution: Resolution) => set({ resolution }),
   setDateRange: (dateRange: DateRange) => set({ dateRange }),
 
-  addGraph: async (type: ChartType, containerId: number) => {
+  addGraph: (type: ChartType) => {
     set((state) => {
       return {
         graphs: [
@@ -92,7 +89,6 @@ const useVisualizationStore = create<VisualizationState>((set, get) => ({
             graphDBFilePath: null, // Default to null for new graphs
             id: `graph-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             type,
-            containerId,
             title: `New ${type.charAt(0).toUpperCase() + type.slice(1)} Chart`,
             error: null,
             isLoading: false,
@@ -115,37 +111,56 @@ const useVisualizationStore = create<VisualizationState>((set, get) => ({
       ),
     })),
 
-  saveConfig: (): string => {
-    const state = get();
-    const config: ConfigToSave = {
-      resolution: state.resolution,
-      dateRange: state.dateRange,
-      graphs: state.graphs,
-      globalDBFilePath: state.globalDBFilePath,
-    };
-    return JSON.stringify(config);
+  addDatabase: async (filePath: string) => {
+    set((state) => {
+      const DBs = state.databases;
+      if (!DBs.includes(filePath)) {
+        // only add a new DB if it wasn't added before
+        DBs.push(filePath);
+      }
+      return {
+        databases: DBs,
+      };
+    });
   },
 
-  loadConfig: (configStr: string) => {
-    try {
-      const config = JSON.parse(configStr) as ConfigToSave;
-      set({
-        resolution: config.resolution || "day",
-        dateRange: config.dateRange || {
-          startDate: new Date(),
-          endDate: new Date(),
-        },
-        // Transform SavedGraphConfig[] to GraphConfig[] by adding missing data property
-        graphs: (config.graphs || []).map((graph) => ({
-          ...graph,
-          containerId: 0, // Default containerId for loaded graphs
-        })),
-        globalDBFilePath: config.globalDBFilePath,
-      });
-    } catch (error) {
-      console.error("Failed to load configuration:", error);
-      set({ error: "Failed to load dashboard configuration." });
+  removeDatabase: async (filePath: string) => {
+    set((state) => ({
+      databases: state.databases.filter((db) => db != filePath),
+    }));
+  },
+
+  setGraphDatabase: (graphId: string, dbPath: string) => {
+    set((state) => ({
+      graphs: state.graphs.map((g) => {
+        if (g.id == graphId) {
+          g.graphDBFilePath = dbPath;
+          return g;
+        }
+        return g;
+      }),
+    }));
+  },
+
+  getGraphDatabase: (graphId: string): string | null => {
+    const res = get().graphs.filter((g) => g.id === graphId);
+    if (res.length === 0) {
+      return null;
     }
+    return res[0].graphDBFilePath;
+  },
+
+  hasAnyDatabase(): boolean {
+    return get().databases.length > 0;
+  },
+
+  mustGetGraph(id: string): GraphConfig {
+    const res = get().graphs.find((g) => g.id === id);
+    if (!res) {
+      console.error("Trying to get graph for non existent id: " + id);
+      throw new Error("Trying to get graph for non existent id: " + id);
+    }
+    return res;
   },
 }));
 

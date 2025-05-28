@@ -1,29 +1,30 @@
-import { setDbFilePath, triggerDuckDBFileDialog } from "../gateway/io";
-import { runQuery } from "../gateway/db";
+import { triggerDuckDBFileDialog } from "../gateway/io";
+import { runQueryOnDatabase } from "../gateway/db";
 import { Table } from "apache-arrow";
 
 // File upload operations
 export async function uploadDatabaseFile(): Promise<string | null> {
   try {
     const selected = await triggerDuckDBFileDialog();
-
-    if (typeof selected === "string") {
-      setDbFilePath(selected);
-      return selected;
-    }
-    return null;
-  } catch (error: any) {
-    throw new Error(`Error selecting file: ${error.message || error}`);
+    return selected;
+  } catch (error) {
+    console.error("File upload error:", error);
+    throw error;
   }
 }
 
-// Database viewer operations
-export async function fetchDatabaseTables(): Promise<{
+// Fetch database tables from a specific database
+export async function fetchDatabaseTablesFromPath(
+  databasePath: string,
+): Promise<{
   tables: string[];
 }> {
   try {
-    // Query to get all tables from the database
-    const tablesResult = await executeCustomQuery("SHOW TABLES");
+    // Query to get all tables from the specific database
+    const tablesResult = await executeCustomQueryOnDatabase(
+      databasePath,
+      "SHOW TABLES",
+    );
     const tableNames: string[] = [];
     const schema = tablesResult.schema;
     const tableNameColumn = schema.fields[0].name;
@@ -36,43 +37,27 @@ export async function fetchDatabaseTables(): Promise<{
       }
     }
 
-    return { tables: tableNames };
+    return {
+      tables: tableNames,
+    };
   } catch (error) {
     console.error("Error fetching database tables:", error);
     throw error;
   }
 }
 
-// Graph data operations
-export async function fetchGraphData(
-  tableName: string,
-  systemVariable: string,
-  resolution: string,
-  startDate: string | null,
-  endDate: string | null,
+// Execute custom SQL query on a specific database by path
+export async function executeCustomQueryOnDatabase(
+  databasePath: string,
+  query: string,
 ): Promise<Table<any>> {
-  console.log(
-    "Fetching graph data for:",
-    systemVariable,
-    resolution,
-    startDate,
-    endDate,
-  );
-  const query = `
-    SELECT *
-    FROM ${tableName}
-    LIMIT 100;
-  `;
-
-  return await executeCustomQuery(query);
-}
-
-// Execute custom SQL query
-export async function executeCustomQuery(query: string): Promise<Table<any>> {
   if (!query.trim()) {
     throw new Error("Query cannot be empty");
   }
-  return await runQuery(query);
+  if (!databasePath) {
+    throw new Error("Database path cannot be empty");
+  }
+  return await runQueryOnDatabase(databasePath, query);
 }
 
 // Utility function to get column names and provide lazy access to table data

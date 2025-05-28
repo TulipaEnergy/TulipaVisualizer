@@ -1,25 +1,25 @@
-import { useState } from "react";
 // import { runTest } from "./dbConn";
 import Toolbar from "./components/Toolbar";
-import GraphContainer from "./components/GraphContainer";
+import DatabaseList from "./components/DatabaseList";
 import useVisualizationStore from "./store/visualizationStore";
 import {
   Container,
   Button,
   Stack,
-  Title,
-  Text,
   Box,
   Paper,
   Accordion,
   Code,
+  Grid,
+  SimpleGrid,
 } from "@mantine/core";
 import "@mantine/core/styles.css"; // Import Mantine core styles
 import "./styles/index.css";
+import GraphCard from "./components/GraphCard";
 
-// Component to display the current state of the visualization store
-const VisualizationStateLogger = () => {
-  const storeState = useVisualizationStore();
+// Component to display the current state of both stores
+const StoreStateLogger = () => {
+  const visualizationState = useVisualizationStore();
 
   return (
     <Paper
@@ -38,11 +38,11 @@ const VisualizationStateLogger = () => {
       shadow="md"
     >
       <Accordion>
-        <Accordion.Item value="store-state">
+        <Accordion.Item value="visualization-state">
           <Accordion.Control>Visualization Store State</Accordion.Control>
           <Accordion.Panel>
             <Box style={{ maxHeight: "40vh", overflow: "auto" }}>
-              <Code block>{JSON.stringify(storeState, null, 2)}</Code>
+              <Code block>{JSON.stringify(visualizationState, null, 2)}</Code>
             </Box>
           </Accordion.Panel>
         </Accordion.Item>
@@ -52,94 +52,69 @@ const VisualizationStateLogger = () => {
 };
 
 export default function App() {
-  const { globalDBFilePath } = useVisualizationStore();
-  const [graphIds, setGraphIds] = useState<number[]>([]);
-
-  // Function to add a new graph container
-  const addGraphContainer = () => {
-    setGraphIds((prev) => [...prev, Date.now()]);
-  };
-
-  // Function to remove a graph container
-  const removeGraphContainer = (idToRemove: number) => {
-    setGraphIds((prev) => prev.filter((id) => id !== idToRemove));
-  };
+  const { addGraph, graphs, hasAnyDatabase } = useVisualizationStore();
 
   return (
     <Stack p="md" h="100vh">
-      {/* Integrate Toolbar at the top */}
       <Toolbar />
+      <Grid style={{ flex: 1 }}>
+        <Grid.Col span={3}>
+          <Paper withBorder p="md" h="100%">
+            <DatabaseList />
+          </Paper>
+        </Grid.Col>
 
-      <Container
-        fluid
-        py="md"
-        style={{
-          flex: 1,
-          width: "100%",
-          maxWidth: "100%",
-          padding: "0 16px",
-        }}
-      >
-        {/* Show visualization section when a file is selected via toolbar */}
-        {globalDBFilePath && (
-          <>
-            <Stack gap="md" align="center" style={{ width: "100%" }}>
-              <Box
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  width: "100%",
-                }}
-              >
-                <Title order={1}>Data Visualization</Title>
-                <Button onClick={addGraphContainer} color="green">
-                  Add Graph Container
-                </Button>
-              </Box>
-
-              {/* Display all graph containers */}
-              <Stack w="100%" gap="md">
-                {graphIds.map((id) => (
+        <Grid.Col span={9}>
+          <Container
+            fluid
+            py="md"
+            style={{
+              flex: 1,
+              width: "100%",
+              maxWidth: "100%",
+              padding: "0 16px",
+            }}
+          >
+            {hasAnyDatabase() && (
+              <>
+                <Stack gap="md" align="center" style={{ width: "100%" }}>
                   <Box
-                    key={id}
                     style={{
                       display: "flex",
                       alignItems: "center",
+                      justifyContent: "space-between",
                       width: "100%",
                     }}
                   >
                     <Button
-                      onClick={() => removeGraphContainer(id)}
-                      color="red"
-                      variant="subtle"
-                      mr="xs"
-                      style={{ minWidth: "auto" }}
+                      onClick={() => {
+                        addGraph("default");
+                      }}
+                      color="green"
                     >
-                      X
+                      Add Graph
                     </Button>
-                    <Box style={{ flexGrow: 1, width: "100%" }}>
-                      <GraphContainer id={id} />
-                    </Box>
                   </Box>
-                ))}
-              </Stack>
-            </Stack>
-          </>
-        )}
 
-        {!globalDBFilePath && (
-          <Stack align="center" justify="center" h="100%">
-            <Text>
-              Please connect to a database using the toolbar above to start
-              visualizing data.
-            </Text>
-          </Stack>
-        )}
-      </Container>
+                  <SimpleGrid
+                    cols={{ base: 1, sm: 2 }}
+                    spacing="md"
+                    style={{
+                      width: "100%",
+                    }}
+                  >
+                    {graphs.map((graph) => (
+                      <GraphCard key={graph.id} graphId={graph.id} />
+                    ))}
+                  </SimpleGrid>
+                </Stack>
+              </>
+            )}
+          </Container>
+        </Grid.Col>
+      </Grid>
 
-      {/* State Logger Component */}
-      <VisualizationStateLogger />
+      <StoreStateLogger />
     </Stack>
   );
 }

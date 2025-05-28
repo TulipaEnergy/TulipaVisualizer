@@ -1,42 +1,30 @@
-import UploadButton from "./UploadButton";
 import ResolutionSelector from "./ResolutionSelector";
 import TimeFramePicker from "./TimeFramePicker";
 import useVisualizationStore from "../store/visualizationStore";
-import { Paper, Group, Divider, Text, Badge } from "@mantine/core";
+import { Paper, Group, Divider, Text, Title } from "@mantine/core";
 
 const Toolbar: React.FC = () => {
-  const { globalDBFilePath, isLoading } = useVisualizationStore();
+  const { isLoading, hasAnyDatabase } = useVisualizationStore();
 
   return (
     <Paper p="md" radius="md" withBorder shadow="xs">
-      <Group wrap="wrap" justify="flex-start" gap="md" align="center">
-        <UploadButton />
+      <Group wrap="wrap" justify="space-between" gap="md" align="center">
+        <Title order={2}>Tulipa Energy Visualizer</Title>
 
-        {globalDBFilePath && (
-          <>
-            <Divider orientation="vertical" />
+        {hasAnyDatabase() && (
+          <Group wrap="wrap" gap="md" align="center">
             <ResolutionSelector />
 
             <Divider orientation="vertical" />
             <TimeFramePicker />
 
-            <Divider orientation="vertical" />
-            <Group align="center">
-              <Text size="sm" fw={500}>
-                Database:
-              </Text>
-              <Badge variant="light" color="blue" title={globalDBFilePath}>
-                {globalDBFilePath.split("/").pop()}
-              </Badge>
-            </Group>
-          </>
-        )}
-
-        {isLoading && (
-          <>
-            <Divider orientation="vertical" />
-            <Text size="sm">Loading...</Text>
-          </>
+            {isLoading && (
+              <>
+                <Divider orientation="vertical" />
+                <Text size="sm">Loading...</Text>
+              </>
+            )}
+          </Group>
         )}
       </Group>
     </Paper>
