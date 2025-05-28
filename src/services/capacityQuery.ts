@@ -1,4 +1,4 @@
-import { executeCustomQuery } from "./databaseOperations";
+import { executeCustomQueryOnDatabase } from "./databaseOperations";
 
 const capacityQuery = (
   asset: string,
@@ -54,6 +54,7 @@ export async function fetchCapacityData(
   assetName: string,
   startYear: number,
   endYear: number,
+  db: string,
 ): Promise<
   {
     year: number;
@@ -63,7 +64,8 @@ export async function fetchCapacityData(
   }[]
 > {
   try {
-    const table = await executeCustomQuery(
+    const table = await executeCustomQueryOnDatabase(
+      db,
       capacityQuery(assetName, startYear, endYear),
     );
 
@@ -87,44 +89,45 @@ export async function fetchCapacityData(
   }
 }
 
-export function capacityOverPeriodTest(
-  assetName: string,
-  startYear: number,
-  endYear: number,
-) {
-  (async () => {
-    try {
-      const table = await executeCustomQuery(
-        capacityQuery(assetName, startYear, endYear),
-      );
+// TO BE MOVED IN TESTING FILE AFTER BACKEND REFACTOR
+// export function capacityOverPeriodTest(
+//   assetName: string,
+//   startYear: number,
+//   endYear: number,
+// ) {
+//   (async () => {
+//     try {
+//       const table = await executeCustomQuery(
+//         capacityQuery(assetName, startYear, endYear),
+//       );
 
-      const yearColumn = table.getChild("year");
-      const capacityColumn = table.getChild("installed_capacity");
+//       const yearColumn = table.getChild("year");
+//       const capacityColumn = table.getChild("installed_capacity");
 
-      if (!yearColumn || !capacityColumn) {
-        console.error("Required columns not found in period result");
-        return;
-      }
+//       if (!yearColumn || !capacityColumn) {
+//         console.error("Required columns not found in period result");
+//         return;
+//       }
 
-      console.log(
-        `Installed capacity for asset '${assetName}' from ${startYear} to ${endYear}:`,
-      );
-      for (let i = 0; i < yearColumn.length; i++) {
-        const year = yearColumn.get(i);
-        const capacity = capacityColumn.get(i);
-        console.log(`Year: ${year}, Capacity: ${capacity}`);
-      }
-    } catch (err) {
-      console.error("Error querying capacity over period:", err);
-    }
-  })();
-}
+//       console.log(
+//         `Installed capacity for asset '${assetName}' from ${startYear} to ${endYear}:`,
+//       );
+//       for (let i = 0; i < yearColumn.length; i++) {
+//         const year = yearColumn.get(i);
+//         const capacity = capacityColumn.get(i);
+//         console.log(`Year: ${year}, Capacity: ${capacity}`);
+//       }
+//     } catch (err) {
+//       console.error("Error querying capacity over period:", err);
+//     }
+//   })();
+// }
 
 const assetsQuery = `SELECT asset FROM asset;`;
 
-export async function fetchAssets(): Promise<string[]> {
+export async function fetchAssets(databasePath: string): Promise<string[]> {
   try {
-    const table = await executeCustomQuery(assetsQuery);
+    const table = await executeCustomQueryOnDatabase(databasePath, assetsQuery);
     const assetColumn = table.getChild("asset");
     if (!assetColumn) {
       throw new Error("No 'asset' column in response");
@@ -150,10 +153,13 @@ const availableYearsQuery = (asset?: string): string => {
   `;
 };
 
-export async function fetchAvailableYears(asset?: string): Promise<number[]> {
+export async function fetchAvailableYears(
+  db: string,
+  asset: string,
+): Promise<number[]> {
   try {
     const query = availableYearsQuery(asset);
-    const table = await executeCustomQuery(query);
+    const table = await executeCustomQueryOnDatabase(db, query);
     const yearColumn = table.getChild("year");
     if (!yearColumn) {
       throw new Error("No 'year' column in available years response");
@@ -163,8 +169,4 @@ export async function fetchAvailableYears(asset?: string): Promise<number[]> {
     console.error("Failed to fetch available years:", err);
     return [];
   }
-}
-
-if (typeof window !== "undefined") {
-  (window as any).capacityOverPeriodTest = capacityOverPeriodTest;
 }

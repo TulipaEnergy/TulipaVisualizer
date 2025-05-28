@@ -1,18 +1,19 @@
 import { useEffect, useState, useRef } from "react";
 import ReactECharts from "echarts-for-react";
 import {
-  Paper,
-  Group,
+  Stack,
   TextInput,
   Select,
-  ActionIcon,
-  Stack,
-  Loader,
+  Group,
   Text,
   Flex,
+  Loader,
+  Paper,
+  ActionIcon,
 } from "@mantine/core";
 import useVisualizationStore, { ChartType } from "../store/visualizationStore";
 import DatabaseViewer from "./database-viewer/DatabaseViewer";
+import DatabaseSelector from "./DatabaseSelector";
 import Capacity from "./kpis/Capacity";
 import SystemCosts from "./kpis/SystemCosts";
 import ProductionPrices from "./kpis/ProductionPrices";
@@ -23,9 +24,9 @@ interface GraphCardProps {
 }
 
 const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
-  const { graphs, updateGraph, removeGraph } = useVisualizationStore();
+  const { updateGraph, removeGraph, mustGetGraph } = useVisualizationStore();
 
-  const graph = graphs.find((g) => g.id === graphId);
+  const graph = mustGetGraph(graphId);
 
   const [height, setHeight] = useState(400);
   const [isResizing, setIsResizing] = useState(false);
@@ -77,21 +78,21 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
     };
   }, [isResizing, graphId]);
 
-  // Handle ECharts resize when container dimensions change
+  // Handle ECharts resize when dimensions change
   useEffect(() => {
     if (chartRef.current) {
       const resizeObserver = new ResizeObserver(() => {
         chartRef.current?.getEchartsInstance().resize();
       });
 
-      const chartContainer = document.getElementById(graphId);
-      if (chartContainer) {
-        resizeObserver.observe(chartContainer);
+      const chartElement = document.getElementById(graphId);
+      if (chartElement) {
+        resizeObserver.observe(chartElement);
       }
 
       return () => {
-        if (chartContainer) {
-          resizeObserver.unobserve(chartContainer);
+        if (chartElement) {
+          resizeObserver.unobserve(chartElement);
         }
         resizeObserver.disconnect();
       };
@@ -150,13 +151,10 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
               value={graph.type}
               onChange={handleTypeChange}
               data={chartTypes}
+              placeholder="Choose a type"
               size="xs"
               style={{ width: 130 }}
             />
-
-            {/* {graph?.type === "capacity" && ( // shows the capacity UI
-              <Capacity key={globalDBFilePath} graphId={graph.id} dbFile={globalDBFilePath ?? "somepath"} />
-            )} */}
 
             <ActionIcon
               variant="subtle"
@@ -179,6 +177,9 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
           </Group>
         </Group>
 
+        {/* Database Selector */}
+        <DatabaseSelector graphId={graphId} size="xs" showBadge={true} />
+
         <div style={{ flexGrow: 1, position: "relative" }}>
           {graph.isLoading ? (
             <Flex h="100%" justify="center" align="center">
@@ -188,16 +189,24 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
             <Flex h="100%" justify="center" align="center">
               <Text c="red">{graph.error}</Text>
             </Flex>
+          ) : !graph.graphDBFilePath ? (
+            <Flex h="100%" justify="center" align="center">
+              <Text c="dimmed">Please select a database above</Text>
+            </Flex> // In all of the components below, the graphs must have a db file selected
           ) : graph.type === "database" ? (
-            <DatabaseViewer />
+            <DatabaseViewer graphId={graphId} />
           ) : graph.type === "system-costs" ? (
-            <SystemCosts />
+            <SystemCosts graphId={graphId} />
           ) : graph.type === "production-prices" ? (
-            <ProductionPrices />
+            <ProductionPrices graphId={graphId} />
           ) : graph.type === "storage-prices" ? (
-            <StoragePrices />
-          ) : (
+            <StoragePrices graphId={graphId} />
+          ) : graph.type === "capacity" ? (
             <Capacity graphId={graphId} />
+          ) : (
+            <Flex h="100%" justify="center" align="center">
+              <Text c="dimmed"> Please select a chart type above </Text>
+            </Flex>
           )}
         </div>
 

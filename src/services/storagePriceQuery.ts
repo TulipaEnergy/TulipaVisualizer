@@ -1,4 +1,7 @@
-import { executeCustomQuery, extractTableData } from "./databaseOperations";
+import {
+  executeCustomQueryOnDatabase,
+  extractTableData,
+} from "./databaseOperations";
 
 const STORAGE_PRICE_QUERY = `SELECT st.asset,
 st.year AS milestone_year,
@@ -13,8 +16,8 @@ GROUP BY
 	st.year,
 	st.asset;`;
 
-export async function getStoragePrice(): Promise<StoragePriceRow[]> {
-  const raw_table = await executeCustomQuery(STORAGE_PRICE_QUERY);
+export async function getStoragePrice(db: string): Promise<StoragePriceRow[]> {
+  const raw_table = await executeCustomQueryOnDatabase(db, STORAGE_PRICE_QUERY);
   const { columns, getRow, numRows } = extractTableData(raw_table);
   const data: StoragePriceRow[] = [];
 

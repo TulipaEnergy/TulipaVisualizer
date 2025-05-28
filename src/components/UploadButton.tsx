@@ -1,36 +1,31 @@
 import { useState } from "react";
-import useVisualizationStore from "../store/visualizationStore";
-import { uploadDatabaseFile } from "../services/databaseOperations";
 import { Button } from "@mantine/core";
+import { uploadDatabaseFile } from "../services/databaseOperations";
+import useVisualizationStore from "../store/visualizationStore";
 
 const UploadButton: React.FC = () => {
-  const { graphs, updateGraph, setGlobalDBFilePath, setIsLoading, setError } =
-    useVisualizationStore();
+  const { setError, addDatabase } = useVisualizationStore();
   const [isUploading, setIsUploading] = useState(false);
 
   async function handleFileSelect() {
     try {
       setIsUploading(true);
-      setIsLoading(true);
 
-      const selected = await uploadDatabaseFile();
+      const selectedPath = await uploadDatabaseFile();
 
-      if (selected) {
-        setGlobalDBFilePath(selected);
+      if (selectedPath) {
+        // Add the database to the database store
+        addDatabase(selectedPath);
         setError(null);
-        graphs.forEach((g) => {
-          updateGraph(g.id, { options: null });
-        });
-        console.log("Selected file:", selected);
       } else {
-        console.log("No file selected.");
+        // the selectedPath is null if the user cancels the dialog
+        console.info("File dialog canceled");
       }
     } catch (error: any) {
       setError(`Error selecting file: ${error.message || error}`);
       console.error("Error selecting file:", error);
     } finally {
       setIsUploading(false);
-      setIsLoading(false);
     }
   }
 

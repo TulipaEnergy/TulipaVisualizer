@@ -20,7 +20,7 @@ export const TablesList = ({
         Tables
       </Text>
       {tables.length > 0 ? (
-        <ScrollArea h={300} type="auto" offsetScrollbars scrollbarSize={8}>
+        <ScrollArea h={400} type="auto" offsetScrollbars scrollbarSize={8}>
           {tables.map((tableName) => (
             <Group
               key={tableName}

@@ -1,4 +1,7 @@
-import { executeCustomQuery, extractTableData } from "./databaseOperations";
+import {
+  executeCustomQueryOnDatabase,
+  extractTableData,
+} from "./databaseOperations";
 
 const TRANSPORTATION_PRICE_QUERY = (carrier: string): string => {
   return `
@@ -25,8 +28,10 @@ const TRANSPORTATION_PRICE_QUERY = (carrier: string): string => {
 
 export async function getTransportationPrice(
   carrier: string,
+  dbPath: string,
 ): Promise<TransportationPriceRow[]> {
-  const raw_table = await executeCustomQuery(
+  const raw_table = await executeCustomQueryOnDatabase(
+    dbPath,
     TRANSPORTATION_PRICE_QUERY(carrier),
   );
   const { columns, getRow, numRows } = extractTableData(raw_table);

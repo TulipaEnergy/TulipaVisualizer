@@ -7,19 +7,40 @@ import {
 } from "../../services/systemCostsQuery";
 import useVisualizationStore from "../../store/visualizationStore";
 
-const SystemCosts: React.FC = () => {
-  const { globalDBFilePath } = useVisualizationStore();
+interface SystemCostsProps {
+  graphId: string;
+}
 
+const SystemCosts: React.FC<SystemCostsProps> = ({ graphId }) => {
   const [loadingData, setLoadingData] = useState<boolean>(true);
   const [errorData, setErrorData] = useState<string | null>(null);
-
   const [chartOptions, setChartOptions] = useState<any>(null);
+  const { getGraphDatabase } = useVisualizationStore();
+  const dbFilePath = getGraphDatabase(graphId);
 
   useEffect(() => {
     const fetchDataAndConfigureChart = async () => {
+      // Reset states at the beginning of each fetch
+      setLoadingData(true);
+      setErrorData(null);
+
+      // DB File should always be provided - see assertion in GraphCard
+      if (!dbFilePath) {
+        setErrorData("No database selected");
+        setLoadingData(false);
+        return;
+      }
+
       try {
-        setLoadingData(true);
-        const transformedData: FixedAssetCostRow[] = await getSystemCost();
+        const transformedData: FixedAssetCostRow[] =
+          await getSystemCost(dbFilePath);
+
+        // Check if we got any data
+        if (!transformedData || transformedData.length === 0) {
+          setErrorData("No system cost data found in the selected database");
+          setLoadingData(false);
+          return;
+        }
 
         const years: number[] = [
           ...new Set(transformedData.map((item) => item.milestone_year)),
@@ -106,14 +127,17 @@ const SystemCosts: React.FC = () => {
         setChartOptions(option);
       } catch (err) {
         console.error("Error fetching or processing data for chart:", err);
-        setErrorData(`Error fetching or processing data for chart: ${err}`);
+        setErrorData(
+          "Failed to load system cost data. " +
+            (err instanceof Error ? err.message : ""),
+        );
       } finally {
         setLoadingData(false);
       }
     };
 
     fetchDataAndConfigureChart();
-  }, [globalDBFilePath]); // Refreshes whenever you select a diff db file
+  }, [dbFilePath]); // Refreshes whenever you select a diff db file
 
   if (loadingData) {
     return (

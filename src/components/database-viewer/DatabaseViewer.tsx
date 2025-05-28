@@ -2,8 +2,8 @@ import { Grid, Container } from "@mantine/core";
 import { useState, useEffect } from "react";
 import useVisualizationStore from "../../store/visualizationStore";
 import {
-  executeCustomQuery,
-  fetchDatabaseTables,
+  executeCustomQueryOnDatabase,
+  fetchDatabaseTablesFromPath,
 } from "../../services/databaseOperations";
 import { TablesList } from "./TablesList";
 import { QueryEditor } from "./QueryEditor";
@@ -14,9 +14,14 @@ interface QueryResult {
   rows: any[][];
 }
 
-const DatabaseViewer = () => {
-  const { globalDBFilePath, isLoading: storeIsLoading } =
+interface DatabaseViewerProps {
+  graphId: string;
+}
+
+const DatabaseViewer: React.FC<DatabaseViewerProps> = ({ graphId }) => {
+  const { isLoading: storeIsLoading, getGraphDatabase } =
     useVisualizationStore();
+  const dbFilePath = getGraphDatabase(graphId)!;
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [sqlQuery, setSqlQuery] = useState<string>("");
@@ -38,7 +43,7 @@ const DatabaseViewer = () => {
 
     try {
       setIsLoading(true);
-      const table = await executeCustomQuery(sqlQuery);
+      const table = await executeCustomQueryOnDatabase(dbFilePath, sqlQuery);
 
       // Extract column names from table schema
       const columns = table.schema.fields.map((field) => field.name);
@@ -70,26 +75,27 @@ const DatabaseViewer = () => {
     setSqlQuery(`SELECT * FROM ${tableName} LIMIT 100;`);
   };
 
-  // Show table schema
   const showTableSchema = (tableName: string) => {
     const query = `PRAGMA table_info('${tableName}');`;
     setSqlQuery(query);
     executeQuery();
   };
 
-  // Fetch database tables when component mounts
+  // update tables whenever the db file is changed
   useEffect(() => {
-    if (globalDBFilePath) {
-      fetchDatabaseTables()
-        .then(({ tables }) => {
-          setTables(tables);
-        })
-        .catch((error) => {
-          console.error("Error fetching database tables:", error);
-          setError("Failed to fetch database tables");
-        });
+    fetchDatabaseTablesFromPath(dbFilePath)
+      .then(({ tables }) => {
+        setTables(tables);
+      })
+      .catch((error) => {
+        console.error("Error fetching database tables:", error);
+        setError("Failed to fetch database tables");
+      });
+
+    if (sqlQuery) {
+      executeQuery();
     }
-  }, [globalDBFilePath]);
+  }, [dbFilePath]);
 
   // Persist queryHistory to localStorage whenever it changes
   useEffect(() => {
@@ -114,7 +120,7 @@ const DatabaseViewer = () => {
             onQueryChange={setSqlQuery}
             onExecute={executeQuery}
             isLoading={isLoading || storeIsLoading}
-            isDisabled={!globalDBFilePath}
+            isDisabled={false} // any case when this should be true?
             queryHistory={queryHistory}
             setQueryHistory={setQueryHistory}
           />
@@ -122,7 +128,7 @@ const DatabaseViewer = () => {
 
         <Grid.Col span={12}>
           <ResultsTable
-            dbFile={globalDBFilePath ?? "unknown file how did you do this"}
+            dbFile={dbFilePath}
             result={queryResult}
             isLoading={isLoading || storeIsLoading}
             error={error}
