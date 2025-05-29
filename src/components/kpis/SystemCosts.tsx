@@ -34,6 +34,7 @@ const SystemCosts: React.FC<SystemCostsProps> = ({ graphId }) => {
       try {
         const transformedData: FixedAssetCostRow[] =
           await getSystemCost(dbFilePath);
+        console.log("succesful query system costs");
 
         // Check if we got any data
         if (!transformedData || transformedData.length === 0) {

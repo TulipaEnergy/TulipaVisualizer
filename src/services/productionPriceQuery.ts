@@ -1,51 +1,22 @@
-import {
-  executeCustomQueryOnDatabase,
-  extractTableData,
-} from "./databaseOperations";
-
-const PRODUCTION_PRICE_QUERY = `SELECT
-bc.asset,
-bc.year AS milestone_year,
-SUM(bc.dual_balance_consumer * (bc.time_block_end - time_block_start + 1) * d.resolution * m.weight
-) AS assets_production_price
-	
-
-FROM cons_balance_consumer as bc
-JOIN
-	rep_periods_mapping AS m ON m.year = bc.year AND m.rep_period = bc.rep_period
-JOIN
-	rep_periods_data AS d ON d.year = m.year AND d.rep_period = m.rep_period
-GROUP BY
-	bc.year,
-	bc.asset;`;
+import { Table } from "apache-arrow";
+import { apacheIPC } from "../gateway/db";
 
 export async function getProductionPrice(
-  db: string,
+  dbPath: string,
 ): Promise<ProductionPriceRow[]> {
-  const raw_table = await executeCustomQueryOnDatabase(
-    db,
-    PRODUCTION_PRICE_QUERY,
-  );
-  const { columns, getRow, numRows } = extractTableData(raw_table);
-  const data: ProductionPriceRow[] = [];
-
-  for (let i = 0; i < numRows; i++) {
-    const row = getRow(i);
-    if (row) {
-      const rowObject: ProductionPriceRow = {
-        milestone_year: row[columns.indexOf("milestone_year")],
-        asset: row[columns.indexOf("asset")],
-        assets_production_price:
-          row[columns.indexOf("assets_production_price")],
-      };
-      data.push(rowObject);
-    }
+  try {
+    let res: Table<any> = await apacheIPC("get_production_price", {
+      dbPath: dbPath,
+    });
+    return res.toArray() as Array<ProductionPriceRow>; // Convert Apache Arrow Table into JS array
+  } catch (err) {
+    console.error("Error querying ProductionPrice over period:", err);
+    throw err;
   }
-  return data;
 }
 
-export interface ProductionPriceRow {
-  milestone_year: number;
+export type ProductionPriceRow = {
   asset: string;
+  milestone_year: number;
   assets_production_price: number;
-}
+};

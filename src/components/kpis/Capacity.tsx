@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { Select, Stack, Paper, Text, Container } from "@mantine/core";
-import { fetchAssets, fetchAvailableYears } from "../../services/capacityQuery";
+import { fetchAvailableYears } from "../../services/capacityQuery";
 import type { EChartsOption } from "echarts";
-import { fetchCapacityData } from "../../services/capacityQuery";
+import { getCapacity } from "../../services/capacityQuery";
 import useVisualizationStore, {
   CapacityOptions,
 } from "../../store/visualizationStore";
 import ReactECharts from "echarts-for-react";
+import { getAssets } from "../../services/metadata";
 
 // Returns a placeholder chart when inputs are missing
 const getNoSelectionOption = (
@@ -34,7 +35,7 @@ const capacityGraph = async (
   endYear: number,
   db: string,
 ): Promise<EChartsOption> => {
-  const data = await fetchCapacityData(asset, startYear, endYear, db);
+  const data = await getCapacity(db, asset, startYear, endYear);
   const round2 = (v: number) => Math.round(v * 100) / 100; // round to 2 decimals
   const years = data.map((d) => d.year.toString());
   const capacities = data.map((d) => round2(d.installed_capacity));
@@ -109,7 +110,7 @@ const Capacity: React.FC<CapacityProps> = ({ graphId }) => {
     // Load new assets from the new database
     const loadAssets = async () => {
       try {
-        const list = await fetchAssets(dbFilePath);
+        const list = await getAssets(dbFilePath);
         setAssets(list);
       } catch (err) {
         console.error("Could not load assets:", err);

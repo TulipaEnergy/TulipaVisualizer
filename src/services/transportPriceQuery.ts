@@ -1,55 +1,20 @@
-import {
-  executeCustomQueryOnDatabase,
-  extractTableData,
-} from "./databaseOperations";
-
-const TRANSPORTATION_PRICE_QUERY = (carrier: string): string => {
-  return `
-    SELECT
-    tr.year AS milestone_year,
-    tr.from_asset || ' -> ' || tr.to_asset AS route,
-    SUM(
-        -tr.dual_max_transport_flow_limit_simple_method * (tr.time_block_end - tr.time_block_start + 1) * d.resolution * m.weight
-    ) AS flows_transportation_price
-    FROM
-        cons_transport_flow_limit_simple_method AS tr
-    JOIN
-        rep_periods_mapping AS m ON m.year = tr.year AND m.rep_period = tr.rep_period
-    JOIN
-        rep_periods_data AS d ON d.year = m.year AND d.rep_period = m.rep_period
-    JOIN
-        flow AS f ON f.from_asset = tr.from_asset AND f.to_asset = tr.to_asset
-    WHERE
-        f.is_transport = TRUE AND f.carrier = '${carrier}'
-    GROUP BY
-        tr.year,
-        route;`;
-};
+import { Table } from "apache-arrow";
+import { apacheIPC } from "../gateway/db";
 
 export async function getTransportationPrice(
-  carrier: string,
   dbPath: string,
+  carrier: string,
 ): Promise<TransportationPriceRow[]> {
-  const raw_table = await executeCustomQueryOnDatabase(
-    dbPath,
-    TRANSPORTATION_PRICE_QUERY(carrier),
-  );
-  const { columns, getRow, numRows } = extractTableData(raw_table);
-  const data: TransportationPriceRow[] = [];
-
-  for (let i = 0; i < numRows; i++) {
-    const row = getRow(i);
-    if (row) {
-      const rowObject: TransportationPriceRow = {
-        milestone_year: row[columns.indexOf("milestone_year")],
-        route: row[columns.indexOf("route")],
-        flows_transportation_price:
-          row[columns.indexOf("flows_transportation_price")],
-      };
-      data.push(rowObject);
-    }
+  try {
+    let res: Table<any> = await apacheIPC("get_transportation_price", {
+      dbPath: dbPath,
+      carrier: carrier,
+    });
+    return res.toArray() as Array<TransportationPriceRow>; // Convert Apache Arrow Table into JS array
+  } catch (err) {
+    console.error("Error querying transporation price:", err);
+    throw err;
   }
-  return data;
 }
 
 export interface TransportationPriceRow {

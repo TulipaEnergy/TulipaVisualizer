@@ -1,13 +1,11 @@
 import { Grid, Container } from "@mantine/core";
 import { useState, useEffect } from "react";
 import useVisualizationStore from "../../store/visualizationStore";
-import {
-  executeCustomQueryOnDatabase,
-  fetchDatabaseTablesFromPath,
-} from "../../services/databaseOperations";
 import { TablesList } from "./TablesList";
 import { QueryEditor } from "./QueryEditor";
 import { ResultsTable } from "./ResultsTable";
+import { runCustomQuery } from "../../services/databaseOperations";
+import { getTables } from "../../services/metadata";
 
 interface QueryResult {
   columns: string[];
@@ -43,7 +41,7 @@ const DatabaseViewer: React.FC<DatabaseViewerProps> = ({ graphId }) => {
 
     try {
       setIsLoading(true);
-      const table = await executeCustomQueryOnDatabase(dbFilePath, sqlQuery);
+      const table = await runCustomQuery(dbFilePath, sqlQuery);
 
       // Extract column names from table schema
       const columns = table.schema.fields.map((field) => field.name);
@@ -83,8 +81,8 @@ const DatabaseViewer: React.FC<DatabaseViewerProps> = ({ graphId }) => {
 
   // update tables whenever the db file is changed
   useEffect(() => {
-    fetchDatabaseTablesFromPath(dbFilePath)
-      .then(({ tables }) => {
+    getTables(dbFilePath)
+      .then((tables: string[]) => {
         setTables(tables);
       })
       .catch((error) => {
