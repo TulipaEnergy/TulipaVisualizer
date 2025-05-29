@@ -1,5 +1,4 @@
 import { open } from "@tauri-apps/plugin-dialog";
-import { invoke } from "@tauri-apps/api/core";
 
 export async function triggerDuckDBFileDialog(): Promise<string | null> {
   return await open({
@@ -11,8 +10,4 @@ export async function triggerDuckDBFileDialog(): Promise<string | null> {
       },
     ],
   });
-}
-
-export async function setDbFilePath(selected: string) {
-  await invoke("set_path", { path: selected });
 }
