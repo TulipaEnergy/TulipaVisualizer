@@ -1,18 +1,11 @@
-import { Table } from "apache-arrow";
-import { apacheIPC } from "../gateway/db";
+import { genericApacheIPC } from "../gateway/db";
 
 export async function getStoragePrice(
   dbPath: string,
 ): Promise<StoragePriceRow[]> {
-  try {
-    let res: Table<any> = await apacheIPC("get_storage_price", {
-      dbPath: dbPath,
-    });
-    return res.toArray() as Array<StoragePriceRow>; // Convert Apache Arrow Table into JS array
-  } catch (err) {
-    console.error("Error querying storage price over period:", err);
-    throw err;
-  }
+  return genericApacheIPC<StoragePriceRow>("get_storage_price", {
+    dbPath: dbPath,
+  });
 }
 
 export interface StoragePriceRow {

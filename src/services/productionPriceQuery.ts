@@ -1,18 +1,11 @@
-import { Table } from "apache-arrow";
-import { apacheIPC } from "../gateway/db";
+import { genericApacheIPC } from "../gateway/db";
 
 export async function getProductionPrice(
   dbPath: string,
 ): Promise<ProductionPriceRow[]> {
-  try {
-    let res: Table<any> = await apacheIPC("get_production_price", {
-      dbPath: dbPath,
-    });
-    return res.toArray() as Array<ProductionPriceRow>; // Convert Apache Arrow Table into JS array
-  } catch (err) {
-    console.error("Error querying ProductionPrice over period:", err);
-    throw err;
-  }
+  return genericApacheIPC<ProductionPriceRow>("get_production_price", {
+    dbPath: dbPath,
+  });
 }
 
 export type ProductionPriceRow = {
