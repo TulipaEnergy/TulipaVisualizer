@@ -3,7 +3,7 @@ use once_cell::sync::Lazy;
 use tauri::ipc::Response;
 use duckdb::{ arrow::array::RecordBatch, types::Value, Connection };
 use arrow_ipc::{ writer::StreamWriter, };
-use mockall::{ predicate::* };
+// use mockall::{ predicate::* };
 
 // Connection pool for multi-database support
 static DB_POOL: Lazy<Mutex<HashMap<String, Connection>>> = Lazy::new(|| Mutex::new(HashMap::new()));

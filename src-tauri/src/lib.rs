@@ -18,7 +18,10 @@ pub fn run() {
             metadata::get_tables,
             production_price::get_production_price,
             storage_price::get_storage_price,
-            system_cost::get_system_cost,
+            system_cost::get_fixed_asset_cost,
+            system_cost::get_unit_on_cost,
+            system_cost::get_fixed_flow_cost,
+            system_cost::get_variable_flow_cost,
             transport_price::get_transportation_price])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

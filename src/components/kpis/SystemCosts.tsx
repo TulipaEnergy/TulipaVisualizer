@@ -2,9 +2,9 @@ import { Text, Container, Loader, Paper, Stack } from "@mantine/core";
 import { useState, useEffect } from "react";
 import ReactECharts from "echarts-for-react";
 import {
-  getSystemCost,
-  FixedAssetCostRow,
-} from "../../services/systemCostsQuery";
+  getAssetCostsByYear,
+  getFlowCostsByYear,
+} from "../../services/systemCosts";
 import useVisualizationStore from "../../store/visualizationStore";
 
 interface SystemCostsProps {
@@ -19,7 +19,7 @@ const SystemCosts: React.FC<SystemCostsProps> = ({ graphId }) => {
   const dbFilePath = getGraphDatabase(graphId);
 
   useEffect(() => {
-    const fetchDataAndConfigureChart = async () => {
+    (async () => {
       // Reset states at the beginning of each fetch
       setLoadingData(true);
       setErrorData(null);
@@ -32,43 +32,60 @@ const SystemCosts: React.FC<SystemCostsProps> = ({ graphId }) => {
       }
 
       try {
-        const transformedData: FixedAssetCostRow[] =
-          await getSystemCost(dbFilePath);
-        console.log("succesful query system costs");
+        const assetData: {
+          year: number;
+          asset_fixed_costs: number;
+          unit_on_costs: number;
+        }[] = await getAssetCostsByYear(dbFilePath);
+
+        const flowData: {
+          year: number;
+          flow_fixed_costs: number;
+          flow_variable_costs: number;
+        }[] = await getFlowCostsByYear(dbFilePath);
 
         // Check if we got any data
-        if (!transformedData || transformedData.length === 0) {
+        if (assetData.length === 0 && flowData.length === 0) {
           setErrorData("No system cost data found in the selected database");
           setLoadingData(false);
           return;
         }
 
-        const years: number[] = [
-          ...new Set(transformedData.map((item) => item.milestone_year)),
-        ].sort((a, b) => a - b);
-        const assets: string[] = [
-          ...new Set(transformedData.map((item) => item.asset)),
+        // Define a single series for the total fixed cost
+        const series = [
+          {
+            name: "Asset Fixed",
+            type: "bar",
+            data: assetData.map((i) => i.asset_fixed_costs),
+            stack: "Asset Costs",
+          },
+          {
+            name: "Unit On",
+            type: "bar",
+            data: assetData.map((i) => i.unit_on_costs),
+            stack: "Asset Costs",
+          },
+          {
+            name: "Flow Fixed",
+            type: "bar",
+            data: flowData.map((i) => i.flow_fixed_costs),
+            stack: "Flow Costs",
+          },
+          {
+            name: "Flow Variable",
+            type: "bar",
+            data: flowData.map((i) => i.flow_variable_costs),
+            stack: "Flow Costs",
+          },
         ];
 
-        const series = assets.map((assetName: string) => ({
-          name: assetName,
-          type: "bar",
-          stack: "total",
-          emphasis: {
-            focus: "series",
-          },
-          data: years.map((year: number) => {
-            const item = transformedData.find(
-              (d: FixedAssetCostRow) =>
-                d.milestone_year === year && d.asset === assetName,
-            );
-            return item ? item.assets_fixed_cost : 0;
-          }),
-        }));
+        const years = [
+          ...new Set([...assetData, ...flowData].map((item) => item.year)),
+        ].sort((a, b) => a - b);
 
         const option = {
           title: {
-            text: "Assets Fixed Cost by Milestone Year",
+            text: "Total Asset and Flow Costs by Year", // Updated chart title
             left: "center",
           },
           tooltip: {
@@ -78,7 +95,7 @@ const SystemCosts: React.FC<SystemCostsProps> = ({ graphId }) => {
             },
             formatter: function (params: any[]) {
               let totalCost = 0;
-              let tooltipContent = `<strong>${params[0].name}</strong><br/>`;
+              let tooltipContent = `<strong>${params[0].name}</strong><br/>`; // Year
               params.forEach((item) => {
                 totalCost += item.value as number;
                 tooltipContent +=
@@ -90,14 +107,15 @@ const SystemCosts: React.FC<SystemCostsProps> = ({ graphId }) => {
             },
           },
           legend: {
-            data: assets,
+            // Update legend data to match all new series names
+            data: ["Asset Fixed", "Unit On", "Flow Fixed", "Flow Variable"],
             bottom: "0%",
             type: "scroll",
           },
           xAxis: {
             type: "category",
-            data: years,
-            name: "Milestone Year",
+            data: years, // Use the combined and sorted years for the x-axis categories
+            name: "Year",
             nameLocation: "end",
             nameTextStyle: {
               align: "right",
@@ -110,7 +128,7 @@ const SystemCosts: React.FC<SystemCostsProps> = ({ graphId }) => {
           },
           yAxis: {
             type: "value",
-            name: "Fixed Cost",
+            name: "Cost",
             axisLabel: {
               formatter: "{value}",
             },
@@ -135,9 +153,7 @@ const SystemCosts: React.FC<SystemCostsProps> = ({ graphId }) => {
       } finally {
         setLoadingData(false);
       }
-    };
-
-    fetchDataAndConfigureChart();
+    })();
   }, [dbFilePath]); // Refreshes whenever you select a diff db file
 
   if (loadingData) {

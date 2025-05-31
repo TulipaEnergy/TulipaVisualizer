@@ -1,5 +1,5 @@
 import { Table } from "apache-arrow";
-import { apacheIPC } from "../gateway/db";
+import { apacheIPC, genericApacheIPC } from "../gateway/db";
 
 export async function getCapacity(
   dbPath: string,
@@ -7,18 +7,12 @@ export async function getCapacity(
   startYear: number,
   endYear: number,
 ): Promise<CapacityJson[]> {
-  try {
-    let res: Table<any> = await apacheIPC("get_capacity", {
-      dbPath: dbPath,
-      assetName: assetName,
-      startYear: startYear,
-      endYear: endYear,
-    });
-    return res.toArray() as Array<CapacityJson>; // Convert Apache Arrow Table into JS array
-  } catch (err) {
-    console.error("Error querying capacity over period:", err);
-    throw err;
-  }
+  return genericApacheIPC<CapacityJson>("get_capacity", {
+    dbPath: dbPath,
+    assetName: assetName,
+    startYear: startYear,
+    endYear: endYear,
+  });
 }
 
 type CapacityJson = {

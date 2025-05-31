@@ -13,7 +13,23 @@ export async function apacheIPC(
     return table;
   } catch (error) {
     console.error(
-      `Error executing query {endpoint: ${cmd}, args: ${args}:\n`,
+      `Error calling endpoint ${cmd}, with args: ${JSON.stringify(args)}:\n`,
+      error,
+    );
+    throw error;
+  }
+}
+
+export async function genericApacheIPC<T>(
+  cmd: string,
+  args?: InvokeArgs,
+): Promise<T[]> {
+  try {
+    const table = await apacheIPC(cmd, args);
+    return table.toArray() as Array<T>;
+  } catch (error) {
+    console.error(
+      `Error calling endpoint ${cmd}, with args: ${JSON.stringify(args)} and casting result:\n`,
       error,
     );
     throw error;
