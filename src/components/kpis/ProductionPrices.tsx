@@ -2,109 +2,100 @@ import { Text, Container, Loader, Paper, Stack } from "@mantine/core";
 import { useState, useEffect } from "react";
 import ReactECharts from "echarts-for-react";
 import {
-  getProductionPrice,
-  ProductionPriceRow,
+  getProductionPricePeriod,
+  ProductionPricePeriodRow,
 } from "../../services/productionPriceQuery";
 import useVisualizationStore from "../../store/visualizationStore";
 
-interface ProductionPricesProps {
+interface ProductionPricesPeriodProps {
   graphId: string;
 }
 
-const ProductionPrices: React.FC<ProductionPricesProps> = ({ graphId }) => {
+const ProductionPricesPeriod: React.FC<ProductionPricesPeriodProps> = ({
+  graphId,
+}) => {
   const { getGraphDatabase } = useVisualizationStore();
-  const [loadingData, setLoadingData] = useState<boolean>(true);
+  const [loadingData, setLoadingData] = useState(true);
   const [errorData, setErrorData] = useState<string | null>(null);
   const [chartOptions, setChartOptions] = useState<any>(null);
 
-  const dbFilePath = getGraphDatabase(graphId);
+  const dbPath = getGraphDatabase(graphId);
 
   useEffect(() => {
-    const fetchDataAndConfigureChart = async () => {
+    const fetchData = async () => {
+      if (!dbPath) {
+        setErrorData("No database selected.");
+        return;
+      }
+
       try {
         setLoadingData(true);
+        const data: ProductionPricePeriodRow[] =
+          await getProductionPricePeriod(dbPath);
 
-        // DB File should always be provided - see assertion in GraphCard
-        if (!dbFilePath) {
-          setErrorData("No database selected");
-          setLoadingData(false);
-          return;
+        // Sort and compute cumulative x start for each period
+        const sorted = [...data].sort(
+          (a, b) => a.milestone_year - b.milestone_year || a.period - b.period,
+        );
+
+        let currentX = 0;
+        const xMap = new Map<string, number>();
+        const barWidths = new Map<string, number>();
+
+        for (const row of sorted) {
+          const key = `${row.milestone_year}-P${row.period}`;
+          if (!xMap.has(key)) {
+            currentX += row.length;
+            xMap.set(key, currentX);
+            barWidths.set(key, row.length);
+          }
         }
 
-        const transformedData: ProductionPriceRow[] =
-          await getProductionPrice(dbFilePath);
+        const groupedByAsset = new Map<
+          string,
+          { name: string; value: [number, number, number] }[]
+        >();
+        for (const d of sorted) {
+          const key = `${d.milestone_year}-P${d.period}`;
+          const xEnd = xMap.get(key)!;
+          const width = barWidths.get(key)!;
+          const entry = {
+            name: `${d.asset} (${key})`,
+            value: [xEnd, width, d.y_axis] as [number, number, number],
+          };
+          if (!groupedByAsset.has(d.asset)) {
+            groupedByAsset.set(d.asset, []);
+          }
+          groupedByAsset.get(d.asset)!.push(entry);
+        }
 
-        const years: number[] = [
-          ...new Set(transformedData.map((item) => item.milestone_year)),
-        ].sort((a, b) => a - b);
-        const assets: string[] = [
-          ...new Set(transformedData.map((item) => item.asset)),
-        ];
-
-        const series = assets.map((assetName: string) => ({
-          name: assetName,
-          type: "bar",
-          stack: "total",
-          emphasis: {
-            focus: "series",
-          },
-          data: years.map((year: number) => {
-            const item = transformedData.find(
-              (d: ProductionPriceRow) =>
-                d.milestone_year === year && d.asset === assetName,
-            );
-            return item ? item.assets_production_price : 0;
-          }),
-        }));
-
-        const option = {
+        const chartOption = {
           title: {
-            text: "Assets Production Price by Milestone Year",
+            text: "Assets Production Price by Period",
             left: "center",
           },
           tooltip: {
-            trigger: "axis",
-            axisPointer: {
-              type: "shadow",
+            trigger: "item",
+            formatter: (params: any) => {
+              const y = params.value[2];
+              return `
+                <strong>${params.name}</strong><br/>
+                Price: ${y.toFixed(2)}
+              `;
             },
-            formatter: function (params: any[]) {
-              let totalPrice = 0;
-              let tooltipContent = `<strong>${params[0].name}</strong><br/>`;
-              params.forEach((item) => {
-                totalPrice += item.value as number;
-                tooltipContent +=
-                  `<span style="display:inline-block;margin-right:4px;border-radius:10px;width:10px;height:10px;background-color:${item.color};"></span>` +
-                  `${item.seriesName}: ${item.value ? Number(item.value).toFixed(2) : 0}<br/>`;
-              });
-              tooltipContent += `<hr style="margin: 5px 0;"/><strong>Total: ${totalPrice.toFixed(2)}</strong>`;
-              return tooltipContent;
-            },
-          },
-          legend: {
-            data: assets,
-            bottom: "0%",
-            type: "scroll",
           },
           xAxis: {
-            type: "category",
-            data: years,
-            name: "Milestone Year",
-            nameLocation: "end",
-            nameTextStyle: {
-              align: "right",
-              verticalAlign: "top",
-              padding: [20, 10, 0, 0],
-            },
+            type: "value",
+            name: "Time in Periods",
+            nameLocation: "middle",
+            nameGap: 30,
             axisLabel: {
-              rotate: 45,
+              formatter: (val: number) => val.toFixed(1),
             },
           },
           yAxis: {
             type: "value",
             name: "Production Price",
-            axisLabel: {
-              formatter: "{value}",
-            },
           },
           grid: {
             left: "3%",
@@ -113,20 +104,50 @@ const ProductionPrices: React.FC<ProductionPricesProps> = ({ graphId }) => {
             bottom: "15%",
             containLabel: true,
           },
-          series: series,
+          series: Array.from(groupedByAsset.entries()).map(([asset, data]) => ({
+            type: "custom",
+            name: asset,
+            renderItem: (params: any, api: any) => {
+              params = params; // done to escape build fail for not read value
+              const x = api.value(0);
+              const width = api.value(1);
+              const y = api.value(2);
+
+              const xStart = api.coord([x - width, 0])[0];
+              const xEnd = api.coord([x, 0])[0];
+              const yCoord = api.coord([0, y])[1];
+              const yBase = api.coord([0, 0])[1];
+
+              return {
+                type: "rect",
+                shape: {
+                  x: xStart,
+                  y: yCoord,
+                  width: xEnd - xStart,
+                  height: yBase - yCoord,
+                },
+                style: api.style(),
+              };
+            },
+            encode: {
+              x: 0,
+              y: 2,
+            },
+            data,
+          })),
         };
 
-        setChartOptions(option);
+        setChartOptions(chartOption);
       } catch (err) {
-        console.error("Error fetching or processing data for chart:", err);
-        setErrorData(`Failed to load production price data: ${err}`);
+        setErrorData("Failed to load production prices.");
+        console.error(err);
       } finally {
         setLoadingData(false);
       }
     };
 
-    fetchDataAndConfigureChart();
-  }, [dbFilePath]); // Refreshes whenever you select a diff db file
+    fetchData();
+  }, [dbPath]);
 
   if (loadingData) {
     return (
@@ -153,10 +174,9 @@ const ProductionPrices: React.FC<ProductionPricesProps> = ({ graphId }) => {
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
-          color: "red",
         }}
       >
-        <Text>{errorData}</Text>
+        <Text color="red">{errorData}</Text>
       </Container>
     );
   }
@@ -187,7 +207,7 @@ const ProductionPrices: React.FC<ProductionPricesProps> = ({ graphId }) => {
               alignItems: "center",
             }}
           >
-            <Text>No chart data available after processing.</Text>
+            <Text>No chart data available.</Text>
           </Paper>
         )}
       </Stack>
@@ -195,4 +215,4 @@ const ProductionPrices: React.FC<ProductionPricesProps> = ({ graphId }) => {
   );
 };
 
-export default ProductionPrices;
+export default ProductionPricesPeriod;
