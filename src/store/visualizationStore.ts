@@ -6,6 +6,7 @@ export type ChartType =
   | "database"
   | "system-costs"
   | "production-prices"
+  | "production-prices-period"
   | "storage-prices"
   | "default";
 
