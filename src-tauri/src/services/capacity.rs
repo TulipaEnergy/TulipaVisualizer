@@ -1,12 +1,137 @@
 use duckdb::{ types::Value, arrow::array::RecordBatch };
 use tauri::ipc::Response;
 use crate::duckdb::{run_query_rb, serialize_recordbatch};
+use crate::services::metadata::check_column_in_table;
 
 #[tauri::command]
-pub fn get_capacity(db_path: String, asset_name: String, start_year: u32, end_year: u32) -> Result<Response, String> {
-    let res: Vec<RecordBatch> = run_query_rb(db_path, CAPACITY_SQL.to_string(), vec![Value::from(asset_name), Value::from(start_year), Value::from(end_year)])?;
+pub fn get_capacity(
+    db_path: String,
+    asset_name: String,
+    start_year: u32,
+    end_year: u32,
+) -> Result<Response, String> {
+    // Check for solution columns
+    let inv_has = check_column_in_table(db_path.clone(), "var_assets_investment", "solution")?;
+    let dec_has = check_column_in_table(db_path.clone(), "var_assets_decommission", "solution")?;
 
-    return serialize_recordbatch(res);
+    // 2) Build the parts SELECT that based on the above check
+    let invest_expr = if inv_has {
+        "COALESCE(i.solution * c.capacity, -1) AS investment"
+    } else {
+        "-1 AS investment" // frontend handles -1
+    };
+
+    let decomm_expr = if dec_has {
+        "COALESCE(d.solution * c.capacity, -1) AS decommission"
+    } else {
+        "-1 AS decommission"
+    };
+
+    let inv_upto = if inv_has {
+    "
+    (
+      SELECT COALESCE(SUM(solution), 0)
+      FROM var_assets_investment
+      WHERE asset = $1 AND milestone_year <= y.year
+    )
+    "
+    } else {
+        "0"
+    };
+
+    let inv_before = if inv_has {
+        "
+        (
+        SELECT COALESCE(SUM(solution), 0)
+        FROM var_assets_investment
+        WHERE asset = $1 AND milestone_year < y.year
+        )
+        "
+    } else {
+        "0"
+    };
+
+    let dec_upto = if dec_has {
+        "
+        (
+        SELECT COALESCE(SUM(solution), 0)
+        FROM var_assets_decommission
+        WHERE asset = $1 AND milestone_year <= y.year
+        )
+        "
+    } else {
+        "0"
+    };
+    let dec_before = if dec_has {
+        "
+        (
+        SELECT COALESCE(SUM(solution), 0)
+        FROM var_assets_decommission
+        WHERE asset = $1 AND milestone_year < y.year
+        )
+        "
+    } else {
+        "0"
+    };
+
+    // plug into sql
+    let sql = format!(r#"
+WITH years AS (
+  SELECT DISTINCT year FROM (
+    SELECT commission_year AS year FROM asset_both WHERE asset = $1
+    UNION
+    SELECT milestone_year AS year FROM var_assets_investment WHERE asset = $1
+    UNION
+    SELECT milestone_year AS year FROM var_assets_decommission WHERE asset = $1
+  ) t
+  WHERE year BETWEEN $2 AND $3
+),
+capacity_val AS (
+  SELECT capacity FROM asset WHERE asset = $1
+)
+SELECT
+  y.year,
+  {invest_expr},
+  {decomm_expr},
+  (
+    (
+      SELECT COALESCE(SUM(initial_units),0)
+      FROM asset_both
+      WHERE asset = $1 AND commission_year <= y.year
+    )
+    + {inv_upto}
+    - {dec_upto}
+  ) * c.capacity AS installed_capacity,
+  (
+    (
+      SELECT COALESCE(SUM(initial_units),0)
+      FROM asset_both
+      WHERE asset = $1 AND commission_year <= y.year
+    )
+    + {inv_before}
+    - {dec_before}
+  ) * c.capacity AS old_capacity
+FROM years y
+LEFT JOIN var_assets_investment   AS i ON (i.asset = $1 AND i.milestone_year = y.year)
+LEFT JOIN var_assets_decommission AS d ON (d.asset = $1 AND d.milestone_year = y.year)
+CROSS JOIN capacity_val c
+ORDER BY y.year;
+"#,
+        invest_expr = invest_expr,
+        decomm_expr = decomm_expr,
+        inv_upto = inv_upto,
+        inv_before = inv_before,
+        dec_upto = dec_upto,
+        dec_before = dec_before,
+    );
+
+    let res: Vec<RecordBatch> =
+        run_query_rb(db_path, sql, vec![
+            Value::from(asset_name.clone()),
+            Value::from(start_year),
+            Value::from(end_year),
+        ])?;
+    serialize_recordbatch(res)
 }
 
 #[tauri::command]
@@ -37,37 +162,63 @@ WITH years AS (
         WHERE asset = $1
     ) t
     WHERE year BETWEEN $2 AND $3
-)
-SELECT y.year, COALESCE(i.solution, -1) AS investment, COALESCE(d.solution, -1) AS decommission,
-(
-    (
-        SELECT COALESCE(SUM(initial_units), 0)
-        FROM asset_both
-        WHERE asset = $1
-        AND commission_year <= y.year
-    ) + (
-        SELECT COALESCE(SUM(solution), 0)
-        FROM var_assets_investment
-        WHERE asset = $1
-        AND milestone_year <= y.year
-    ) - (
-        SELECT COALESCE(SUM(solution), 0)
-        FROM var_assets_decommission
-        WHERE asset = $1
-        AND milestone_year <= y.year
-    )
-) * (
+),
+capacity_val AS (
     SELECT capacity
     FROM asset
     WHERE asset = $1
-) AS installed_capacity
+)
+SELECT 
+    y.year, 
+    COALESCE(i.solution * c.capacity, -1)    AS investment, 
+    COALESCE(d.solution * c.capacity, -1)    AS decommission,
+    -- total installed capacity at end of this year
+    (
+        (
+            SELECT COALESCE(SUM(initial_units), 0)
+            FROM asset_both
+            WHERE asset = $1
+              AND commission_year <= y.year
+        ) + (
+            SELECT COALESCE(SUM(solution), 0)
+            FROM var_assets_investment
+            WHERE asset = $1
+              AND milestone_year <= y.year
+        ) - (
+            SELECT COALESCE(SUM(solution), 0)
+            FROM var_assets_decommission
+            WHERE asset = $1
+              AND milestone_year <= y.year
+        )
+    ) * c.capacity AS installed_capacity,
+    -- capacity *before* this year's investments/decommissions but *including* this year's initial_units
+    (
+        (
+            SELECT COALESCE(SUM(initial_units), 0)
+            FROM asset_both
+            WHERE asset = $1
+              AND commission_year <= y.year
+        ) + (
+            SELECT COALESCE(SUM(solution), 0)
+            FROM var_assets_investment
+            WHERE asset = $1
+              AND milestone_year < y.year
+        ) - (
+            SELECT COALESCE(SUM(solution), 0)
+            FROM var_assets_decommission
+            WHERE asset = $1
+              AND milestone_year < y.year
+        )
+    ) * c.capacity AS old_capacity
 FROM years y
 LEFT JOIN var_assets_investment AS i
-ON i.asset = $1 AND i.milestone_year = y.year
+    ON i.asset = $1 AND i.milestone_year = y.year
 LEFT JOIN var_assets_decommission AS d
-ON d.asset = $1 AND d.milestone_year = y.year
+    ON d.asset = $1 AND d.milestone_year = y.year
+CROSS JOIN capacity_val c
 ORDER BY y.year;
 ";
+
 
 const AVAILABLE_YEARS_SQL: &str = "
 SELECT DISTINCT year FROM (

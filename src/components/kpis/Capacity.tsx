@@ -9,7 +9,11 @@ import {
   Flex,
 } from "@mantine/core";
 import { fetchAvailableYears } from "../../services/capacityQuery";
-import type { EChartsOption } from "echarts";
+import type {
+  EChartsOption,
+  BarSeriesOption,
+  TooltipComponentOption,
+} from "echarts";
 import { getCapacity } from "../../services/capacityQuery";
 import useVisualizationStore, {
   CapacityOptions,
@@ -26,45 +30,165 @@ const capacityGraph = async (
   const data = await getCapacity(db, asset, startYear, endYear);
   const round2 = (v: number) => Math.round(v * 100) / 100; // round to 2 decimals
   const years = data.map((d) => d.year.toString());
-  const capacities = data.map((d) => round2(d.installed_capacity));
+  const new_capacities = data.map((d) => round2(d.installed_capacity));
+  const old_capacities = data.map((d) => round2(d.old_capacity));
   const investments = data.map((d) =>
     d.investment >= 0 ? round2(d.investment) : null,
   );
   const decommissions = data.map((d) =>
-    d.decommission >= 0 ? round2(d.decommission) : null,
+    d.decommission >= 0 ? -round2(d.decommission) : null,
   );
 
-  // build the three series objects
-  const seriesList = [
-    { name: "Installed Capacity", data: capacities },
-    { name: "Investment", data: investments },
-    { name: "Decommission", data: decommissions },
+  // Canvas helper for stripes
+  function createStripeCanvas(color: string) {
+    const c = document.createElement("canvas");
+    c.width = c.height = 4;
+    const ctx = c.getContext("2d")!;
+    ctx.strokeStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(0, 4);
+    ctx.lineTo(4, 0);
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    return c;
+  }
+
+  // The 4 bars
+  const series: BarSeriesOption[] = [
+    {
+      name: "Old Capacity",
+      type: "bar",
+      data: old_capacities,
+      itemStyle: { color: "#8A8A8A" },
+      stack: "old",
+      emphasis: { focus: "series" },
+    },
+    {
+      name: "Investment",
+      type: "bar",
+      data: investments,
+      itemStyle: {
+        color: {
+          type: "pattern",
+          image: createStripeCanvas("#43A047"),
+          repeat: "repeat",
+        },
+      },
+      stack: "old",
+      emphasis: { focus: "series" },
+    },
+    {
+      name: "Decommission",
+      type: "bar",
+      data: decommissions,
+      itemStyle: {
+        color: {
+          type: "pattern",
+          image: createStripeCanvas("#D32F2F"),
+          repeat: "repeat",
+        },
+      },
+      stack: "old",
+      emphasis: { focus: "series" },
+    },
+    {
+      name: "New Capacity",
+      type: "bar",
+      data: new_capacities,
+      itemStyle: { color: "#5470C6" },
+      barGap: "5%",
+      stack: "new",
+      emphasis: { focus: "series" },
+    },
   ];
 
-  // Sort DESC so smallest max => highest z-index => drawn last (on top)
-  const sortedSeries = seriesList
-    .map((s) => ({ ...s, max: Math.max(...s.data.map((v) => v || 0)) }))
-    .sort((a, b) => b.max - a.max);
+  const tooltip: TooltipComponentOption = {
+    trigger: "axis",
+    axisPointer: { type: "shadow" },
+    formatter: (params: any) => {
+      const arr = Array.isArray(params) ? params : [params];
+      const year = arr[0]?.name || "";
+      let html = `<strong>${year}</strong><br/>`;
 
-  return {
-    title: {
-      text: `${asset} capacity (${startYear}–${endYear})`,
-      left: "center",
+      arr.forEach((item: any) => {
+        if (item.value == null) {
+          return;
+        }
+
+        // choose plain color vs striped CSS
+        let styleStr: string;
+        if (item.seriesName === "Investment") {
+          styleStr = `
+          background-image:
+            repeating-linear-gradient(
+              -45deg,
+              #43A047 0,
+              #43A047 2px,
+              transparent 2px,
+              transparent 4px
+            );
+        `;
+        } else if (item.seriesName === "Decommission") {
+          styleStr = `
+          background-image:
+            repeating-linear-gradient(
+              -45deg,
+              #D32F2F 0,
+              #D32F2F 2px,
+              transparent 2px,
+              transparent 4px
+            );
+        `;
+        } else {
+          styleStr = `background-color: ${item.color};`;
+        }
+
+        html +=
+          `<span
+          style="display:inline-block;
+                  margin-right:4px;
+                  border-radius:10px;
+                  width:10px;
+                  height:10px;
+                  ${styleStr}
+          "></span> ` + `${item.seriesName}: ${item.value.toFixed(2)} MW<br/>`;
+      });
+
+      return html;
     },
-    tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
-    legend: { top: 30, data: sortedSeries.map((s) => s.name) },
-    xAxis: { type: "category", data: years, axisLabel: { rotate: 45 } },
-    yAxis: { type: "value", name: "Installed Capacity in MW" },
-    dataZoom: [{ type: "slider", start: 0, end: 100 }],
-    series: sortedSeries.map((s, idx) => ({
-      name: s.name,
-      type: "bar",
-      data: s.data,
-      barGap: "-100%", // fully overlap every series
-      barCategoryGap: "20%", // slight breathing room
-      z: idx + 1, // higher idx drawn last
-    })),
   };
+
+  const option: EChartsOption = {
+    title: { text: "Capacity by Year", left: "center" },
+    tooltip,
+    legend: {
+      data: ["New Capacity", "Investment", "Decommission", "Old Capacity"],
+      bottom: "0%",
+      type: "scroll",
+    },
+    xAxis: {
+      type: "category",
+      data: years,
+      name: "Year",
+      nameLocation: "middle",
+      nameTextStyle: { padding: [10, 0, 0, 0] },
+    },
+    yAxis: {
+      type: "value",
+      name: "Capacity (MW)",
+      axisLabel: { formatter: "{value}" },
+    },
+    grid: {
+      left: "3%",
+      right: "4%",
+      top: "12%",
+      bottom: "12%",
+      containLabel: true,
+    },
+    series,
+  };
+
+  return option;
 };
 
 interface CapacityProps {
