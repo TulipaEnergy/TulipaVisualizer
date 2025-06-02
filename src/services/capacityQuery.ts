@@ -19,6 +19,7 @@ type CapacityJson = {
   year: number;
   investment: number;
   decommission: number;
+  old_capacity: number;
   installed_capacity: number;
 };
 
