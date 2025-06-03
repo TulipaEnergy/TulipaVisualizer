@@ -14,6 +14,8 @@ dist-ssr
 *.duckdb
 *.xml
 coverage
+*.duckdb
+commit.md
 
 # Editor directories and files
 .vscode/*

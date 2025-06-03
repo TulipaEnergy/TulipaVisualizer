@@ -1,12 +1,12 @@
-use duckdb::{ types::Value, arrow::array::RecordBatch };
+use duckdb::{ arrow::{array::RecordBatch, datatypes::Schema}, types::Value };
 use tauri::ipc::Response;
 use crate::duckdb::{run_query_rb, serialize_recordbatch};
 
 #[tauri::command]
 pub fn get_transportation_price(db_path: String, carrier: String) -> Result<Response, String> {
-    let res: Vec<RecordBatch> = run_query_rb(db_path, TRANSPORTATION_PRICE_SQL.to_string(), vec![Value::from(carrier)])?;
+    let res: (Vec<RecordBatch>, Schema) = run_query_rb(db_path, TRANSPORTATION_PRICE_SQL.to_string(), vec![Value::from(carrier)])?;
 
-    return serialize_recordbatch(res);
+    return serialize_recordbatch(res.0, res.1);
 }
 
 // --- TESTING ---

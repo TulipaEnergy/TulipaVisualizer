@@ -93,5 +93,6 @@ backend-test-job:
     - rustup default stable
     - rustup component add llvm-tools-preview
     - cargo install cargo-llvm-cov # for code coverage
+    - curl -L "https://github.com/Benjamin1260/tulipa_output/releases/download/output/Norse_out.duckdb" -o "src-tauri/.duckdb" #get db-file
     - npm run tauri:test
     - cargo llvm-cov report --summary-only --manifest-path src-tauri/Cargo.toml

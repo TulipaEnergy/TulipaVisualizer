@@ -27,5 +27,6 @@ tauri-plugin-dialog = "2.2.1"
 arrow-ipc = "54.3.1" # version need to match duckDB version!
 duckdb = { version = "1.2.2", features = ["bundled"] }
 mockall = "0.13.1"
+serial_test = "3.2.0"
 
 

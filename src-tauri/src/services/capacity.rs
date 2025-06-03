@@ -1,7 +1,8 @@
+use duckdb::arrow::datatypes::Schema;
 use duckdb::{ types::Value, arrow::array::RecordBatch };
 use tauri::ipc::Response;
-use crate::duckdb::{run_query_rb, serialize_recordbatch};
 use crate::services::metadata::check_column_in_table;
+use crate::duckdb::{run_query_rb, serialize_recordbatch};
 
 #[tauri::command]
 pub fn get_capacity(
@@ -125,20 +126,20 @@ ORDER BY y.year;
         dec_before = dec_before,
     );
 
-    let res: Vec<RecordBatch> =
+    let res: (Vec<RecordBatch>, Schema) =
         run_query_rb(db_path, sql, vec![
             Value::from(asset_name.clone()),
             Value::from(start_year),
             Value::from(end_year),
         ])?;
-    serialize_recordbatch(res)
+    serialize_recordbatch(res.0, res.1)
 }
 
 #[tauri::command]
 pub fn get_available_years(db_path: String, asset_name: String) -> Result<Response, String> {
-    let res: Vec<RecordBatch> = run_query_rb(db_path, AVAILABLE_YEARS_SQL.to_string(), vec![Value::from(asset_name)])?;
+    let res: (Vec<RecordBatch>, Schema) = run_query_rb(db_path, AVAILABLE_YEARS_SQL.to_string(), vec![Value::from(asset_name)])?;
 
-    return serialize_recordbatch(res);
+    return serialize_recordbatch(res.0, res.1);
 }
 
 // --- TESTING ---
