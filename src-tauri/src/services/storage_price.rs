@@ -1,12 +1,12 @@
-use duckdb::{ arrow::array::RecordBatch };
+use duckdb::arrow::{array::RecordBatch, datatypes::Schema};
 use tauri::ipc::Response;
 use crate::duckdb::{run_query_rb, serialize_recordbatch};
 
 #[tauri::command]
 pub fn get_storage_price(db_path: String) -> Result<Response, String> {
-    let res: Vec<RecordBatch> = run_query_rb(db_path, STORAGE_PRICE_SQL.to_string(), [].to_vec())?;
+    let res: (Vec<RecordBatch>, Schema) = run_query_rb(db_path, STORAGE_PRICE_SQL.to_string(), [].to_vec())?;
 
-    return serialize_recordbatch(res);
+    return serialize_recordbatch(res.0, res.1);
 }
 
 const STORAGE_PRICE_SQL: &str = "

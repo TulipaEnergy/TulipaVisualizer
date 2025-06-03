@@ -1,5 +1,5 @@
 use crate::duckdb::{ serialize_recordbatch, run_query_rb, run_query_row };
-use duckdb::{ types::Value, arrow::array::RecordBatch };
+use duckdb::{ arrow::{array::RecordBatch, datatypes::Schema}, types::Value };
 use tauri::ipc::Response;
 
 // gets the import/ export between categories which are not level-0
@@ -8,9 +8,9 @@ pub fn get_import(db_path: String, cat_name: String) -> Result<Response, String>
     let cat_id: u32 = get_id_from_category(db_path.to_string(), cat_name)?;
     let q: String = IMPORT_EXPORT_SQL_TEMPLATE.replace("{{1}}", "in");
 
-    let res: Vec<RecordBatch> = run_query_rb(db_path, q, vec![Value::from(cat_id), Value::from(cat_id)])?;
+    let res: (Vec<RecordBatch>, Schema) = run_query_rb(db_path, q, vec![Value::from(cat_id), Value::from(cat_id)])?;
 
-    return serialize_recordbatch(res);
+    return serialize_recordbatch(res.0, res.1);
 }
 
 #[tauri::command]
@@ -18,9 +18,9 @@ pub fn get_export(db_path: String, cat_name: String) -> Result<Response, String>
     let cat_id: u32 = get_id_from_category(db_path.to_string(), cat_name)?;
     let q: String = IMPORT_EXPORT_SQL_TEMPLATE.replace("{{1}}", "out");
 
-    let res: Vec<RecordBatch> = run_query_rb(db_path, q, vec![Value::from(cat_id), Value::from(cat_id)])?;
+    let res: (Vec<RecordBatch>, Schema) = run_query_rb(db_path, q, vec![Value::from(cat_id), Value::from(cat_id)])?;
 
-    return serialize_recordbatch(res);
+    return serialize_recordbatch(res.0, res.1);
 }
 
 fn get_category_from_id(db_path: String, id: u32) -> Result<String, String> {

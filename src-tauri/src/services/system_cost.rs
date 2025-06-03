@@ -1,25 +1,20 @@
-use duckdb::{ arrow::array::RecordBatch };
+use duckdb::arrow::{array::RecordBatch, datatypes::Schema};
 use tauri::ipc::Response;
 use crate::duckdb::{run_query_rb, serialize_recordbatch};
 use crate::services::metadata::check_column_in_table;
 
-
 #[tauri::command]
 pub fn get_fixed_asset_cost(db_path: String) -> Result<Response, String> {
-    println!("querying system costs (fixed asset)");
-    let res: Vec<RecordBatch> = run_query_rb(db_path, FIXED_ASSET_COST_SQL.to_string(), [].to_vec())?;
-    println!("done!");
+    let res: (Vec<RecordBatch>, Schema) = run_query_rb(db_path, FIXED_ASSET_COST_SQL.to_string(), [].to_vec())?;
 
-    return serialize_recordbatch(res);
+    return serialize_recordbatch(res.0, res.1);
 }
 
 #[tauri::command]
 pub fn get_fixed_flow_cost(db_path: String) -> Result<Response, String> {
-    println!("querying flow costs (fixed)");
-    let res: Vec<RecordBatch> = run_query_rb(db_path, FIXED_FLOW_COST_SQL.to_string(), [].to_vec())?;
-    println!("done!");
+    let res: (Vec<RecordBatch>, Schema) = run_query_rb(db_path, FIXED_FLOW_COST_SQL.to_string(), [].to_vec())?;
 
-    return serialize_recordbatch(res);
+    return serialize_recordbatch(res.0, res.1);
 }
 
 #[tauri::command]
@@ -31,9 +26,8 @@ pub fn get_variable_flow_cost(db_path: String) -> Result<Response, String> {
         VARIABLE_FLOW_COST_SQL_FALLBACK.to_string()
     };
 
-    let res: Vec<RecordBatch> = run_query_rb(db_path, query, [].to_vec())?;
-    println!("done!");
-    return serialize_recordbatch(res);
+    let res: (Vec<RecordBatch>, Schema) = run_query_rb(db_path, query, [].to_vec())?;
+    return serialize_recordbatch(res.0, res.1);
 }
 
 #[tauri::command]
@@ -45,10 +39,9 @@ pub fn get_unit_on_cost(db_path: String) -> Result<Response, String> {
         UNIT_ON_COST_SQL_FALLBACK.to_string()
     };
 
-    let res: Vec<RecordBatch> = run_query_rb(db_path, query, [].to_vec())?;
-    println!("done!");
+    let res: (Vec<RecordBatch>, Schema) = run_query_rb(db_path, query, [].to_vec())?;
 
-    return serialize_recordbatch(res);
+    return serialize_recordbatch(res.0, res.1);
 }
 
 // --- TESTING ---
