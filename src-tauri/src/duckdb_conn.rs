@@ -150,7 +150,7 @@ mod tests {
     mod serialize_recordbatch {
         use super::*;
         use arrow_ipc::reader::StreamReader;
-        use duckdb::{arrow::{array::{Array, StringArray}, datatypes::{ArrowNativeType, ByteArrayType}}, Row};
+        use duckdb::{arrow::array::{Array, StringArray}, Row};
         use tauri::ipc::{ IpcResponse, Response };
 
         // deserializes response on one column

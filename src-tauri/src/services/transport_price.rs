@@ -1,6 +1,6 @@
 use duckdb::{ arrow::{array::RecordBatch, datatypes::Schema}, types::Value };
 use tauri::ipc::Response;
-use crate::duckdb::{run_query_rb, serialize_recordbatch};
+use crate::duckdb_conn::{run_query_rb, serialize_recordbatch};
 
 #[tauri::command]
 pub fn get_transportation_price(db_path: String, carrier: String) -> Result<Response, String> {

@@ -1,4 +1,4 @@
-use crate::duckdb::{ serialize_recordbatch, run_query_rb, run_query_row };
+use crate::duckdb_conn::{ serialize_recordbatch, run_query_rb, run_query_row };
 use duckdb::{ arrow::{array::RecordBatch, datatypes::Schema}, types::Value };
 use tauri::ipc::Response;
 

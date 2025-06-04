@@ -1,5 +1,5 @@
 mod services;
-mod duckdb;
+mod duckdb_conn;
 use tauri_plugin_dialog;
 use services::*;
 
