@@ -2,7 +2,7 @@ use duckdb::arrow::{array::RecordBatch, datatypes::Schema};
 use tauri::ipc::Response;
 use crate::services::query_builder::build_time_weighted_query;
 use crate::services::query_builder::build_duration_series_query;
-use crate::duckdb::{run_query_rb, serialize_recordbatch};
+use crate::duckdb_conn::{run_query_rb, serialize_recordbatch};
 
 #[tauri::command]
 pub fn get_production_price(db_path: String) -> Result<Response, String> {

@@ -1,6 +1,6 @@
 use duckdb::arrow::{array::RecordBatch, datatypes::Schema};
 use tauri::ipc::Response;
-use crate::duckdb::{run_query_rb, serialize_recordbatch};
+use crate::duckdb_conn::{run_query_rb, serialize_recordbatch};
 
 #[tauri::command]
 pub fn get_storage_price(db_path: String) -> Result<Response, String> {

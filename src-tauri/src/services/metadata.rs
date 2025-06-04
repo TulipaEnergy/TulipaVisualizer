@@ -1,7 +1,7 @@
 
-use duckdb::{ arrow::{array::RecordBatch, datatypes::Schema}, types::Value, Row };
+use duckdb::{ arrow::{array::RecordBatch, datatypes::Schema}, Row };
 use tauri::ipc::Response;
-use crate::duckdb::{run_query_rb, run_query_row, serialize_recordbatch};
+use crate::duckdb_conn::{run_query_rb, run_query_row, serialize_recordbatch};
 
 #[tauri::command]
 pub fn get_assets(db_path: String) -> Result<Response, String> {

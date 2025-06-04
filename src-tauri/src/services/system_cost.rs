@@ -1,6 +1,6 @@
 use duckdb::arrow::{array::RecordBatch, datatypes::Schema};
 use tauri::ipc::Response;
-use crate::duckdb::{run_query_rb, serialize_recordbatch};
+use crate::duckdb_conn::{run_query_rb, serialize_recordbatch};
 use crate::services::metadata::check_column_in_table;
 
 #[tauri::command]

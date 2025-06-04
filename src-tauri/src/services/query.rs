@@ -1,5 +1,5 @@
 use tauri::ipc::Response;
-use super::super::duckdb::{ serialize_recordbatch, run_query_rb };
+use super::super::duckdb_conn::{ serialize_recordbatch, run_query_rb };
 use duckdb::arrow::{array::RecordBatch, datatypes::Schema};
 
 // runs arbitrary SQL query

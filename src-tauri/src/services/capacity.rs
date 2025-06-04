@@ -2,7 +2,7 @@ use duckdb::arrow::datatypes::Schema;
 use duckdb::{ types::Value, arrow::array::RecordBatch };
 use tauri::ipc::Response;
 use crate::services::metadata::check_column_in_table;
-use crate::duckdb::{run_query_rb, serialize_recordbatch};
+use crate::duckdb_conn::{run_query_rb, serialize_recordbatch};
 
 #[tauri::command]
 pub fn get_capacity(
@@ -146,6 +146,7 @@ pub fn get_available_years(db_path: String, asset_name: String) -> Result<Respon
 
 // --- QUERIES ---
 
+/*
 const CAPACITY_SQL: &str = "
 WITH years AS (
     SELECT DISTINCT year
@@ -219,6 +220,7 @@ LEFT JOIN var_assets_decommission AS d
 CROSS JOIN capacity_val c
 ORDER BY y.year;
 ";
+*/
 
 
 const AVAILABLE_YEARS_SQL: &str = "
