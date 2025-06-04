@@ -1,12 +1,8 @@
 import { genericApacheIPC } from "../gateway/db";
 
-export async function getAssetCostsByYear(dbPath: string): Promise<
-  {
-    year: number;
-    asset_fixed_costs: number;
-    unit_on_costs: number;
-  }[]
-> {
+export async function getAssetCostsByYear(
+  dbPath: string,
+): Promise<AssetSystemCostPerYear[]> {
   const afc = await genericApacheIPC<FixedAssetCostRow>(
     "get_fixed_asset_cost",
     {
@@ -36,13 +32,9 @@ export async function getAssetCostsByYear(dbPath: string): Promise<
   });
 }
 
-export async function getFlowCostsByYear(dbPath: string): Promise<
-  {
-    year: number;
-    flow_fixed_costs: number;
-    flow_variable_costs: number;
-  }[]
-> {
+export async function getFlowCostsByYear(
+  dbPath: string,
+): Promise<FlowSystemCostPerYear[]> {
   const ff = await genericApacheIPC<FixedFlowCost>("get_fixed_flow_cost", {
     dbPath: dbPath,
   });
@@ -60,35 +52,86 @@ export async function getFlowCostsByYear(dbPath: string): Promise<
   ].sort((a, b) => a - b);
 
   return years.map((year) => {
+    const flow_fixed_costs_by_carrier: { [carrier: string]: number } = {};
+    const flow_variable_costs_by_carrier: { [carrier: string]: number } = {};
+
+    ff.filter((d) => d.milestone_year === year).forEach((item) => {
+      if (item.flow_fixed_cost > 0) {
+        flow_fixed_costs_by_carrier[item.carrier] =
+          (flow_fixed_costs_by_carrier[item.carrier] || 0) +
+          item.flow_fixed_cost;
+      }
+    });
+
+    fv.filter((d) => d.milestone_year === year).forEach((item) => {
+      if (item.flow_variable_cost > 0) {
+        flow_variable_costs_by_carrier[item.carrier] =
+          (flow_variable_costs_by_carrier[item.carrier] || 0) +
+          item.flow_variable_cost;
+      }
+    });
+
     return {
       year: year,
-      flow_fixed_costs: ff
-        .filter((d) => d.milestone_year == year)
-        .reduce((sum, item) => sum + item.flow_fixed_cost, 0),
-      flow_variable_costs: fv
-        .filter((d) => d.milestone_year == year)
-        .reduce((sum, item) => sum + item.flow_variable_cost, 0),
+      flow_fixed_costs_by_carrier: flow_fixed_costs_by_carrier,
+      flow_variable_costs_by_carrier: flow_variable_costs_by_carrier,
     };
   });
 }
 
-export interface VariableFlowCost {
+export function getUniqueCarriers(data: FlowSystemCostPerYear[]): string[] {
+  const carriers = new Set<string>();
+  data.forEach((item) => {
+    Object.keys(item.flow_fixed_costs_by_carrier).forEach((carrier) =>
+      carriers.add(carrier),
+    );
+    Object.keys(item.flow_variable_costs_by_carrier).forEach((carrier) =>
+      carriers.add(carrier),
+    );
+  });
+  return Array.from(carriers).sort();
+}
+
+export function getUniqueYears(
+  assetData: AssetSystemCostPerYear[],
+  flowData: FlowSystemCostPerYear[],
+): number[] {
+  return [
+    ...new Set([...assetData, ...flowData].map((item) => item.year)),
+  ].sort((a, b) => a - b);
+}
+
+interface VariableFlowCost {
   milestone_year: number;
+  carrier: string;
   flow_variable_cost: number;
 }
-export interface FixedFlowCost {
+interface FixedFlowCost {
   milestone_year: number;
+  carrier: string;
   flow_fixed_cost: number;
 }
 
-export interface FixedAssetCostRow {
+interface FixedAssetCostRow {
   milestone_year: number;
   asset: string;
   assets_fixed_cost: number;
 }
 
-export interface UnitOnCostRow {
+interface UnitOnCostRow {
   milestone_year: number;
   asset: string;
   unit_on_cost: number;
+}
+
+export interface AssetSystemCostPerYear {
+  year: number;
+  asset_fixed_costs: number;
+  unit_on_costs: number;
+}
+
+export interface FlowSystemCostPerYear {
+  year: number;
+  flow_fixed_costs_by_carrier: { [carrier: string]: number };
+  flow_variable_costs_by_carrier: { [carrier: string]: number };
 }

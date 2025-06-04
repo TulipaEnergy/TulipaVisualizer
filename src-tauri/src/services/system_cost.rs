@@ -5,35 +5,33 @@ use crate::services::metadata::check_column_in_table;
 
 #[tauri::command]
 pub fn get_fixed_asset_cost(db_path: String) -> Result<Response, String> {
-    let res: (Vec<RecordBatch>, Schema) = run_query_rb(db_path, FIXED_ASSET_COST_SQL.to_string(), [].to_vec())?;
+    println!("querying system costs (fixed asset)");
+    let res: (Vec<RecordBatch>, Schema) = run_query_rb(db_path, format!("{DISCOUNT_FACTOR_ASSETS_CTE}{FIXED_ASSET_COST_SQL}"), [].to_vec())?;
+    println!("done!");
 
     return serialize_recordbatch(res.0, res.1);
 }
 
 #[tauri::command]
 pub fn get_fixed_flow_cost(db_path: String) -> Result<Response, String> {
-    let res: (Vec<RecordBatch>, Schema) = run_query_rb(db_path, FIXED_FLOW_COST_SQL.to_string(), [].to_vec())?;
+    println!("querying flow costs (fixed)");
+    let res: (Vec<RecordBatch>, Schema) = run_query_rb(db_path, format!("{DISCOUNT_FACTOR_FLOWS_CTE}{FIXED_FLOW_COST_SQL}"), [].to_vec())?;
+    println!("done!");
 
     return serialize_recordbatch(res.0, res.1);
 }
 
 #[tauri::command]
 pub fn get_variable_flow_cost(db_path: String) -> Result<Response, String> {
-    let query = if check_column_in_table(db_path.clone(), "var_flow", "solution")? {
-        VARIABLE_FLOW_COST_SQL.to_string()
-    } else {
-        println!("querying system costs (flow variable), but var_flow doesn't have solution");
-        VARIABLE_FLOW_COST_SQL_FALLBACK.to_string()
-    };
-
-    let res: (Vec<RecordBatch>, Schema) = run_query_rb(db_path, query, [].to_vec())?;
+    let res: (Vec<RecordBatch>, Schema) = run_query_rb(db_path, format!("{DISCOUNT_FACTOR_FLOWS_CTE}{VARIABLE_FLOW_COST_SQL}"), [].to_vec())?;
+    println!("done!");
     return serialize_recordbatch(res.0, res.1);
 }
 
 #[tauri::command]
 pub fn get_unit_on_cost(db_path: String) -> Result<Response, String> {
     let query = if check_column_in_table(db_path.clone(), "var_units_on", "solution")? {
-        UNIT_ON_COST_SQL.to_string()
+        format!("{DISCOUNT_FACTOR_ASSETS_CTE}{UNIT_ON_COST_SQL}")
     } else {
         println!("querying system costs (unit on), but var_units_on doesn't have solution");
         UNIT_ON_COST_SQL_FALLBACK.to_string()
@@ -48,11 +46,67 @@ pub fn get_unit_on_cost(db_path: String) -> Result<Response, String> {
 
 // --- QUERIES ---
 
+const DISCOUNT_FACTOR_FLOWS_CTE: &str = "
+-- see DISCOUNT_FACTOR_ASSETS_CTE for explanations
+WITH MilestoneYearsWithNext AS (
+    SELECT
+        yd.year AS milestone_year,
+        LEAD(yd.year, 1) OVER (ORDER BY yd.year) AS next_milestone_year
+    FROM
+        year_data AS yd
+    WHERE
+        yd.is_milestone = TRUE
+),
+ComissionedFlowsByMilestoneYear AS (
+    SELECT
+        m.milestone_year,
+        m.next_milestone_year,
+        f.from_asset,
+  		f.to_asset,
+        f.discount_rate,
+        fc.commission_year
+    FROM
+        MilestoneYearsWithNext AS m
+    CROSS JOIN
+        flow AS f
+    JOIN
+        flow_commission AS fc ON f.from_asset = fc.from_asset AND f.to_asset = fc.to_asset
+    WHERE fc.commission_year <= m.milestone_year
+),
+DiscountFactorPerYearAndFlow AS (
+    SELECT
+        fm.milestone_year,
+        fm.from_asset,
+  		fm.to_asset,
+        SUM(
+            POWER(
+                (1 + fm.discount_rate),
+                -(year_val_table.year_val - fm.commission_year)
+            )
+        ) AS discount_factor
+    FROM
+        ComissionedFlowsByMilestoneYear fm
+    CROSS JOIN LATERAL (
+        SELECT s_val AS year_val
+        FROM GENERATE_SERIES(
+            fm.milestone_year,
+            COALESCE(fm.next_milestone_year - 1, fm.milestone_year)
+        ) AS s(s_val)
+    ) AS year_val_table
+    GROUP BY
+        fm.milestone_year,
+        fm.from_asset,
+  		fm.to_asset,
+)
+";
+
 const VARIABLE_FLOW_COST_SQL: &str = "
+-- using DISCOUNT_FACTOR_FLOWS_CTE
 SELECT
     yd.year AS milestone_year,
+    f.carrier,
     SUM(
-        f.discount_rate * rpm.weight * (vf.time_block_end - vf.time_block_start + 1) * fm.variable_cost * vf.solution
+        df.discount_factor * rpm.weight * (vf.time_block_end - vf.time_block_start + 1) * fm.variable_cost * vf.solution
     ) AS flow_variable_cost
 FROM
     year_data AS yd
@@ -61,32 +115,25 @@ JOIN
 JOIN
     flow_milestone AS fm ON yd.year = fm.milestone_year
 JOIN    
-    flow AS f ON f.from_asset = fm.from_asset AND f.to_asset = fm.to_asset -- Corrected join condition
+    flow AS f ON f.from_asset = fm.from_asset AND f.to_asset = fm.to_asset
 JOIN
-    var_flow AS vf ON f.from_asset = vf.from_asset AND f.to_asset = vf.to_asset AND vf.year = rpm.year AND rpm.rep_period = vf.rep_period -- Corrected join condition
+    var_flow AS vf ON f.from_asset = vf.from_asset AND f.to_asset = vf.to_asset AND vf.year = rpm.year AND rpm.rep_period = vf.rep_period
+JOIN 
+	DiscountFactorPerYearAndFlow AS df ON df.from_asset = vf.from_asset AND df.to_asset = vf.to_asset AND df.milestone_year = yd.year
 WHERE
     yd.is_milestone = TRUE
 GROUP BY
-    yd.year;
-";
-
-const VARIABLE_FLOW_COST_SQL_FALLBACK: &str = "
-SELECT 
-            yd.year AS milestone_year,
-            0 AS flow_variable_cost
-        FROM
-            year_data AS yd
-        WHERE
-            yd.is_milestone = TRUE
-        GROUP BY
-            yd.year
+    yd.year,
+    f.carrier;
 ";
 
 const FIXED_FLOW_COST_SQL: &str = "
+-- using DISCOUNT_FACTOR_FLOWS_CTE
 SELECT
     yd.year AS milestone_year,
+    f.carrier,
     SUM(
-        0.5 * f.discount_rate * fc.fixed_cost * f.capacity *
+        0.5 * df.discount_factor * fc.fixed_cost * f.capacity *
         (fb.initial_export_units + fb.initial_import_units)
     ) AS flow_fixed_cost
 FROM
@@ -97,29 +144,100 @@ JOIN
     flow AS f ON fb.from_asset = f.from_asset AND fb.to_asset = f.to_asset
 JOIN
     flow_commission AS fc ON f.from_asset = fc.from_asset AND f.to_asset = fc.to_asset
+JOIN DiscountFactorPerYearAndFlow AS df ON df.from_asset = f.from_asset AND df.to_asset = f.to_asset AND df.milestone_year = yd.year
 WHERE
     yd.is_milestone = TRUE
     AND f.is_transport = TRUE
     AND yd.year BETWEEN fb.commission_year AND (fb.commission_year + f.technical_lifetime)
 GROUP BY
-    yd.year;
+    yd.year,
+    f.carrier;
+";
+
+const DISCOUNT_FACTOR_ASSETS_CTE: &str = "
+WITH MilestoneYearsWithNext AS (
+    -- e.g. for Multi-Year scenario:
+    -- 2030 ... 2050
+    -- 2050 ... NULL
+    SELECT
+        yd.year AS milestone_year,
+        LEAD(yd.year, 1) OVER (ORDER BY yd.year) AS next_milestone_year
+    FROM
+        year_data AS yd
+    WHERE
+        yd.is_milestone = TRUE
+),
+ComissionedAssetsByMilestoneYear AS (
+    -- e.g. for Multi-Year scenario:
+    -- milestone year 2030 will contain the batteries comissioned in 2020, 2025, 2030 (+ other assets)
+    -- milestone year 2050 will contain the batteries comissioned in 2020, 2025, 2030, 2040, 2050 (+ other assets)
+    SELECT
+        m.milestone_year,
+        m.next_milestone_year,
+        a.asset,
+        a.discount_rate,
+        ac.commission_year
+    FROM
+        MilestoneYearsWithNext AS m
+    CROSS JOIN
+        asset AS a
+    JOIN
+        asset_commission AS ac ON a.asset = ac.asset
+    WHERE ac.commission_year <= m.milestone_year
+),
+DiscountFactorPerYearAndAsset AS (
+    -- Computes https://tulipaenergy.github.io/TulipaEnergyModel.jl/dev/40-formulation/#Discounting-Factor-for-Operation-Costs
+    -- resulting a discount factor per (milestone year, asset) tuple
+    -- Thus, one milestone year's costs also include the next non-milestone years' costs, accounting for inflation
+    -- e.g. for Multi-Year scenario:
+    -- for milestone year 2030, for battery comissioned in 2020, will account for years 2030 to 2049
+    -- for milestone year 2030, for battery comissioned in 2025, will account for years 2030 to 2049
+    -- so on for batteries comissioned up to year 2030, then the analogous for other types of assets
+    -- next for milestone year 2050, for the battery comissioned in 2020, will account for year 2050
+    -- so on for batteries comissioned up to year 2050, then the analogous for other types of assets
+    SELECT
+        am.milestone_year,
+        am.asset,
+        SUM(
+            POWER(
+                (1 + am.discount_rate),
+                -(year_val_table.year_val - am.commission_year)
+            )
+        ) AS discount_factor
+    FROM
+        ComissionedAssetsByMilestoneYear am
+    CROSS JOIN LATERAL (
+        SELECT s_val AS year_val
+        FROM GENERATE_SERIES(
+            am.milestone_year,
+            COALESCE(am.next_milestone_year - 1, am.milestone_year)
+        ) AS s(s_val)
+    ) AS year_val_table
+    GROUP BY
+        am.milestone_year,
+        am.asset
+)
 ";
 
 const UNIT_ON_COST_SQL: &str = "
+-- using DISCOUNT_FACTOR_ASSETS_CTE
 SELECT
     yd.year AS milestone_year,
     a.asset,
     SUM(
-        a.discount_rate
+        df.discount_factor
         * COALESCE(am.units_on_cost, 0) 
         * (vuo.solution / a.capacity) 
         * rpm.weight
         * (vuo.time_block_end - vuo.time_block_start + 1) 
+        * rpd.resolution
     ) AS unit_on_cost
 FROM
     year_data AS yd
 JOIN
     rep_periods_mapping AS rpm ON yd.year = rpm.year
+JOIN
+    rep_periods_data AS rpd ON yd.year = rpm.year AND rpd.rep_period = rpm.rep_period  
 JOIN
     asset_milestone AS am ON yd.year = am.milestone_year
 JOIN
@@ -128,6 +246,8 @@ JOIN
     var_units_on AS vuo ON a.asset = vuo.asset 
                          AND rpm.rep_period = vuo.rep_period
                          AND rpm.year = vuo.year
+JOIN
+    DiscountFactorPerYearAndAsset AS df ON yd.year = df.milestone_year AND a.asset = df.asset
 WHERE
     yd.is_milestone = TRUE
     AND a.unit_commitment = TRUE
@@ -152,31 +272,37 @@ GROUP BY
 ";
 
 const FIXED_ASSET_COST_SQL: &str = "
-    SELECT
-        yd.year AS milestone_year,
-        a.asset,
-        SUM(
-            a.discount_rate * a.capacity * ac.fixed_cost * ab.initial_units
-            +
-            CASE
-                WHEN a.type = 'storage' THEN
-                    a.discount_rate * a.capacity_storage_energy * ac.fixed_cost_storage_energy * ab.initial_storage_units
-                ELSE
-                    0
-            END
-        ) AS assets_fixed_cost
-    FROM
-        year_data AS yd
-    JOIN
-        asset_both AS ab ON ab.milestone_year = yd.year
-    JOIN
-        asset AS a ON ab.asset = a.asset
-    JOIN
-        asset_commission AS ac ON a.asset = ac.asset
-    WHERE
-        yd.is_milestone = TRUE
+-- using DISCOUNT_FACTOR_ASSETS_CTE
+SELECT
+    yd.year AS milestone_year,
+    a.asset,
+    SUM(
+        df.discount_factor * a.capacity * ac.fixed_cost * ab.initial_units
+        +
+        CASE
+            WHEN a.type = 'storage' THEN
+                df.discount_factor * a.capacity_storage_energy * ac.fixed_cost_storage_energy * ab.initial_storage_units
+            ELSE
+                0
+        END
+    ) AS assets_fixed_cost
+FROM
+    year_data AS yd
+JOIN
+    asset_both AS ab ON ab.milestone_year = yd.year
+JOIN
+    asset AS a ON ab.asset = a.asset
+JOIN
+    asset_commission AS ac ON a.asset = ac.asset
+JOIN
+    DiscountFactorPerYearAndAsset AS df ON yd.year = df.milestone_year AND a.asset = df.asset
+WHERE
+    yd.is_milestone = TRUE
     AND yd.year BETWEEN ab.commission_year AND (ab.commission_year + a.technical_lifetime)
-    GROUP BY
-        yd.year,
-        a.asset;
+GROUP BY
+    yd.year,
+    a.asset
+ORDER BY
+    a.asset,
+    yd.year;
 ";

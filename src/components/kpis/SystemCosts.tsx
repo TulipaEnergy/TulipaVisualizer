@@ -1,9 +1,15 @@
 import { Text, Container, Loader, Paper, Stack } from "@mantine/core";
 import { useState, useEffect } from "react";
 import ReactECharts from "echarts-for-react";
+import * as echarts from "echarts";
+
 import {
   getAssetCostsByYear,
   getFlowCostsByYear,
+  FlowSystemCostPerYear,
+  AssetSystemCostPerYear,
+  getUniqueCarriers,
+  getUniqueYears,
 } from "../../services/systemCosts";
 import useVisualizationStore from "../../store/visualizationStore";
 
@@ -11,10 +17,12 @@ interface SystemCostsProps {
   graphId: string;
 }
 
+type EChartsOption = echarts.EChartsOption;
+
 const SystemCosts: React.FC<SystemCostsProps> = ({ graphId }) => {
   const [loadingData, setLoadingData] = useState<boolean>(true);
   const [errorData, setErrorData] = useState<string | null>(null);
-  const [chartOptions, setChartOptions] = useState<any>(null);
+  const [chartOptions, setChartOptions] = useState<EChartsOption | null>(null);
   const { getGraphDatabase } = useVisualizationStore();
   const dbFilePath = getGraphDatabase(graphId);
 
@@ -32,61 +40,13 @@ const SystemCosts: React.FC<SystemCostsProps> = ({ graphId }) => {
       }
 
       try {
-        const assetData: {
-          year: number;
-          asset_fixed_costs: number;
-          unit_on_costs: number;
-        }[] = await getAssetCostsByYear(dbFilePath);
+        const [series, legendData, years] = await getSeries(dbFilePath);
 
-        const flowData: {
-          year: number;
-          flow_fixed_costs: number;
-          flow_variable_costs: number;
-        }[] = await getFlowCostsByYear(dbFilePath);
-
-        // Check if we got any data
-        if (assetData.length === 0 && flowData.length === 0) {
-          setErrorData("No system cost data found in the selected database");
-          setLoadingData(false);
-          return;
-        }
-
-        // Define a single series for the total fixed cost
-        const series = [
-          {
-            name: "Asset Fixed",
-            type: "bar",
-            data: assetData.map((i) => i.asset_fixed_costs),
-            stack: "Asset Costs",
-          },
-          {
-            name: "Unit On",
-            type: "bar",
-            data: assetData.map((i) => i.unit_on_costs),
-            stack: "Asset Costs",
-          },
-          {
-            name: "Flow Fixed",
-            type: "bar",
-            data: flowData.map((i) => i.flow_fixed_costs),
-            stack: "Flow Costs",
-          },
-          {
-            name: "Flow Variable",
-            type: "bar",
-            data: flowData.map((i) => i.flow_variable_costs),
-            stack: "Flow Costs",
-          },
-        ];
-
-        const years = [
-          ...new Set([...assetData, ...flowData].map((item) => item.year)),
-        ].sort((a, b) => a - b);
-
-        const option = {
+        const option: EChartsOption = {
           title: {
-            text: "Total Asset and Flow Costs by Year", // Updated chart title
+            text: "Asset & Flow Operation Costs",
             left: "center",
+            subtext: "by Year, with flows grouped by Carrier",
           },
           tooltip: {
             trigger: "axis",
@@ -95,26 +55,55 @@ const SystemCosts: React.FC<SystemCostsProps> = ({ graphId }) => {
             },
             formatter: function (params: any[]) {
               let totalCost = 0;
-              let tooltipContent = `<strong>${params[0].name}</strong><br/>`; // Year
-              params.forEach((item) => {
-                totalCost += item.value as number;
-                tooltipContent +=
-                  `<span style="display:inline-block;margin-right:4px;border-radius:10px;width:10px;height:10px;background-color:${item.color};"></span>` +
-                  `${item.seriesName}: ${Number(item.value).toFixed(2)}<br/>`;
+              let tooltipContent = `<strong>${params[0].name}</strong><br/>`;
+
+              // Sort params to group fixed and variable costs, and then by carrier
+              const sortedParams = [...params].sort((a, b) => {
+                const nameA = a.seriesName.toLowerCase();
+                const nameB = b.seriesName.toLowerCase();
+
+                // Prioritize Asset costs
+                if (nameA.includes("asset") && !nameB.includes("asset"))
+                  return -1;
+                if (!nameA.includes("asset") && nameB.includes("asset"))
+                  return 1;
+
+                // Then group fixed vs variable
+                if (nameA.includes("fixed") && !nameB.includes("fixed"))
+                  return -1;
+                if (!nameA.includes("fixed") && nameB.includes("fixed"))
+                  return 1;
+
+                // Then by carrier name
+                return nameA.localeCompare(nameB);
               });
-              tooltipContent += `<hr style="margin: 5px 0;"/><strong>Total: ${totalCost.toFixed(2)}</strong>`;
+
+              sortedParams.forEach((item) => {
+                if (
+                  item.value !== null &&
+                  item.value !== undefined &&
+                  item.value !== 0
+                ) {
+                  totalCost += item.value as number;
+                  tooltipContent +=
+                    `<span style="display:inline-block;margin-right:4px;border-radius:10px;width:10px;height:10px;background-color:${item.color};"></span>` +
+                    `${item.seriesName}: ${Number(item.value).toFixed(2)}<br/>`;
+                }
+              });
+              tooltipContent += `<hr style="margin: 5px 0;"/><strong>Total: ${totalCost.toFixed(
+                2,
+              )}</strong>`;
               return tooltipContent;
             },
-          },
+          } as any,
           legend: {
-            // Update legend data to match all new series names
-            data: ["Asset Fixed", "Unit On", "Flow Fixed", "Flow Variable"],
+            data: legendData,
             bottom: "0%",
             type: "scroll",
           },
           xAxis: {
             type: "category",
-            data: years, // Use the combined and sorted years for the x-axis categories
+            data: years,
             name: "Year",
             nameLocation: "end",
             nameTextStyle: {
@@ -133,16 +122,19 @@ const SystemCosts: React.FC<SystemCostsProps> = ({ graphId }) => {
               formatter: "{value}",
             },
           },
+          dataZoom: {
+            bottom: "10%",
+            minSpan: Math.floor(100 / years.length) - 1,
+          },
           grid: {
             left: "3%",
             right: "4%",
-            top: "10%",
-            bottom: "15%",
+            top: "20%",
+            bottom: "20%",
             containLabel: true,
           },
           series: series,
         };
-
         setChartOptions(option);
       } catch (err) {
         console.error("Error fetching or processing data for chart:", err);
@@ -222,5 +214,83 @@ const SystemCosts: React.FC<SystemCostsProps> = ({ graphId }) => {
     </Container>
   );
 };
+
+async function getSeries(
+  dbFilePath: string,
+): Promise<[echarts.SeriesOption[], string[], number[]]> {
+  const assetData: AssetSystemCostPerYear[] =
+    await getAssetCostsByYear(dbFilePath);
+
+  const flowData: FlowSystemCostPerYear[] =
+    await getFlowCostsByYear(dbFilePath);
+
+  const years = getUniqueYears(assetData, flowData);
+  const uniqueCarriers = getUniqueCarriers(flowData);
+
+  const series: echarts.BarSeriesOption[] = [
+    {
+      name: "Asset - Fixed",
+      type: "bar",
+      data: years.map((year) => {
+        const yearData = assetData.find((d) => d.year === year);
+        return yearData ? yearData.asset_fixed_costs : 0;
+      }),
+      stack: "Asset Costs",
+    },
+    {
+      name: "Asset - Unit On",
+      type: "bar",
+      data: years.map((year) => {
+        const yearData = assetData.find((d) => d.year === year);
+        return yearData ? yearData.unit_on_costs : 0;
+      }),
+      stack: "Asset Costs",
+    },
+  ];
+
+  const legendData: string[] = ["Asset - Fixed", "Asset - Unit On"];
+
+  uniqueCarriers.forEach((carrier) => {
+    let foundData = false;
+    series.push({
+      name: `Flow Fixed - ${carrier}`,
+      type: "bar",
+      data: years.map((year) => {
+        const yearData = flowData.find((d) => d.year === year);
+        if (yearData?.flow_fixed_costs_by_carrier[carrier]) {
+          foundData = true;
+          return yearData?.flow_fixed_costs_by_carrier[carrier];
+        } else {
+          return 0;
+        }
+      }),
+      stack: "Flow Costs",
+    });
+    if (foundData) {
+      legendData.push(`Flow Fixed - ${carrier}`);
+    }
+
+    foundData = false;
+    series.push({
+      name: `Flow Variable - ${carrier}`,
+      type: "bar",
+      data: years.map((year) => {
+        const yearData = flowData.find((d) => d.year === year);
+        if (yearData?.flow_variable_costs_by_carrier[carrier]) {
+          foundData = true;
+          return yearData?.flow_variable_costs_by_carrier[carrier];
+        } else {
+          return 0;
+        }
+      }),
+      stack: "Flow Costs",
+    });
+    if (foundData) {
+      legendData.push(`Flow Variable - ${carrier}`);
+    }
+  });
+
+  return [series, legendData, years];
+}
 
 export default SystemCosts;
