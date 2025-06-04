@@ -7,6 +7,7 @@ export type ChartType =
   | "system-costs"
   | "production-prices"
   | "production-prices-period"
+  | "production-prices-duration-series"
   | "storage-prices"
   | "default";
 

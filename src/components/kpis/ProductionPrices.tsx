@@ -2,18 +2,18 @@ import { Text, Container, Loader, Paper, Stack } from "@mantine/core";
 import { useState, useEffect } from "react";
 import ReactECharts from "echarts-for-react";
 import {
-  getProductionPricePeriod,
-  ProductionPricePeriodRow,
+  getProductionPriceDurationSeries,
+  ProductionPriceDurationSeriesRow,
 } from "../../services/productionPriceQuery";
 import useVisualizationStore from "../../store/visualizationStore";
 
-interface ProductionPricesPeriodProps {
+interface ProductionPricesDurationSeriesProps {
   graphId: string;
 }
 
-const ProductionPricesPeriod: React.FC<ProductionPricesPeriodProps> = ({
-  graphId,
-}) => {
+const ProductionPricesDurationSeries: React.FC<
+  ProductionPricesDurationSeriesProps
+> = ({ graphId }) => {
   const { getGraphDatabase } = useVisualizationStore();
   const [loadingData, setLoadingData] = useState(true);
   const [errorData, setErrorData] = useState<string | null>(null);
@@ -30,24 +30,25 @@ const ProductionPricesPeriod: React.FC<ProductionPricesPeriodProps> = ({
 
       try {
         setLoadingData(true);
-        const data: ProductionPricePeriodRow[] =
-          await getProductionPricePeriod(dbPath);
+        const data: ProductionPriceDurationSeriesRow[] =
+          await getProductionPriceDurationSeries(dbPath);
 
         // Sort and compute cumulative x start for each period
         const sorted = [...data].sort(
-          (a, b) => a.milestone_year - b.milestone_year || a.period - b.period,
+          (a, b) =>
+            a.milestone_year - b.milestone_year ||
+            a.period - b.period ||
+            a.start - b.start,
         );
 
         let currentX = 0;
         const xMap = new Map<string, number>();
-        const barWidths = new Map<string, number>();
 
         for (const row of sorted) {
-          const key = `${row.milestone_year}-P${row.period}`;
+          const key = `${row.milestone_year}-P${row.period}-${row.start}`;
           if (!xMap.has(key)) {
-            currentX += row.length;
+            currentX += row.end - row.start;
             xMap.set(key, currentX);
-            barWidths.set(key, row.length);
           }
         }
 
@@ -56,11 +57,12 @@ const ProductionPricesPeriod: React.FC<ProductionPricesPeriodProps> = ({
           { name: string; value: [number, number, number] }[]
         >();
         for (const d of sorted) {
-          const key = `${d.milestone_year}-P${d.period}`;
+          const key = `${d.milestone_year}-P${d.period}-${d.start}`;
           const xEnd = xMap.get(key)!;
-          const width = barWidths.get(key)!;
+          const width = d.end - d.start;
+          const keyToShow = `${d.milestone_year}, hours ${xEnd - width}-${xEnd}`;
           const entry = {
-            name: `${d.asset} (${key})`,
+            name: `${d.asset} (${keyToShow})`,
             value: [xEnd, width, d.y_axis] as [number, number, number],
           };
           if (!groupedByAsset.has(d.asset)) {
@@ -71,7 +73,7 @@ const ProductionPricesPeriod: React.FC<ProductionPricesPeriodProps> = ({
 
         const chartOption = {
           title: {
-            text: "Assets Production Price by Period",
+            text: "Assets Production Price Duration Series",
             left: "center",
           },
           tooltip: {
@@ -86,7 +88,7 @@ const ProductionPricesPeriod: React.FC<ProductionPricesPeriodProps> = ({
           },
           xAxis: {
             type: "value",
-            name: "Time in Periods",
+            name: "Time in Hours",
             nameLocation: "middle",
             nameGap: 30,
             axisLabel: {
@@ -215,4 +217,4 @@ const ProductionPricesPeriod: React.FC<ProductionPricesPeriodProps> = ({
   );
 };
 
-export default ProductionPricesPeriod;
+export default ProductionPricesDurationSeries;
