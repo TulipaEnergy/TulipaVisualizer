@@ -24,7 +24,8 @@ pub fn run() {
             system_cost::get_variable_flow_cost,
             system_cost::get_unit_on_cost,
             transport_price::get_transportation_price,
-            transport_price::get_transportation_price])
+            production_price::get_production_price_period,
+            production_price::get_production_price_duration_series])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

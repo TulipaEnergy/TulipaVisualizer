@@ -1,8 +1,8 @@
 use duckdb::arrow::{array::RecordBatch, datatypes::Schema};
 use tauri::ipc::Response;
 use crate::services::query_builder::build_time_weighted_query;
+use crate::services::query_builder::build_duration_series_query;
 use crate::duckdb::{run_query_rb, serialize_recordbatch};
-
 
 #[tauri::command]
 pub fn get_production_price(db_path: String) -> Result<Response, String> {
@@ -14,6 +14,19 @@ pub fn get_production_price(db_path: String) -> Result<Response, String> {
 #[tauri::command]
 pub fn get_production_price_period(db_path: String) -> Result<Response, String> {
     let sql = build_time_weighted_query(
+        "cons_balance_consumer",
+        "dual_balance_consumer",
+        &["asset"]
+    );
+    let res: (Vec<RecordBatch>, Schema) = run_query_rb(db_path, sql, [].to_vec())?;
+
+    return serialize_recordbatch(res.0, res.1);
+
+}
+
+#[tauri::command]
+pub fn get_production_price_duration_series(db_path: String) -> Result<Response, String> {
+    let sql = build_duration_series_query(
         "cons_balance_consumer",
         "dual_balance_consumer",
         &["asset"]
