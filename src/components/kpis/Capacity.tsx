@@ -235,7 +235,7 @@ const Capacity: React.FC<CapacityProps> = ({ graphId }) => {
       setErrorData(null);
       setChartOptions(null);
 
-      const asset = graph.options?.asset;
+      const asset = (graph.options as CapacityOptions)?.asset;
 
       if (!asset) {
         console.log("NO ASSET, RESETTING YEARS");
@@ -250,7 +250,7 @@ const Capacity: React.FC<CapacityProps> = ({ graphId }) => {
 
         // Check if current year selections are still valid, and reset if not
         let needsUpdate = false;
-        const newOptions = { ...graph.options };
+        const newOptions = { ...(graph.options as CapacityOptions) };
 
         if (
           newOptions.startYear != null &&
@@ -277,9 +277,9 @@ const Capacity: React.FC<CapacityProps> = ({ graphId }) => {
 
       // Check if all required inputs are available. If any is missing, it shows it on the UI.
       if (
-        !graph.options?.asset ||
-        !graph.options.startYear ||
-        !graph.options.endYear
+        !(graph.options as CapacityOptions)?.asset ||
+        !(graph.options as CapacityOptions).startYear ||
+        !(graph.options as CapacityOptions).endYear
       ) {
         console.log("NO GRAPH OPTIONS");
         setChartOptions(null);
@@ -289,10 +289,11 @@ const Capacity: React.FC<CapacityProps> = ({ graphId }) => {
       // All required inputs have values.
       try {
         console.log("GENERATING GRAPH for: " + JSON.stringify(graph.options));
+        const capacityOptions = graph.options as CapacityOptions;
         const option = await capacityGraph(
-          graph.options.asset,
-          graph.options.startYear,
-          graph.options.endYear,
+          capacityOptions.asset!,
+          capacityOptions.startYear!,
+          capacityOptions.endYear!,
           dbFilePath,
         );
         setChartOptions(option);
@@ -308,7 +309,7 @@ const Capacity: React.FC<CapacityProps> = ({ graphId }) => {
     if (value) {
       updateGraph(graph.id, {
         options: {
-          ...graph.options,
+          ...(graph.options as CapacityOptions),
           asset: value,
         } as CapacityOptions,
       });
@@ -318,14 +319,18 @@ const Capacity: React.FC<CapacityProps> = ({ graphId }) => {
   const handleStartChange = (value: string | null) => {
     const year = value ? parseInt(value, 10) : null;
     if (year != null) {
-      updateGraph(graph.id, { options: { ...graph.options, startYear: year } });
+      updateGraph(graph.id, {
+        options: { ...(graph.options as CapacityOptions), startYear: year },
+      });
     }
   };
 
   const handleEndChange = (value: string | null) => {
     const year = value ? parseInt(value, 10) : null;
     if (year != null) {
-      updateGraph(graph.id, { options: { ...graph.options, endYear: year } });
+      updateGraph(graph.id, {
+        options: { ...(graph.options as CapacityOptions), endYear: year },
+      });
     }
   };
 
@@ -333,7 +338,7 @@ const Capacity: React.FC<CapacityProps> = ({ graphId }) => {
     <Stack>
       <Group>
         <Select
-          value={graph.options?.asset || null}
+          value={(graph.options as CapacityOptions)?.asset || null}
           onChange={handleAssetChange}
           data={assets.map((a) => ({ value: a, label: a }))}
           placeholder={assets.length ? "Select asset" : ""}
@@ -343,12 +348,14 @@ const Capacity: React.FC<CapacityProps> = ({ graphId }) => {
 
         <Select
           placeholder="Start Year"
-          value={graph.options?.startYear?.toString() || null}
+          value={
+            (graph.options as CapacityOptions)?.startYear?.toString() || null
+          }
           onChange={handleStartChange}
           data={availableYears
             .filter((y) =>
-              graph?.options?.endYear != null
-                ? y <= graph.options.endYear
+              (graph.options as CapacityOptions)?.endYear != null
+                ? y <= (graph.options as CapacityOptions).endYear!
                 : true,
             )
             .map((y) => ({ value: y.toString(), label: y.toString() }))}
@@ -358,12 +365,14 @@ const Capacity: React.FC<CapacityProps> = ({ graphId }) => {
 
         <Select
           placeholder="End Year"
-          value={graph.options?.endYear?.toString() || null}
+          value={
+            (graph.options as CapacityOptions)?.endYear?.toString() || null
+          }
           onChange={handleEndChange}
           data={availableYears
             .filter((y) =>
-              graph?.options?.startYear != null
-                ? y >= graph.options.startYear
+              (graph.options as CapacityOptions)?.startYear != null
+                ? y >= (graph.options as CapacityOptions).startYear!
                 : true,
             )
             .map((y) => ({ value: y.toString(), label: y.toString() }))}
