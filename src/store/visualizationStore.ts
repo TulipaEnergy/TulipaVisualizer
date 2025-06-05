@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { EnergyFlowOptions } from "../types/GeoEnergyFlow";
 
 export type Resolution = "hour" | "day" | "week" | "month" | "year";
 export type ChartType =
@@ -8,6 +9,7 @@ export type ChartType =
   | "production-prices"
   | "production-prices-period"
   | "storage-prices"
+  | "geo-imports-exports"
   | "default";
 
 export interface DateRange {
@@ -21,13 +23,16 @@ export interface CapacityOptions {
   endYear?: number;
 }
 
+// Union type for all possible chart options
+export type ChartOptions = CapacityOptions | EnergyFlowOptions;
+
 export interface GraphConfig {
   id: string;
   type: ChartType;
   title: string;
   error: string | null;
   isLoading: boolean;
-  options: CapacityOptions | null; // Each KPI should define its own options structure
+  options: ChartOptions | null;
   graphDBFilePath: string | null; // For when each graph has its own DB file
 }
 

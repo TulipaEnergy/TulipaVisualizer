@@ -26,3 +26,5 @@ coverage
 *.sln
 *.sw?
 .cursor
+.scannerwork
+sonar-project.properties

@@ -18,6 +18,7 @@ import Capacity from "./kpis/Capacity";
 import SystemCosts from "./kpis/SystemCosts";
 import ProductionPricesPeriod from "./kpis/ProductionPrices";
 import StoragePrices from "./kpis/Storage Prices";
+import GeoImportsExports from "./kpis/GeoImportsExports";
 
 interface GraphCardProps {
   graphId: string;
@@ -38,6 +39,7 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
     { value: "system-costs", label: "System Costs" },
     { value: "production-prices-period", label: "Production Prices" },
     { value: "storage-prices", label: "Storage Prices" },
+    { value: "geo-imports-exports", label: "Geographical Imports/Exports" },
     { value: "database", label: "Database View" },
   ];
 
@@ -203,6 +205,8 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
             <StoragePrices graphId={graphId} />
           ) : graph.type === "capacity" ? (
             <Capacity graphId={graphId} />
+          ) : graph.type === "geo-imports-exports" ? (
+            <GeoImportsExports graphId={graphId} />
           ) : (
             <Flex h="100%" justify="center" align="center">
               <Text c="dimmed"> Please select a chart type above </Text>
