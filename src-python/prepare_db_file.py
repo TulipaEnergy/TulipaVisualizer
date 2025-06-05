@@ -3,8 +3,8 @@ import duckdb
 import random
 import shutil
 import os
+import polars as pl
 
-# 1) user interaction
 def get_duckdb_in_path():
     Tk().withdraw()   
     file = filedialog.askopenfilename(filetypes=[("duckdb file", ".duckdb")])
@@ -15,8 +15,43 @@ def get_duckdb_out_path():
     file = filedialog.asksaveasfilename(filetypes=[("duckdb file", ".duckdb")])
     return file
 
+category_df = pl.DataFrame({
+    'name': ['location', 'Netherlands', 'Belgium', 'South Holland', 'North Holland', 'Antwerp', 'technology', 'renewable', 'fossil', 'solar', 'wind', 'ccgt'],
+    'parent_id': [None, 1, 1, 2, 2, 3, None, 7, 7, 8, 8, 9],
+    'level': [-1, 1, 1, 0, 0, 0, -1, 1, 1, 0, 0, 0]
+})
 
-# 2) create a copy of duckdb file
+recursive_root_leaf_sql = """
+    -- https://duckdb.org/docs/stable/sql/query_syntax/with.html#recursive-ctes
+    WITH RECURSIVE RootLeafID_unfiltered (
+        root_id, leaf_id
+    ) AS (
+        -- Base case
+        SELECT c.id, c.id
+            FROM category c
+            WHERE c.level = -1
+        UNION ALL
+        -- Recursive step
+        SELECT rl.root_id, c.id
+            FROM RootLeafID_unfiltered rl
+            JOIN category c ON c.parent_id = rl.leaf_id
+            -- will terminate when leaf because no more rows will be added
+    ),
+    RootLeafID as (
+        SELECT rl.* 
+            FROM RootLeafID_unfiltered rl
+            JOIN category c ON c.id = rl.leaf_id
+            WHERE c.level = 0
+    )
+
+    SELECT rl.*
+        FROM RootLeafID rl
+        JOIN category c ON c.id = rl.leaf_id
+        ORDER BY rl.root_id, rl.leaf_id
+"""
+
+
+# 1) select in- and output-file
 file = get_duckdb_in_path()
 out_path = get_duckdb_out_path()
 shutil.copy2(file, out_path)
@@ -77,40 +112,42 @@ try:
     """)
 
     # 4c) insert some example data
-    conn.execute("""
-        INSERT INTO category (name, parent_id, level) VALUES
-            ('Netherlands', NULL, 1),
-            ('Belgium', NULL, 1);
-        INSERT INTO category (name, parent_id, level) VALUES
-            ('South-Holland', 1, 0),
-            ('North-Holland', 1, 0),
-            ('Antwerp', 2, 0);
-    """)
+    # row by row because otherwise, foreign key on self is violated
+    for row in category_df.iter_rows():
+        conn.execute("""
+            INSERT INTO category (name, parent_id, level)
+            VALUES (?, ?, ?)
+        """, (row[0], row[1], row[2]))
 
 
-    # 5) create asset_metadata table (asset_id, category_id) (later also things like coordinates and energy carrier type)
+    # 5) create asset_category table ...
     # 5a) create table
     conn.execute("""
-        CREATE TABLE asset_metadata(
-            asset VARCHAR PRIMARY KEY REFERENCES asset(asset),
-            category_id INTEGER NOT NULL REFERENCES category(id)
+        CREATE TABLE asset_category(
+            asset VARCHAR REFERENCES asset(asset),
+            root_id INTEGER NOT NULL REFERENCES category(id),
+            leaf_id INTEGER NOT NULL REFERENCES category(id),
+            PRIMARY KEY (asset, root_id)
         );
     """)
 
     # 6) randomly add metadata for each asset
-    # 6a) select al level-0 category-ids
-    cat_ids = conn.execute("""
-        SELECT id FROM category
-            WHERE level = 0;
-    """).fetchall()
+    # 6a) select al level-0 category-ids for two category types
+    rows = root_leaf_ids = conn.execute(recursive_root_leaf_sql).fetchall()
+    
+    grouped = {}
+    for root_id, leaf_id in rows:
+        grouped.setdefault(root_id, []).append(leaf_id)
     
     # 6b) for each row in asset, add a row in asset_metadata with a random L0-category assigned
     assets = conn.execute("SELECT asset FROM asset;").fetchall()
     
-    for (asset,) in assets:
-        (cat_id,) = random.choice(cat_ids)
-        conn.execute(f"INSERT INTO asset_metadata VALUES (?, ?);", (asset, cat_id))
-
+    for root_id in grouped.keys():
+        current_leave_ids = grouped.get(root_id)
+        for (asset,) in assets:
+            leaf_id = random.choice(current_leave_ids)
+            conn.execute(f"INSERT INTO asset_category VALUES (?, ?, ?);", (asset, root_id, leaf_id))
+    
 
 finally:
     # cleanup
