@@ -79,7 +79,7 @@ pub fn get_capacity(
     let sql = format!(r#"
 WITH years AS (
   SELECT DISTINCT year FROM (
-    SELECT commission_year AS year FROM asset_both WHERE asset = $1
+    SELECT milestone_year AS year FROM asset_both WHERE asset = $1
     UNION
     SELECT milestone_year AS year FROM var_assets_investment WHERE asset = $1
     UNION
@@ -98,22 +98,22 @@ SELECT
     (
       SELECT COALESCE(SUM(initial_units),0)
       FROM asset_both
-      WHERE asset = $1 AND commission_year <= y.year
+      WHERE asset = $1 AND milestone_year = y.year
     )
     + {inv_upto}
     - {dec_upto}
-  ) * c.capacity AS installed_capacity,
+  ) * c.capacity AS final_capacity,
   (
     (
       SELECT COALESCE(SUM(initial_units),0)
       FROM asset_both
-      WHERE asset = $1 AND commission_year <= y.year
+      WHERE asset = $1 AND milestone_year = y.year
     )
     + {inv_before}
     - {dec_before}
-  ) * c.capacity AS old_capacity
+  ) * c.capacity AS initial_capacity
 FROM years y
-LEFT JOIN var_assets_investment   AS i ON (i.asset = $1 AND i.milestone_year = y.year)
+LEFT JOIN var_assets_investment AS i ON (i.asset = $1 AND i.milestone_year = y.year)
 LEFT JOIN var_assets_decommission AS d ON (d.asset = $1 AND d.milestone_year = y.year)
 CROSS JOIN capacity_val c
 ORDER BY y.year;
@@ -146,86 +146,9 @@ pub fn get_available_years(db_path: String, asset_name: String) -> Result<Respon
 
 // --- QUERIES ---
 
-/*
-const CAPACITY_SQL: &str = "
-WITH years AS (
-    SELECT DISTINCT year
-    FROM (
-        SELECT commission_year AS year
-        FROM asset_both
-        WHERE asset = $1
-        UNION
-        SELECT milestone_year AS year
-        FROM var_assets_investment
-        WHERE asset = $1
-        UNION
-        SELECT milestone_year AS year
-        FROM var_assets_decommission
-        WHERE asset = $1
-    ) t
-    WHERE year BETWEEN $2 AND $3
-),
-capacity_val AS (
-    SELECT capacity
-    FROM asset
-    WHERE asset = $1
-)
-SELECT 
-    y.year, 
-    COALESCE(i.solution * c.capacity, -1)    AS investment, 
-    COALESCE(d.solution * c.capacity, -1)    AS decommission,
-    -- total installed capacity at end of this year
-    (
-        (
-            SELECT COALESCE(SUM(initial_units), 0)
-            FROM asset_both
-            WHERE asset = $1
-              AND commission_year <= y.year
-        ) + (
-            SELECT COALESCE(SUM(solution), 0)
-            FROM var_assets_investment
-            WHERE asset = $1
-              AND milestone_year <= y.year
-        ) - (
-            SELECT COALESCE(SUM(solution), 0)
-            FROM var_assets_decommission
-            WHERE asset = $1
-              AND milestone_year <= y.year
-        )
-    ) * c.capacity AS installed_capacity,
-    -- capacity *before* this year's investments/decommissions but *including* this year's initial_units
-    (
-        (
-            SELECT COALESCE(SUM(initial_units), 0)
-            FROM asset_both
-            WHERE asset = $1
-              AND commission_year <= y.year
-        ) + (
-            SELECT COALESCE(SUM(solution), 0)
-            FROM var_assets_investment
-            WHERE asset = $1
-              AND milestone_year < y.year
-        ) - (
-            SELECT COALESCE(SUM(solution), 0)
-            FROM var_assets_decommission
-            WHERE asset = $1
-              AND milestone_year < y.year
-        )
-    ) * c.capacity AS old_capacity
-FROM years y
-LEFT JOIN var_assets_investment AS i
-    ON i.asset = $1 AND i.milestone_year = y.year
-LEFT JOIN var_assets_decommission AS d
-    ON d.asset = $1 AND d.milestone_year = y.year
-CROSS JOIN capacity_val c
-ORDER BY y.year;
-";
-*/
-
-
 const AVAILABLE_YEARS_SQL: &str = "
 SELECT DISTINCT year FROM (
-    SELECT commission_year AS year, asset FROM asset_both
+    SELECT milestone_year AS year, asset FROM asset_both
     UNION
     SELECT milestone_year AS year, asset FROM var_assets_investment
     UNION

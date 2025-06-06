@@ -30,8 +30,8 @@ const capacityGraph = async (
   const data = await getCapacity(db, asset, startYear, endYear);
   const round2 = (v: number) => Math.round(v * 100) / 100; // round to 2 decimals
   const years = data.map((d) => d.year.toString());
-  const new_capacities = data.map((d) => round2(d.installed_capacity));
-  const old_capacities = data.map((d) => round2(d.old_capacity));
+  const final_capacities = data.map((d) => round2(d.final_capacity));
+  const initial_capacities = data.map((d) => round2(d.initial_capacity));
   const investments = data.map((d) =>
     d.investment >= 0 ? round2(d.investment) : null,
   );
@@ -56,9 +56,9 @@ const capacityGraph = async (
   // The 4 bars
   const series: BarSeriesOption[] = [
     {
-      name: "Old Capacity",
+      name: "Initial Capacity",
       type: "bar",
-      data: old_capacities,
+      data: initial_capacities,
       itemStyle: { color: "#8A8A8A" },
       stack: "old",
       emphasis: { focus: "series" },
@@ -92,9 +92,9 @@ const capacityGraph = async (
       emphasis: { focus: "series" },
     },
     {
-      name: "New Capacity",
+      name: "Final Capacity",
       type: "bar",
-      data: new_capacities,
+      data: final_capacities,
       itemStyle: { color: "#5470C6" },
       barGap: "5%",
       stack: "new",
@@ -162,7 +162,12 @@ const capacityGraph = async (
     title: { text: "Capacity by Year", left: "center" },
     tooltip,
     legend: {
-      data: ["New Capacity", "Investment", "Decommission", "Old Capacity"],
+      data: [
+        "Final Capacity",
+        "Investment",
+        "Decommission",
+        "Initial Capacity",
+      ],
       bottom: "0%",
       type: "scroll",
     },
