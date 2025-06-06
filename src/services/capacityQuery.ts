@@ -19,8 +19,8 @@ type CapacityJson = {
   year: number;
   investment: number;
   decommission: number;
-  old_capacity: number;
-  installed_capacity: number;
+  initial_capacity: number;
+  final_capacity: number;
 };
 
 // TO BE MOVED IN TESTING FILE AFTER BACKEND REFACTOR
