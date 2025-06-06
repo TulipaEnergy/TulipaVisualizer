@@ -16,16 +16,15 @@ pub fn run() {
             capacity::get_available_years,
             metadata::get_assets,
             metadata::get_tables,
-            production_price::get_production_price,
-            production_price::get_production_price_period,
+            production_price::get_production_price_yearly,
             storage_price::get_storage_price,
             system_cost::get_fixed_asset_cost,
             system_cost::get_fixed_flow_cost,
             system_cost::get_variable_flow_cost,
             system_cost::get_unit_on_cost,
             transport_price::get_transportation_price,
-            production_price::get_production_price_period,
-            production_price::get_production_price_duration_series])
+            production_price::get_production_price_resolution,
+            production_price::get_production_years])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
