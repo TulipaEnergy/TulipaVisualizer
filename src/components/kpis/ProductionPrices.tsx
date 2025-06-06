@@ -1,11 +1,21 @@
-import { Text, Container, Loader, Paper, Stack } from "@mantine/core";
+import {
+  Text,
+  Container,
+  Loader,
+  Paper,
+  Stack,
+  Select,
+  Group,
+} from "@mantine/core";
 import { useState, useEffect } from "react";
 import ReactECharts from "echarts-for-react";
 import {
   getProductionPriceDurationSeries,
   ProductionPriceDurationSeriesRow,
+  getProductionYears,
 } from "../../services/productionPriceQuery";
 import useVisualizationStore from "../../store/visualizationStore";
+import { Resolution } from "../../types/resolution";
 
 interface ProductionPricesDurationSeriesProps {
   graphId: string;
@@ -18,8 +28,26 @@ const ProductionPricesDurationSeries: React.FC<
   const [loadingData, setLoadingData] = useState(true);
   const [errorData, setErrorData] = useState<string | null>(null);
   const [chartOptions, setChartOptions] = useState<any>(null);
+  const [resolution, setResolution] = useState<Resolution>(Resolution.Hours);
+  const [year, setYear] = useState<number | null>(null);
+  const [availableYears, setAvailableYears] = useState<number[]>([]);
 
   const dbPath = getGraphDatabase(graphId);
+
+  useEffect(() => {
+    const fetchYears = async () => {
+      try {
+        const years = await getProductionYears(dbPath!);
+        setAvailableYears(years.map((y) => y.year));
+        if (!year && years.length > 0) {
+          setYear(years[0].year);
+        }
+      } catch (err) {
+        console.error("Failed to fetch years:", err);
+      }
+    };
+    fetchYears();
+  }, [dbPath]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -28,41 +56,29 @@ const ProductionPricesDurationSeries: React.FC<
         return;
       }
 
+      if (year === null) {
+        setChartOptions(null);
+        setLoadingData(false);
+        return;
+      }
+
       try {
         setLoadingData(true);
+        if (year === null) return;
         const data: ProductionPriceDurationSeriesRow[] =
-          await getProductionPriceDurationSeries(dbPath);
-
-        // Sort and compute cumulative x start for each period
-        const sorted = [...data].sort(
-          (a, b) =>
-            a.milestone_year - b.milestone_year ||
-            a.period - b.period ||
-            a.start - b.start,
-        );
-
-        let currentX = 0;
-        const xMap = new Map<string, number>();
-
-        for (const row of sorted) {
-          const key = `${row.milestone_year}-P${row.period}-${row.start}`;
-          if (!xMap.has(key)) {
-            currentX += row.end - row.start;
-            xMap.set(key, currentX);
-          }
-        }
+          await getProductionPriceDurationSeries(dbPath, resolution, year);
 
         const groupedByAsset = new Map<
           string,
           { name: string; value: [number, number, number] }[]
         >();
-        for (const d of sorted) {
-          const key = `${d.milestone_year}-P${d.period}-${d.start}`;
-          const xEnd = xMap.get(key)!;
-          const width = d.end - d.start;
-          const keyToShow = `${d.milestone_year}, hours ${xEnd - width}-${xEnd}`;
+        for (const d of data) {
+          const key = `${d.milestone_year}, ${resolution} ${d.global_start}-${d.global_end}`;
+          const xEnd = d.global_end;
+          const width = d.global_end - d.global_start;
+
           const entry = {
-            name: `${d.asset} (${keyToShow})`,
+            name: `${d.asset} (${key})`,
             value: [xEnd, width, d.y_axis] as [number, number, number],
           };
           if (!groupedByAsset.has(d.asset)) {
@@ -82,13 +98,13 @@ const ProductionPricesDurationSeries: React.FC<
               const y = params.value[2];
               return `
                 <strong>${params.name}</strong><br/>
-                Price: ${y.toFixed(2)}
+                Price: ${y.toFixed(4)}
               `;
             },
           },
           xAxis: {
             type: "value",
-            name: "Time in Hours",
+            name: `Time in ${resolution}`,
             nameLocation: "middle",
             nameGap: 30,
             axisLabel: {
@@ -149,9 +165,9 @@ const ProductionPricesDurationSeries: React.FC<
     };
 
     fetchData();
-  }, [dbPath]);
+  }, [dbPath, resolution, year]);
 
-  if (loadingData) {
+  if (loadingData && year !== null) {
     return (
       <Container
         size="xl"
@@ -186,6 +202,47 @@ const ProductionPricesDurationSeries: React.FC<
   return (
     <Container size="xl" h="100%">
       <Stack>
+        <Group>
+          <Select
+            label="Resolution"
+            value={resolution}
+            onChange={(val) => {
+              if (!val) return;
+              if (val === resolution) {
+                return;
+              }
+              setResolution(val as Resolution);
+            }}
+            data={[
+              { value: Resolution.Hours, label: "Hours" },
+              { value: Resolution.Days, label: "Days" },
+              { value: Resolution.Weeks, label: "Weeks" },
+              { value: Resolution.Months, label: "Months" },
+              { value: Resolution.Years, label: "Years" },
+            ]}
+            size="xs"
+            style={{ maxWidth: 160 }}
+          />
+          <Select
+            label="Year"
+            value={year?.toString() || ""}
+            onChange={(val) => {
+              if (!val) return;
+              if (val === year?.toString()) {
+                return;
+              }
+              setYear(Number(val));
+            }}
+            data={availableYears.map((y) => ({
+              value: y.toString(),
+              label: y.toString(),
+            }))}
+            size="xs"
+            style={{ maxWidth: 160 }}
+            placeholder="Select year"
+            disabled={availableYears.length === 0}
+          />
+        </Group>
         {chartOptions ? (
           <Paper
             p="md"

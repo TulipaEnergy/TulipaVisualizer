@@ -1,13 +1,11 @@
 import { create } from "zustand";
 import { EnergyFlowOptions } from "../types/GeoEnergyFlow";
+import { Resolution } from "../types/resolution";
 
-export type Resolution = "hour" | "day" | "week" | "month" | "year";
 export type ChartType =
   | "capacity"
   | "database"
   | "system-costs"
-  | "production-prices"
-  | "production-prices-period"
   | "production-prices-duration-series"
   | "storage-prices"
   | "geo-imports-exports"
@@ -19,13 +17,23 @@ export interface DateRange {
 }
 
 export interface CapacityOptions {
+  type: "capacity";
   asset?: string;
   startYear?: number;
   endYear?: number;
 }
 
 // Union type for all possible chart options
-export type ChartOptions = CapacityOptions | EnergyFlowOptions;
+export type ChartOptions =
+  | CapacityOptions
+  | EnergyFlowOptions
+  | ProductionPriceOptions;
+
+export interface ProductionPriceOptions {
+  type: "production-prices";
+  resolution?: Resolution;
+  year?: number;
+}
 
 export interface GraphConfig {
   id: string;
@@ -33,7 +41,7 @@ export interface GraphConfig {
   title: string;
   error: string | null;
   isLoading: boolean;
-  options: ChartOptions | null;
+  options: ChartOptions | null; // Each KPI should define its own options structure
   graphDBFilePath: string | null; // For when each graph has its own DB file
 }
 
@@ -77,7 +85,7 @@ const useVisualizationStore = create<VisualizationState>((set, get) => ({
   databases: [],
 
   // Visualization settings
-  resolution: "day",
+  resolution: Resolution.Days,
   dateRange: { startDate: new Date(), endDate: new Date() },
   graphs: [],
 

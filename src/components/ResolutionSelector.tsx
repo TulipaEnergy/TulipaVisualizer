@@ -1,4 +1,4 @@
-import { Resolution } from "../store/visualizationStore";
+import { Resolution } from "../types/resolution";
 import useVisualizationStore from "../store/visualizationStore";
 import { Group, Text, Select } from "@mantine/core";
 
@@ -26,11 +26,10 @@ const ResolutionSelector: React.FC<ResolutionSelectorProps> = ({
         value={resolution}
         onChange={handleChange}
         data={[
-          { value: "minute", label: "Minute" },
-          { value: "hour", label: "Hour" },
-          { value: "day", label: "Day" },
-          { value: "week", label: "Week" },
-          { value: "month", label: "Month" },
+          { value: "hours", label: "Hour" },
+          { value: "days", label: "Day" },
+          { value: "weeks", label: "Week" },
+          { value: "months", label: "Month" },
         ]}
         size="sm"
       />
