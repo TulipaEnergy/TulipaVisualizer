@@ -7,63 +7,54 @@ import {
   Stack,
   Box,
   Paper,
-  Accordion,
-  Code,
-  Grid,
   SimpleGrid,
 } from "@mantine/core";
 import "@mantine/core/styles.css"; // Import Mantine core styles
 import "./styles/index.css";
 import GraphCard from "./components/GraphCard";
 
-// Component to display the current state of both stores
-const StoreStateLogger = () => {
-  const visualizationState = useVisualizationStore();
-
-  return (
-    <Paper
-      withBorder
-      p="xs"
-      mt="md"
-      style={{
-        position: "fixed",
-        bottom: "20px",
-        right: "20px",
-        width: "40%",
-        maxHeight: "50vh",
-        zIndex: 1000,
-        opacity: 0.9,
-      }}
-      shadow="md"
-    >
-      <Accordion>
-        <Accordion.Item value="visualization-state">
-          <Accordion.Control>Visualization Store State</Accordion.Control>
-          <Accordion.Panel>
-            <Box style={{ maxHeight: "40vh", overflow: "auto" }}>
-              <Code block>{JSON.stringify(visualizationState, null, 2)}</Code>
-            </Box>
-          </Accordion.Panel>
-        </Accordion.Item>
-      </Accordion>
-    </Paper>
-  );
-};
-
 export default function App() {
   const { addGraph, graphs, hasAnyDatabase } = useVisualizationStore();
 
   return (
-    <Stack p="md" h="100vh">
+    <Stack p={0} h="100vh">
       <Toolbar />
-      <Grid style={{ flex: 1 }}>
-        <Grid.Col span={3}>
-          <Paper withBorder p="md" h="100%">
+      <Box
+        style={{
+          display: "flex",
+          paddingTop: "80px",
+        }}
+      >
+        {/* Fixed Left Sidebar */}
+        <Box
+          style={{
+            position: "fixed",
+            left: 0,
+            top: "80px",
+            width: "25%",
+            height: "calc(100vh - 80px)",
+            zIndex: 100,
+          }}
+        >
+          <Paper
+            withBorder
+            p="md"
+            h="100%"
+            style={{ borderRadius: 0, overflow: "auto" }}
+          >
             <DatabaseList />
           </Paper>
-        </Grid.Col>
+        </Box>
 
-        <Grid.Col span={9}>
+        {/* Main Content Area */}
+        <Box
+          style={{
+            marginLeft: "25%",
+            width: "75%",
+            height: "100%",
+            overflow: "auto",
+          }}
+        >
           <Container
             fluid
             py="md"
@@ -110,10 +101,8 @@ export default function App() {
               </>
             )}
           </Container>
-        </Grid.Col>
-      </Grid>
-
-      <StoreStateLogger />
+        </Box>
+      </Box>
     </Stack>
   );
 }
