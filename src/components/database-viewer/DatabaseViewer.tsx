@@ -70,7 +70,7 @@ const DatabaseViewer: React.FC<DatabaseViewerProps> = ({ graphId }) => {
   // Handle table selection
   const handleTableSelect = (tableName: string) => {
     setSelectedTable(tableName);
-    setSqlQuery(`SELECT * FROM ${tableName} LIMIT 100;`);
+    setSqlQuery(`SELECT * FROM ${tableName};`);
   };
 
   const showTableSchema = (tableName: string) => {
