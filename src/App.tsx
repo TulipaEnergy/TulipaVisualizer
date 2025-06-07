@@ -1,4 +1,3 @@
-// import { runTest } from "./dbConn";
 import Toolbar from "./components/Toolbar";
 import DatabaseList from "./components/DatabaseList";
 import useVisualizationStore from "./store/visualizationStore";
