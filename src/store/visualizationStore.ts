@@ -11,11 +11,6 @@ export type ChartType =
   | "geo-imports-exports"
   | "default";
 
-export interface DateRange {
-  startDate: Date | null;
-  endDate: Date | null;
-}
-
 export interface CapacityOptions {
   type: "capacity";
   asset?: string;
@@ -52,16 +47,11 @@ export interface VisualizationState {
   error: string | null;
 
   // Visualization settings
-  resolution: Resolution;
-  dateRange: DateRange;
   graphs: GraphConfig[];
 
   // Actions
   setIsLoading: (isLoading: boolean) => void;
   setError: (error: string | null) => void;
-
-  setResolution: (resolution: Resolution) => void;
-  setDateRange: (dateRange: DateRange) => void;
 
   addGraph: (type: ChartType) => void;
   mustGetGraph: (id: string) => GraphConfig;
@@ -85,15 +75,11 @@ const useVisualizationStore = create<VisualizationState>((set, get) => ({
   databases: [],
 
   // Visualization settings
-  resolution: Resolution.Days,
-  dateRange: { startDate: new Date(), endDate: new Date() },
   graphs: [],
 
   // Actions
   setIsLoading: (isLoading: boolean) => set({ isLoading }),
   setError: (error: string | null) => set({ error }),
-  setResolution: (resolution: Resolution) => set({ resolution }),
-  setDateRange: (dateRange: DateRange) => set({ dateRange }),
 
   addGraph: (type: ChartType) => {
     set((state) => {
@@ -128,20 +114,21 @@ const useVisualizationStore = create<VisualizationState>((set, get) => ({
 
   addDatabase: async (filePath: string) => {
     set((state) => {
-      const DBs = state.databases;
-      if (!DBs.includes(filePath)) {
-        // only add a new DB if it wasn't added before
-        DBs.push(filePath);
+      if (!state.databases.includes(filePath)) {
+        // Create a new array with the new database added
+        return {
+          databases: [...state.databases, filePath],
+        };
       }
-      return {
-        databases: DBs,
-      };
+      // Return unchanged state if database already exists
+      return state;
     });
   },
 
   removeDatabase: async (filePath: string) => {
     set((state) => ({
       databases: state.databases.filter((db) => db != filePath),
+      graphs: state.graphs.filter((g) => g.graphDBFilePath != filePath),
     }));
   },
 

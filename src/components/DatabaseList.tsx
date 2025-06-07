@@ -3,6 +3,7 @@ import { Stack, Card, Text, Group, ActionIcon, Tooltip } from "@mantine/core";
 import { IconDatabase, IconTrash } from "@tabler/icons-react";
 import UploadButton from "./UploadButton";
 import useVisualizationStore from "../store/visualizationStore";
+import StateVisualizer from "./StateVisualizer";
 
 const DatabaseList: React.FC = () => {
   const { databases, removeDatabase } = useVisualizationStore();
@@ -32,14 +33,7 @@ const DatabaseList: React.FC = () => {
                 <Text size="sm" fw={500}>
                   {db}
                 </Text>
-                <Tooltip
-                  label="Remove database"
-                  style={{
-                    width: 40,
-                    flexShrink: 0,
-                    justifyContent: "center",
-                  }}
-                >
+                <Tooltip label="Remove database" position="top">
                   <ActionIcon
                     size="sm"
                     variant="subtle"
@@ -63,6 +57,8 @@ const DatabaseList: React.FC = () => {
           ))}
         </>
       )}
+
+      <StateVisualizer />
     </Stack>
   );
 };
