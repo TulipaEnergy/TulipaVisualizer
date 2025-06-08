@@ -37,7 +37,8 @@ export interface GraphConfig {
   title: string;
   error: string | null;
   isLoading: boolean;
-  options: ChartOptions | null; // Each KPI should define its own options structure
+  filtersByCategory: { [key: string]: string[] };
+  options: ChartOptions | null;
   graphDBFilePath: string | null; // For when each graph has its own DB file
 }
 
@@ -67,6 +68,13 @@ export interface VisualizationState {
   setGraphDatabase: (graphId: string, dbId: string) => void;
   getGraphDatabase: (graphId: string) => string | null;
   hasAnyDatabase: () => boolean;
+
+  mustGetFiltering: (id: string) => { [key: string]: string[] };
+  updateFiltersForCategory: (
+    graphId: string,
+    categoryRootId: string,
+    newFilters: string[],
+  ) => void;
 }
 
 const useVisualizationStore = create<VisualizationState>((set, get) => ({
@@ -95,6 +103,7 @@ const useVisualizationStore = create<VisualizationState>((set, get) => ({
             error: null,
             isLoading: false,
             options: null,
+            filtersByCategory: {},
           },
         ],
       };
@@ -164,6 +173,31 @@ const useVisualizationStore = create<VisualizationState>((set, get) => ({
       throw new Error("Trying to get graph for non existent id: " + id);
     }
     return res;
+  },
+
+  mustGetFiltering(graphId: string): { [key: string]: string[] } {
+    return get().graphs.find((g) => g.id === graphId)!.filtersByCategory;
+  },
+
+  updateFiltersForCategory(
+    graphId: string,
+    categoryRootId: string,
+    newFilters: string[],
+  ) {
+    set((state) => ({
+      graphs: state.graphs.map((g) => {
+        if (g.id == graphId) {
+          return {
+            ...g,
+            filtersByCategory: {
+              ...g.filtersByCategory,
+              [categoryRootId]: newFilters,
+            },
+          };
+        }
+        return g;
+      }),
+    }));
   },
 }));
 

@@ -20,6 +20,7 @@ import ProductionPricesDurationSeries from "./kpis/ProductionPrices";
 import StoragePrices from "./kpis/Storage Prices";
 import GeoImportsExports from "./kpis/GeoImportsExports";
 import TransportationPricesDurationSeries from "./kpis/TransportationPrices";
+import FilteringScrollMenu from "./metadata/FilteringScrollMenu";
 
 interface GraphCardProps {
   graphId: string;
@@ -181,8 +182,9 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
           </Group>
         </Group>
 
-        {/* Database Selector */}
         <DatabaseSelector graphId={graphId} size="xs" showBadge={true} />
+
+        <FilteringScrollMenu graphId={graphId} />
 
         <div style={{ flexGrow: 1, position: "relative" }}>
           {graph.isLoading ? (

@@ -1,0 +1,25 @@
+.p-treeselect-panel * {
+  font-size: var(--mantine-font-size-xs);
+  font-family: var(--mantine-font-family);
+}
+
+.p-treeselect {
+  border-radius: 0.25rem;
+}
+
+.p-treeselect.p-focus {
+  box-shadow: none !important;
+  border-color: var(--mantine-color-gray-5) !important;
+}
+
+.p-treeselect-trigger {
+  height: 30px !important;
+}
+
+.p-treeselect-header {
+  padding: 10px !important;
+}
+
+.p-tree {
+  padding: 10px !important;
+}

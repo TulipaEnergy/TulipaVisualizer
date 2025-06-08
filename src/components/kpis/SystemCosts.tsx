@@ -182,36 +182,34 @@ const SystemCosts: React.FC<SystemCostsProps> = ({ graphId }) => {
   }
 
   return (
-    <Container size="xl" h="100%">
-      <Stack>
-        {chartOptions ? (
-          <Paper
-            p="md"
-            radius="md"
-            withBorder
-            shadow="xs"
-            style={{ height: "500px" }}
-          >
-            <ReactECharts option={chartOptions} style={{ height: "100%" }} />
-          </Paper>
-        ) : (
-          <Paper
-            p="md"
-            radius="md"
-            withBorder
-            shadow="xs"
-            style={{
-              height: "500px",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <Text>No chart data available after processing.</Text>
-          </Paper>
-        )}
-      </Stack>
-    </Container>
+    <Stack>
+      {chartOptions ? (
+        <Paper
+          p="md"
+          radius="md"
+          withBorder
+          shadow="xs"
+          style={{ height: "500px" }}
+        >
+          <ReactECharts option={chartOptions} style={{ height: "100%" }} />
+        </Paper>
+      ) : (
+        <Paper
+          p="md"
+          radius="md"
+          withBorder
+          shadow="xs"
+          style={{
+            height: "500px",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <Text>No chart data available after processing.</Text>
+        </Paper>
+      )}
+    </Stack>
   );
 };
 
