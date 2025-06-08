@@ -1,5 +1,6 @@
 import { Table } from "apache-arrow";
 import { apacheIPC } from "../gateway/db";
+import { metadataTrees } from "../types/metadata";
 
 export async function getAssets(dbPath: string): Promise<string[]> {
   try {
@@ -23,6 +24,160 @@ export async function getTables(dbPath: String): Promise<string[]> {
     console.error("Error querying tables:", err);
     throw err;
   }
+}
+
+// TODO use actual data
+export async function getAllMetadata(): Promise<metadataTrees> {
+  const mockData: metadataTrees = {
+    location: {
+      key: "1",
+      label: "location",
+      children: [
+        {
+          key: "2",
+          label: "Netherlands",
+          children: [
+            { key: "4", label: "South Holland", children: [] },
+            { key: "5", label: "North Holland", children: [] },
+          ],
+        },
+        {
+          key: "3",
+          label: "Belgium",
+          children: [{ key: "6", label: "Antwerp", children: [] }],
+        },
+      ],
+    },
+    technology: {
+      key: "7",
+      label: "technology",
+      children: [
+        {
+          key: "8",
+          label: "renewables",
+          children: [
+            { key: "10", label: "solar", children: [] },
+            { key: "11", label: "wind", children: [] },
+          ],
+        },
+        {
+          key: "9",
+          label: "fossil",
+          children: [
+            {
+              key: "12",
+              label: "ccgt",
+              children: [
+                { key: "17", label: "ccgt-a", children: [] },
+                { key: "18", label: "ccgt-b", children: [] },
+              ],
+            },
+            { key: "13", label: "coal", children: [] },
+            { key: "14", label: "gas", children: [] },
+            { key: "15", label: "oil", children: [] },
+            { key: "16", label: "nuclear", children: [] },
+          ],
+        },
+      ],
+    },
+    //   technology2: {
+    //     key: "7",
+    //     label: "technology",
+    //     children: [
+    //       {
+    //         key: "8",
+    //         label: "renewables",
+    //         children: [
+    //           { key: "10", label: "solar", children: [] },
+    //           { key: "11", label: "wind", children: [] },
+    //         ],
+    //       },
+    //       {
+    //         key: "9",
+    //         label: "fossil",
+    //         children: [
+    //           {
+    //             key: "12",
+    //             label: "ccgt",
+    //             children: [
+    //               { key: "17", label: "ccgt-a", children: [] },
+    //               { key: "18", label: "ccgt-b", children: [] },
+    //             ],
+    //           },
+    //           { key: "13", label: "coal", children: [] },
+    //           { key: "14", label: "gas", children: [] },
+    //           { key: "15", label: "oil", children: [] },
+    //           { key: "16", label: "nuclear", children: [] },
+    //         ],
+    //       },
+    //     ],
+    //   },
+    //   technology3: {
+    //     key: "7",
+    //     label: "technology",
+    //     children: [
+    //       {
+    //         key: "8",
+    //         label: "renewables",
+    //         children: [
+    //           { key: "10", label: "solar", children: [] },
+    //           { key: "11", label: "wind", children: [] },
+    //         ],
+    //       },
+    //       {
+    //         key: "9",
+    //         label: "fossil",
+    //         children: [
+    //           {
+    //             key: "12",
+    //             label: "ccgt",
+    //             children: [
+    //               { key: "17", label: "ccgt-a", children: [] },
+    //               { key: "18", label: "ccgt-b", children: [] },
+    //             ],
+    //           },
+    //           { key: "13", label: "coal", children: [] },
+    //           { key: "14", label: "gas", children: [] },
+    //           { key: "15", label: "oil", children: [] },
+    //           { key: "16", label: "nuclear", children: [] },
+    //         ],
+    //       },
+    //     ],
+    //   },
+    //   technology4: {
+    //     key: "7",
+    //     label: "technology",
+    //     children: [
+    //       {
+    //         key: "8",
+    //         label: "renewables",
+    //         children: [
+    //           { key: "10", label: "solar", children: [] },
+    //           { key: "11", label: "wind", children: [] },
+    //         ],
+    //       },
+    //       {
+    //         key: "9",
+    //         label: "fossil",
+    //         children: [
+    //           {
+    //             key: "12",
+    //             label: "ccgt",
+    //             children: [
+    //               { key: "17", label: "ccgt-a", children: [] },
+    //               { key: "18", label: "ccgt-b", children: [] },
+    //             ],
+    //           },
+    //           { key: "13", label: "coal", children: [] },
+    //           { key: "14", label: "gas", children: [] },
+    //           { key: "15", label: "oil", children: [] },
+    //           { key: "16", label: "nuclear", children: [] },
+    //         ],
+    //       },
+    //     ],
+    //   },
+  };
+  return Promise.resolve(mockData);
 }
 
 type TableJson = {
