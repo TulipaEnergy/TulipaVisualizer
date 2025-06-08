@@ -1,11 +1,21 @@
-import { Text, Container, Loader, Paper, Stack } from "@mantine/core";
+import {
+  Text,
+  Container,
+  Loader,
+  Paper,
+  Stack,
+  Select,
+  Group,
+} from "@mantine/core";
 import { useState, useEffect } from "react";
 import ReactECharts from "echarts-for-react";
 import {
-  getStoragePrice,
-  StoragePriceRow,
+  getStoragePriceDurationSeries,
+  StoragePriceDurationSeriesRow,
+  getStorageYears,
 } from "../../services/storagePriceQuery";
 import useVisualizationStore from "../../store/visualizationStore";
+import { Resolution } from "../../types/resolution";
 
 interface StoragePricesProps {
   graphId: string;
@@ -16,98 +26,95 @@ const StoragePrices: React.FC<StoragePricesProps> = ({ graphId }) => {
   const [loadingData, setLoadingData] = useState<boolean>(true);
   const [errorData, setErrorData] = useState<string | null>(null);
   const [chartOptions, setChartOptions] = useState<any>(null);
+  const [resolution, setResolution] = useState<Resolution>(Resolution.Hours);
+  const [year, setYear] = useState<number | null>(null);
+  const [availableYears, setAvailableYears] = useState<number[]>([]);
 
-  const dbFilePath = getGraphDatabase(graphId);
+  const dbPath = getGraphDatabase(graphId);
+
+  useEffect(() => {
+    const fetchYears = async () => {
+      try {
+        const years = await getStorageYears(dbPath!);
+        setAvailableYears(years.map((y) => y.year));
+        if (!year && years.length > 0) {
+          setYear(years[0].year);
+        }
+      } catch (err) {
+        console.error("Failed to fetch years:", err);
+      }
+    };
+    fetchYears();
+  }, [dbPath]);
 
   useEffect(() => {
     const fetchDataAndConfigureChart = async () => {
-      // Reset states at the beginning of each fetch
-      setLoadingData(true);
       setErrorData(null);
-
-      // DB File should always be provided - see assertion in GraphCard
-      if (!dbFilePath) {
+      if (!dbPath) {
         setErrorData("No database selected");
+        setLoadingData(false);
+        return;
+      }
+
+      if (year === null) {
+        setChartOptions(null);
         setLoadingData(false);
         return;
       }
 
       try {
         setLoadingData(true);
-        const transformedData: StoragePriceRow[] =
-          await getStoragePrice(dbFilePath);
 
-        const years: number[] = [
-          ...new Set(transformedData.map((item) => item.milestone_year)),
-        ].sort((a, b) => a - b);
-        const assets: string[] = [
-          ...new Set(transformedData.map((item) => item.asset)),
-        ];
+        if (year === null) return;
+        const data: StoragePriceDurationSeriesRow[] =
+          await getStoragePriceDurationSeries(dbPath, resolution, year);
 
-        const series = assets.map((assetName: string) => ({
-          name: assetName,
-          type: "bar",
-          stack: "total",
-          emphasis: {
-            focus: "series",
-          },
-          data: years.map((year: number) => {
-            const item = transformedData.find(
-              (d: StoragePriceRow) =>
-                d.milestone_year === year && d.asset === assetName,
-            );
-            return item ? item.assets_storage_price : 0;
-          }),
-        }));
+        const groupedByAsset = new Map<
+          string,
+          { name: string; value: [number, number, number] }[]
+        >();
+        for (const d of data) {
+          const key = `${d.milestone_year}, ${resolution} ${d.global_start}-${d.global_end}`;
+          const xEnd = d.global_end;
+          const width = d.global_end - d.global_start;
+
+          const entry = {
+            name: `${d.asset} (${key})`,
+            value: [xEnd, width, d.y_axis] as [number, number, number],
+          };
+          if (!groupedByAsset.has(d.asset)) {
+            groupedByAsset.set(d.asset, []);
+          }
+          groupedByAsset.get(d.asset)!.push(entry);
+        }
 
         const option = {
           title: {
-            text: "Assets Storage Price by Milestone Year",
+            text: "Assets Storage Price Duration Series",
             left: "center",
           },
           tooltip: {
-            trigger: "axis",
-            axisPointer: {
-              type: "shadow",
+            trigger: "item",
+            formatter: (params: any) => {
+              const y = params.value[2];
+              return `
+                <strong>${params.name}</strong><br/>
+                Price: ${y.toFixed(4)}
+              `;
             },
-            formatter: function (params: any[]) {
-              let totalPrice = 0;
-              let tooltipContent = `<strong>${params[0].name}</strong><br/>`;
-              params.forEach((item) => {
-                totalPrice += item.value as number;
-                tooltipContent +=
-                  `<span style="display:inline-block;margin-right:4px;border-radius:10px;width:10px;height:10px;background-color:${item.color};"></span>` +
-                  `${item.seriesName}: ${item.value ? Number(item.value).toFixed(2) : 0}<br/>`;
-              });
-              tooltipContent += `<hr style="margin: 5px 0;"/><strong>Total: ${totalPrice.toFixed(2)}</strong>`;
-              return tooltipContent;
-            },
-          },
-          legend: {
-            data: assets,
-            bottom: "0%",
-            type: "scroll",
           },
           xAxis: {
-            type: "category",
-            data: years,
-            name: "Milestone Year",
-            nameLocation: "end",
-            nameTextStyle: {
-              align: "right",
-              verticalAlign: "top",
-              padding: [20, 10, 0, 0],
-            },
+            type: "value",
+            name: `Time in ${resolution}`,
+            nameLocation: "middle",
+            nameGap: 30,
             axisLabel: {
-              rotate: 45,
+              formatter: (val: number) => val.toFixed(1),
             },
           },
           yAxis: {
             type: "value",
             name: "Storage Price",
-            axisLabel: {
-              formatter: "{value}",
-            },
           },
           grid: {
             left: "3%",
@@ -116,7 +123,37 @@ const StoragePrices: React.FC<StoragePricesProps> = ({ graphId }) => {
             bottom: "15%",
             containLabel: true,
           },
-          series: series,
+          series: Array.from(groupedByAsset.entries()).map(([asset, data]) => ({
+            type: "custom",
+            name: asset,
+            renderItem: (params: any, api: any) => {
+              params = params; // done to escape build fail for not read value
+              const x = api.value(0);
+              const width = api.value(1);
+              const y = api.value(2);
+
+              const xStart = api.coord([x - width, 0])[0];
+              const xEnd = api.coord([x, 0])[0];
+              const yCoord = api.coord([0, y])[1];
+              const yBase = api.coord([0, 0])[1];
+
+              return {
+                type: "rect",
+                shape: {
+                  x: xStart,
+                  y: yCoord,
+                  width: xEnd - xStart,
+                  height: yBase - yCoord,
+                },
+                style: api.style(),
+              };
+            },
+            encode: {
+              x: 0,
+              y: 2,
+            },
+            data,
+          })),
         };
 
         setChartOptions(option);
@@ -129,9 +166,9 @@ const StoragePrices: React.FC<StoragePricesProps> = ({ graphId }) => {
     };
 
     fetchDataAndConfigureChart();
-  }, [dbFilePath]); // Refreshes whenever you select a diff db file
+  }, [dbPath, resolution, year]); // Refreshes whenever you select a diff db file
 
-  if (loadingData) {
+  if (loadingData && year !== null) {
     return (
       <Container
         size="xl"
@@ -167,6 +204,47 @@ const StoragePrices: React.FC<StoragePricesProps> = ({ graphId }) => {
   return (
     <Container size="xl" h="100%">
       <Stack>
+        <Group>
+          <Select
+            label="Resolution"
+            value={resolution}
+            onChange={(val) => {
+              if (!val) return;
+              if (val === resolution) {
+                return;
+              }
+              setResolution(val as Resolution);
+            }}
+            data={[
+              { value: Resolution.Hours, label: "Hours" },
+              { value: Resolution.Days, label: "Days" },
+              { value: Resolution.Weeks, label: "Weeks" },
+              { value: Resolution.Months, label: "Months" },
+              { value: Resolution.Years, label: "Years" },
+            ]}
+            size="xs"
+            style={{ maxWidth: 160 }}
+          />
+          <Select
+            label="Year"
+            value={year?.toString() || ""}
+            onChange={(val) => {
+              if (!val) return;
+              if (val === year?.toString()) {
+                return;
+              }
+              setYear(Number(val));
+            }}
+            data={availableYears.map((y) => ({
+              value: y.toString(),
+              label: y.toString(),
+            }))}
+            size="xs"
+            style={{ maxWidth: 160 }}
+            placeholder="Select year"
+            disabled={availableYears.length === 0}
+          />
+        </Group>
         {chartOptions ? (
           <Paper
             p="md"

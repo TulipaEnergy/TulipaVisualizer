@@ -9,6 +9,7 @@ export type ChartType =
   | "production-prices-duration-series"
   | "storage-prices"
   | "geo-imports-exports"
+  | "transportation-prices"
   | "default";
 
 export interface CapacityOptions {

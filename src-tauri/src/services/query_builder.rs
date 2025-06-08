@@ -263,5 +263,4 @@ merged AS (
 /* Returns the final dataset. */
 SELECT *
 FROM merged
-ORDER BY {group_cols}, milestone_year, global_start;
-";
+ORDER BY {group_cols}, milestone_year, global_start;";

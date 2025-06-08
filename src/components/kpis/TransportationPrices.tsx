@@ -10,19 +10,20 @@ import {
 import { useState, useEffect } from "react";
 import ReactECharts from "echarts-for-react";
 import {
-  getProductionPriceDurationSeries,
-  ProductionPriceDurationSeriesRow,
-  getProductionYears,
-} from "../../services/productionPriceQuery";
+  getTransportationPriceDurationSeries,
+  TransportationPriceDurationSeriesRow,
+  getTransportationYears,
+  getTransportationCarriers,
+} from "../../services/transportPriceQuery";
 import useVisualizationStore from "../../store/visualizationStore";
 import { Resolution } from "../../types/resolution";
 
-interface ProductionPricesDurationSeriesProps {
+interface TransportationPricesDurationSeriesProps {
   graphId: string;
 }
 
-const ProductionPricesDurationSeries: React.FC<
-  ProductionPricesDurationSeriesProps
+const TransportationPricesDurationSeries: React.FC<
+  TransportationPricesDurationSeriesProps
 > = ({ graphId }) => {
   const { getGraphDatabase } = useVisualizationStore();
   const [loadingData, setLoadingData] = useState(true);
@@ -31,13 +32,15 @@ const ProductionPricesDurationSeries: React.FC<
   const [resolution, setResolution] = useState<Resolution>(Resolution.Hours);
   const [year, setYear] = useState<number | null>(null);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
+  const [carrier, setCarrier] = useState<string | null>(null);
+  const [availableCarriers, setAvailableCarriers] = useState<string[]>([]);
 
   const dbPath = getGraphDatabase(graphId);
 
   useEffect(() => {
     const fetchYears = async () => {
       try {
-        const years = await getProductionYears(dbPath!);
+        const years = await getTransportationYears(dbPath!);
         setAvailableYears(years.map((y) => y.year));
         if (!year && years.length > 0) {
           setYear(years[0].year);
@@ -47,6 +50,21 @@ const ProductionPricesDurationSeries: React.FC<
       }
     };
     fetchYears();
+  }, [dbPath]);
+
+  useEffect(() => {
+    const fetchCarriers = async () => {
+      try {
+        const carriers = await getTransportationCarriers(dbPath!);
+        setAvailableCarriers(carriers.map((y) => y.carrier));
+        if (!carrier && carriers.length > 0) {
+          setCarrier(carriers[0].carrier);
+        }
+      } catch (err) {
+        console.error("Failed to fetch carriers:", err);
+      }
+    };
+    fetchCarriers();
   }, [dbPath]);
 
   useEffect(() => {
@@ -63,13 +81,24 @@ const ProductionPricesDurationSeries: React.FC<
         return;
       }
 
+      if (carrier === null) {
+        setChartOptions(null);
+        setLoadingData(false);
+        return;
+      }
+
       try {
         setLoadingData(true);
-        if (year === null) return;
-        const data: ProductionPriceDurationSeriesRow[] =
-          await getProductionPriceDurationSeries(dbPath, resolution, year);
+        if (year === null || carrier === null) return;
+        const data: TransportationPriceDurationSeriesRow[] =
+          await getTransportationPriceDurationSeries(
+            dbPath,
+            year,
+            carrier,
+            resolution,
+          );
 
-        const groupedByAsset = new Map<
+        const groupedByRoute = new Map<
           string,
           { name: string; value: [number, number, number] }[]
         >();
@@ -79,18 +108,18 @@ const ProductionPricesDurationSeries: React.FC<
           const width = d.global_end - d.global_start;
 
           const entry = {
-            name: `${d.asset} (${key})`,
+            name: `${d.route} (${key})`,
             value: [xEnd, width, d.y_axis] as [number, number, number],
           };
-          if (!groupedByAsset.has(d.asset)) {
-            groupedByAsset.set(d.asset, []);
+          if (!groupedByRoute.has(d.route)) {
+            groupedByRoute.set(d.route, []);
           }
-          groupedByAsset.get(d.asset)!.push(entry);
+          groupedByRoute.get(d.route)!.push(entry);
         }
 
         const chartOption = {
           title: {
-            text: "Assets Production Price Duration Series",
+            text: "Assets Transportation Price Duration Series",
             left: "center",
           },
           tooltip: {
@@ -114,7 +143,7 @@ const ProductionPricesDurationSeries: React.FC<
           },
           yAxis: {
             type: "value",
-            name: "Production Price",
+            name: "Transportation Price",
           },
           grid: {
             left: "3%",
@@ -123,7 +152,7 @@ const ProductionPricesDurationSeries: React.FC<
             bottom: "15%",
             containLabel: true,
           },
-          series: Array.from(groupedByAsset.entries()).map(([asset, data]) => ({
+          series: Array.from(groupedByRoute.entries()).map(([asset, data]) => ({
             type: "custom",
             name: asset,
             renderItem: (params: any, api: any) => {
@@ -158,7 +187,7 @@ const ProductionPricesDurationSeries: React.FC<
 
         setChartOptions(chartOption);
       } catch (err) {
-        setErrorData("Failed to load production prices.");
+        setErrorData("Failed to load transportation prices.");
         console.error(err);
       } finally {
         setLoadingData(false);
@@ -166,9 +195,9 @@ const ProductionPricesDurationSeries: React.FC<
     };
 
     fetchData();
-  }, [dbPath, resolution, year]);
+  }, [dbPath, resolution, year, carrier]);
 
-  if (loadingData && year !== null) {
+  if (loadingData && year !== null && carrier !== null) {
     return (
       <Container
         size="xl"
@@ -243,6 +272,25 @@ const ProductionPricesDurationSeries: React.FC<
             placeholder="Select year"
             disabled={availableYears.length === 0}
           />
+          <Select
+            label="Carrier"
+            value={carrier || ""}
+            onChange={(val) => {
+              if (!val) return;
+              if (val === carrier) {
+                return;
+              }
+              setCarrier(val);
+            }}
+            data={availableCarriers.map((c) => ({
+              value: c,
+              label: c,
+            }))}
+            size="xs"
+            style={{ maxWidth: 160 }}
+            placeholder="Select carrier"
+            disabled={availableCarriers.length === 0}
+          />
         </Group>
         {chartOptions ? (
           <Paper
@@ -275,4 +323,4 @@ const ProductionPricesDurationSeries: React.FC<
   );
 };
 
-export default ProductionPricesDurationSeries;
+export default TransportationPricesDurationSeries;

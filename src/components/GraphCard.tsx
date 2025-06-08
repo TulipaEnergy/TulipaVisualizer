@@ -19,6 +19,7 @@ import SystemCosts from "./kpis/SystemCosts";
 import ProductionPricesDurationSeries from "./kpis/ProductionPrices";
 import StoragePrices from "./kpis/Storage Prices";
 import GeoImportsExports from "./kpis/GeoImportsExports";
+import TransportationPricesDurationSeries from "./kpis/TransportationPrices";
 
 interface GraphCardProps {
   graphId: string;
@@ -39,6 +40,7 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
     { value: "system-costs", label: "System Costs" },
     { value: "production-prices-duration-series", label: "Production Prices" },
     { value: "storage-prices", label: "Storage Prices" },
+    { value: "transportation-prices", label: "Transportation Prices" },
     { value: "geo-imports-exports", label: "Geographical Imports/Exports" },
     { value: "database", label: "Database View" },
   ];
@@ -203,6 +205,8 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
             <ProductionPricesDurationSeries graphId={graphId} />
           ) : graph.type === "storage-prices" ? (
             <StoragePrices graphId={graphId} />
+          ) : graph.type === "transportation-prices" ? (
+            <TransportationPricesDurationSeries graphId={graphId} />
           ) : graph.type === "capacity" ? (
             <Capacity graphId={graphId} />
           ) : graph.type === "geo-imports-exports" ? (

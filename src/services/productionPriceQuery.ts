@@ -1,13 +1,5 @@
 import { genericApacheIPC } from "../gateway/db";
-import { Resolution } from "../types/resolution";
-
-const resolutionToTable: Record<Resolution, number> = {
-  [Resolution.Hours]: 1,
-  [Resolution.Days]: 24,
-  [Resolution.Weeks]: 168,
-  [Resolution.Months]: 720,
-  [Resolution.Years]: 8760,
-};
+import { Resolution, resolutionToTable } from "../types/resolution";
 
 export async function getProductionPriceDurationSeries(
   dbPath: string,
