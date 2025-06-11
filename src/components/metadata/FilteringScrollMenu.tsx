@@ -2,17 +2,16 @@ import React, { useEffect } from "react";
 import { Group, ScrollArea } from "@mantine/core";
 import { IconFilter } from "@tabler/icons-react";
 import { useState } from "react";
-import "primereact/resources/themes/lara-light-cyan/theme.css";
-import "../../styles/components/metadata/filterPerTree.css";
 import FilterPerTree from "./FilterPerTree";
 import { getAllMetadata } from "../../services/metadata";
+import { MetadataTrees } from "../../types/metadata";
 
 interface FilteringProps {
   graphId: string;
 }
 
 const FilteringScrollMenu: React.FC<FilteringProps> = ({ graphId }) => {
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<MetadataTrees>({});
 
   useEffect(() => {
     (async () => {
@@ -22,7 +21,7 @@ const FilteringScrollMenu: React.FC<FilteringProps> = ({ graphId }) => {
 
   return (
     <Group gap="xs" align="center" wrap="nowrap">
-      <IconFilter size={14} color="var(--mantine-color-gray-6)" />
+      <IconFilter size={"1rem"} color="var(--mantine-color-gray-6)" />
       <ScrollArea.Autosize
         type="auto"
         scrollbarSize={6}

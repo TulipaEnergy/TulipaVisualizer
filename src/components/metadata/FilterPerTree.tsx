@@ -3,20 +3,13 @@ import { Group, Badge } from "@mantine/core";
 import { TreeSelect, TreeSelectChangeEvent } from "primereact/treeselect";
 import { TreeNode } from "primereact/treenode";
 import { useState } from "react";
-import "primereact/resources/themes/lara-light-blue/theme.css";
-import "../../styles/components/metadata/filterPerTree.css";
 import useVisualizationStore from "../../store/visualizationStore";
+import { SelectedFilteringKeys } from "../../types/metadata";
+
 interface FilterPerTreeProps {
   graphId: string;
   categoryName: string;
   categoryRoot: TreeNode;
-}
-
-interface SelectedKeys {
-  [key: string]: {
-    checked: boolean;
-    partialChecked: boolean;
-  };
 }
 
 function mustGetKey(n: TreeNode): string {
@@ -82,7 +75,7 @@ function getAllNodes(root: TreeNode): TreeNode[] {
   return result;
 }
 
-function getAllSelected(nodes: TreeNode[]): SelectedKeys {
+function getAllSelected(nodes: TreeNode[]): SelectedFilteringKeys {
   const keys: string[] = [];
   const stack: TreeNode[] = [...nodes];
   while (stack.length > 0) {
@@ -92,7 +85,7 @@ function getAllSelected(nodes: TreeNode[]): SelectedKeys {
       stack.push(...node.children);
     }
   }
-  const allSelected: SelectedKeys = {};
+  const allSelected: SelectedFilteringKeys = {};
   keys.forEach((key) => {
     allSelected[key] = {
       checked: true,
@@ -112,7 +105,7 @@ const FilterPerTree: React.FC<FilterPerTreeProps> = ({
   const categoryRootKey = mustGetKey(categoryRoot);
   const allCurrentCategoryNodes = getAllNodes(categoryRoot);
 
-  const [selectorState, setSelectorState] = useState<SelectedKeys>(
+  const [selectorState, setSelectorState] = useState<SelectedFilteringKeys>(
     getAllSelected(currentTree),
   );
 
@@ -131,7 +124,7 @@ const FilterPerTree: React.FC<FilterPerTreeProps> = ({
           setSelectorState(getAllSelected(currentTree));
           updateFiltersForCategory(graphId, categoryRootKey, [categoryRootKey]);
         } else {
-          const selectorState = e.value as SelectedKeys;
+          const selectorState = e.value as SelectedFilteringKeys;
 
           // disregard all keys which are not checked, or are only partially checked
           const selectedCheckedKeysSet: Set<string> = new Set(

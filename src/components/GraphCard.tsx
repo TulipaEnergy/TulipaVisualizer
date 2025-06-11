@@ -23,6 +23,8 @@ import GeoImportsExports from "./kpis/GeoImportsExports";
 import TransportationPricesDurationSeries from "./kpis/TransportationPrices";
 import FilteringScrollMenu from "./metadata/FilteringScrollMenu";
 import SupplyStackedBarSeries from "./kpis/ResidualLoad";
+import BreakdownMenu from "./metadata/BreakdownMenu";
+import "../styles/components/metadata/treeSelect.css";
 
 interface GraphCardProps {
   graphId: string;
@@ -164,7 +166,7 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
               placeholder="Choose a type"
               size="sm"
               style={{
-                width: "10rem",
+                width: "fit-content",
               }}
               styles={{
                 input: {
@@ -199,6 +201,8 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
         <DatabaseSelector graphId={graphId} size="xs" showBadge={true} />
 
         <FilteringScrollMenu graphId={graphId} />
+
+        <BreakdownMenu graphId={graphId} />
 
         <Divider />
 

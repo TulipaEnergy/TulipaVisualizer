@@ -5,6 +5,7 @@ import "@mantine/core/styles.css";
 import "@mantine/dates/styles.css";
 import App from "./App";
 import "./styles/index.css";
+import "primereact/resources/themes/lara-light-blue/theme.css";
 
 // Create a custom theme (optional)
 const theme = createTheme({
