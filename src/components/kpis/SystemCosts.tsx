@@ -127,7 +127,7 @@ const SystemCosts: React.FC<SystemCostsProps> = ({ graphId }) => {
           },
           dataZoom: [
             {
-              bottom: "10%",
+              bottom: "40px",
               orient: "horizontal",
               minSpan: Math.floor(100 / years.length) - 1,
             },
