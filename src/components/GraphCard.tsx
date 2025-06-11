@@ -22,6 +22,7 @@ import StoragePrices from "./kpis/Storage Prices";
 import GeoImportsExports from "./kpis/GeoImportsExports";
 import TransportationPricesDurationSeries from "./kpis/TransportationPrices";
 import FilteringScrollMenu from "./metadata/FilteringScrollMenu";
+import SupplyStackedBarSeries from "./kpis/ResidualLoad";
 
 interface GraphCardProps {
   graphId: string;
@@ -44,6 +45,7 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
     { value: "storage-prices", label: "Storage Prices" },
     { value: "transportation-prices", label: "Transportation Prices" },
     { value: "geo-imports-exports", label: "Geographical Imports/Exports" },
+    { value: "residual-load", label: "Residual Load" },
     { value: "database", label: "SQL explorer" },
   ];
 
@@ -227,6 +229,8 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
             <Capacity graphId={graphId} />
           ) : graph.type === "geo-imports-exports" ? (
             <GeoImportsExports graphId={graphId} />
+          ) : graph.type === "residual-load" ? (
+            <SupplyStackedBarSeries graphId={graphId} />
           ) : (
             <Flex h="100%" justify="center" align="center">
               <Text c="dimmed"> Please select a chart type above </Text>

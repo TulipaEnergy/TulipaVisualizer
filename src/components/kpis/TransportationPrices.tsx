@@ -176,6 +176,7 @@ const TransportationPricesDurationSeries: React.FC<
           series: Array.from(groupedByRoute.entries()).map(([asset, data]) => ({
             type: "custom",
             name: asset,
+            clip: true,
             renderItem: (params: any, api: any) => {
               params = params; // done to escape build fail for not read value
               const x = api.value(0);

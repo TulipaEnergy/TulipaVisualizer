@@ -10,6 +10,7 @@ export type ChartType =
   | "storage-prices"
   | "geo-imports-exports"
   | "transportation-prices"
+  | "residual-load"
   | "default";
 
 export interface CapacityOptions {
