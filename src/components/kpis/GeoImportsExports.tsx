@@ -43,6 +43,10 @@ const EnergyFlow: React.FC<EnergyFlowProps> = ({ graphId }) => {
 
   const dbFilePath = graph.graphDBFilePath!;
 
+  useEffect(() => {
+    updateGraph(graphId, { title: "Geographical explorer" });
+  }, []);
+
   // Reset everything when database changes
   useEffect(() => {
     console.log("ENERGY FLOW: DB CHANGED");

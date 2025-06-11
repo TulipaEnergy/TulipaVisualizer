@@ -10,6 +10,7 @@ import {
   Loader,
   Paper,
   ActionIcon,
+  Divider,
 } from "@mantine/core";
 import useVisualizationStore, { ChartType } from "../store/visualizationStore";
 import DatabaseViewer from "./database-viewer/DatabaseViewer";
@@ -37,18 +38,20 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
   const chartRef = useRef<ReactECharts>(null);
 
   const chartTypes: { value: ChartType; label: string }[] = [
-    { value: "capacity", label: "Capacity Chart" },
+    { value: "capacity", label: "Asset capacity" },
     { value: "system-costs", label: "System Costs" },
     { value: "production-prices-duration-series", label: "Production Prices" },
     { value: "storage-prices", label: "Storage Prices" },
     { value: "transportation-prices", label: "Transportation Prices" },
     { value: "geo-imports-exports", label: "Geographical Imports/Exports" },
-    { value: "database", label: "Database View" },
+    { value: "database", label: "SQL explorer" },
   ];
 
   useEffect(() => {
     if (graph?.type == "database") {
       setHeight(1200);
+    } else {
+      setHeight(400);
     }
   }, [graph?.type]);
 
@@ -148,7 +151,7 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
             onChange={(e) => updateGraph(graph.id, { title: e.target.value })}
             placeholder="Chart Title"
             size="sm"
-            style={{ flexGrow: 1, fontWeight: 700 }}
+            style={{ flexGrow: 1, fontWeight: 600 }}
           />
 
           <Group wrap="nowrap" gap="xs">
@@ -157,8 +160,17 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
               onChange={handleTypeChange}
               data={chartTypes}
               placeholder="Choose a type"
-              size="xs"
-              style={{ width: 130 }}
+              size="sm"
+              style={{
+                width: "10rem",
+              }}
+              styles={{
+                input: {
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                },
+              }}
             />
 
             <ActionIcon
@@ -185,6 +197,8 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
         <DatabaseSelector graphId={graphId} size="xs" showBadge={true} />
 
         <FilteringScrollMenu graphId={graphId} />
+
+        <Divider />
 
         <div style={{ flexGrow: 1, position: "relative" }}>
           {graph.isLoading ? (

@@ -23,8 +23,12 @@ const SystemCosts: React.FC<SystemCostsProps> = ({ graphId }) => {
   const [loadingData, setLoadingData] = useState<boolean>(true);
   const [errorData, setErrorData] = useState<string | null>(null);
   const [chartOptions, setChartOptions] = useState<EChartsOption | null>(null);
-  const { getGraphDatabase } = useVisualizationStore();
+  const { getGraphDatabase, updateGraph } = useVisualizationStore();
   const dbFilePath = getGraphDatabase(graphId);
+
+  useEffect(() => {
+    updateGraph(graphId, { title: "Asset & Flow Operation Costs" });
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -44,9 +48,8 @@ const SystemCosts: React.FC<SystemCostsProps> = ({ graphId }) => {
 
         const option: EChartsOption = {
           title: {
-            text: "Asset & Flow Operation Costs",
-            left: "center",
-            subtext: "by Year, with flows grouped by Carrier",
+            left: "0",
+            subtext: "By Year, with flows grouped by Carrier",
           },
           tooltip: {
             trigger: "axis",
@@ -122,15 +125,25 @@ const SystemCosts: React.FC<SystemCostsProps> = ({ graphId }) => {
               formatter: "{value}",
             },
           },
-          dataZoom: {
-            bottom: "10%",
-            minSpan: Math.floor(100 / years.length) - 1,
-          },
+          dataZoom: [
+            {
+              bottom: "10%",
+              orient: "horizontal",
+              minSpan: Math.floor(100 / years.length) - 1,
+            },
+            {
+              orient: "vertical",
+              brushSelect: false,
+              minSpan: 10,
+              filterMode: "none",
+              left: 20,
+            },
+          ],
           grid: {
-            left: "3%",
-            right: "4%",
-            top: "20%",
-            bottom: "20%",
+            left: "60px",
+            right: "40px",
+            top: "70px",
+            bottom: "80px",
             containLabel: true,
           },
           series: series,

@@ -25,7 +25,7 @@ interface TransportationPricesDurationSeriesProps {
 const TransportationPricesDurationSeries: React.FC<
   TransportationPricesDurationSeriesProps
 > = ({ graphId }) => {
-  const { getGraphDatabase } = useVisualizationStore();
+  const { getGraphDatabase, updateGraph } = useVisualizationStore();
   const [loadingData, setLoadingData] = useState(true);
   const [errorData, setErrorData] = useState<string | null>(null);
   const [chartOptions, setChartOptions] = useState<any>(null);
@@ -36,6 +36,12 @@ const TransportationPricesDurationSeries: React.FC<
   const [availableCarriers, setAvailableCarriers] = useState<string[]>([]);
 
   const dbPath = getGraphDatabase(graphId);
+
+  useEffect(() => {
+    updateGraph(graphId, {
+      title: "Assets Transportation Price Duration Series",
+    });
+  }, []);
 
   useEffect(() => {
     const fetchYears = async () => {
@@ -118,10 +124,6 @@ const TransportationPricesDurationSeries: React.FC<
         }
 
         const chartOption = {
-          title: {
-            text: "Assets Transportation Price Duration Series",
-            left: "center",
-          },
           tooltip: {
             trigger: "item",
             formatter: (params: any) => {
@@ -143,15 +145,34 @@ const TransportationPricesDurationSeries: React.FC<
           },
           yAxis: {
             type: "value",
-            name: "Transportation Price",
+            name: "Price",
+            nameTextStyle: {
+              align: "right",
+            },
           },
           grid: {
-            left: "3%",
-            right: "4%",
-            top: "10%",
-            bottom: "15%",
+            left: "60px",
+            right: "40px",
+            top: "30px",
+            bottom: "70px",
             containLabel: true,
           },
+          dataZoom: [
+            {
+              type: "slider",
+              orient: "horizontal",
+            },
+            {
+              type: "slider",
+              orient: "vertical",
+              brushSelect: false,
+              filterMode: "none",
+              left: 20,
+            },
+            {
+              type: "inside",
+            },
+          ],
           series: Array.from(groupedByRoute.entries()).map(([asset, data]) => ({
             type: "custom",
             name: asset,
@@ -230,96 +251,94 @@ const TransportationPricesDurationSeries: React.FC<
   }
 
   return (
-    <Container size="xl" h="100%">
-      <Stack>
-        <Group>
-          <Select
-            label="Resolution"
-            value={resolution}
-            onChange={(val) => {
-              if (!val) return;
-              if (val === resolution) {
-                return;
-              }
-              setResolution(val as Resolution);
-            }}
-            data={[
-              { value: Resolution.Hours, label: "Hours" },
-              { value: Resolution.Days, label: "Days" },
-              { value: Resolution.Weeks, label: "Weeks" },
-              { value: Resolution.Months, label: "Months" },
-              { value: Resolution.Years, label: "Years" },
-            ]}
-            size="xs"
-            style={{ maxWidth: 160 }}
-          />
-          <Select
-            label="Year"
-            value={year?.toString() || ""}
-            onChange={(val) => {
-              if (!val) return;
-              if (val === year?.toString()) {
-                return;
-              }
-              setYear(Number(val));
-            }}
-            data={availableYears.map((y) => ({
-              value: y.toString(),
-              label: y.toString(),
-            }))}
-            size="xs"
-            style={{ maxWidth: 160 }}
-            placeholder="Select year"
-            disabled={availableYears.length === 0}
-          />
-          <Select
-            label="Carrier"
-            value={carrier || ""}
-            onChange={(val) => {
-              if (!val) return;
-              if (val === carrier) {
-                return;
-              }
-              setCarrier(val);
-            }}
-            data={availableCarriers.map((c) => ({
-              value: c,
-              label: c,
-            }))}
-            size="xs"
-            style={{ maxWidth: 160 }}
-            placeholder="Select carrier"
-            disabled={availableCarriers.length === 0}
-          />
-        </Group>
-        {chartOptions ? (
-          <Paper
-            p="md"
-            radius="md"
-            withBorder
-            shadow="xs"
-            style={{ height: "500px" }}
-          >
-            <ReactECharts option={chartOptions} style={{ height: "100%" }} />
-          </Paper>
-        ) : (
-          <Paper
-            p="md"
-            radius="md"
-            withBorder
-            shadow="xs"
-            style={{
-              height: "500px",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <Text>No chart data available.</Text>
-          </Paper>
-        )}
-      </Stack>
-    </Container>
+    <Stack>
+      <Group>
+        <Select
+          label="Resolution"
+          value={resolution}
+          onChange={(val) => {
+            if (!val) return;
+            if (val === resolution) {
+              return;
+            }
+            setResolution(val as Resolution);
+          }}
+          data={[
+            { value: Resolution.Hours, label: "Hours" },
+            { value: Resolution.Days, label: "Days" },
+            { value: Resolution.Weeks, label: "Weeks" },
+            { value: Resolution.Months, label: "Months" },
+            { value: Resolution.Years, label: "Years" },
+          ]}
+          size="xs"
+          style={{ maxWidth: 160 }}
+        />
+        <Select
+          label="Year"
+          value={year?.toString() || ""}
+          onChange={(val) => {
+            if (!val) return;
+            if (val === year?.toString()) {
+              return;
+            }
+            setYear(Number(val));
+          }}
+          data={availableYears.map((y) => ({
+            value: y.toString(),
+            label: y.toString(),
+          }))}
+          size="xs"
+          style={{ maxWidth: 160 }}
+          placeholder="Select year"
+          disabled={availableYears.length === 0}
+        />
+        <Select
+          label="Carrier"
+          value={carrier || ""}
+          onChange={(val) => {
+            if (!val) return;
+            if (val === carrier) {
+              return;
+            }
+            setCarrier(val);
+          }}
+          data={availableCarriers.map((c) => ({
+            value: c,
+            label: c,
+          }))}
+          size="xs"
+          style={{ maxWidth: 160 }}
+          placeholder="Select carrier"
+          disabled={availableCarriers.length === 0}
+        />
+      </Group>
+      {chartOptions ? (
+        <Paper
+          p="md"
+          radius="md"
+          withBorder
+          shadow="xs"
+          style={{ height: "500px" }}
+        >
+          <ReactECharts option={chartOptions} style={{ height: "100%" }} />
+        </Paper>
+      ) : (
+        <Paper
+          p="md"
+          radius="md"
+          withBorder
+          shadow="xs"
+          style={{
+            height: "500px",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <Text>No chart data available.</Text>
+        </Paper>
+      )}
+    </Stack>
   );
 };
 
