@@ -1,6 +1,6 @@
 import { Table } from "apache-arrow";
 import { apacheIPC } from "../gateway/db";
-import { metadataTrees } from "../types/metadata";
+import { MetadataTrees } from "../types/metadata";
 
 export async function getAssets(dbPath: string): Promise<string[]> {
   try {
@@ -27,8 +27,8 @@ export async function getTables(dbPath: String): Promise<string[]> {
 }
 
 // TODO use actual data
-export async function getAllMetadata(): Promise<metadataTrees> {
-  const mockData: metadataTrees = {
+export async function getAllMetadata(): Promise<MetadataTrees> {
+  const mockData: MetadataTrees = {
     location: {
       key: "1",
       label: "location",

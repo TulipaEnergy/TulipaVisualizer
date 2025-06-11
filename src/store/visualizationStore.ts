@@ -39,6 +39,7 @@ export interface GraphConfig {
   error: string | null;
   isLoading: boolean;
   filtersByCategory: { [key: string]: string[] };
+  breakdownNodes: string[];
   options: ChartOptions | null;
   graphDBFilePath: string | null; // For when each graph has its own DB file
 }
@@ -105,6 +106,7 @@ const useVisualizationStore = create<VisualizationState>((set, get) => ({
             isLoading: false,
             options: null,
             filtersByCategory: {},
+            breakdownNodes: [],
           },
         ],
       };
@@ -126,12 +128,10 @@ const useVisualizationStore = create<VisualizationState>((set, get) => ({
   addDatabase: async (filePath: string) => {
     set((state) => {
       if (!state.databases.includes(filePath)) {
-        // Create a new array with the new database added
         return {
           databases: [...state.databases, filePath],
         };
       }
-      // Return unchanged state if database already exists
       return state;
     });
   },
