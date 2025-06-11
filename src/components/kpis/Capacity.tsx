@@ -159,7 +159,6 @@ const capacityGraph = async (
   };
 
   const option: EChartsOption = {
-    title: { text: "Capacity by Year", left: "center" },
     tooltip,
     legend: {
       data: [
@@ -212,6 +211,10 @@ const Capacity: React.FC<CapacityProps> = ({ graphId }) => {
   const [chartOptions, setChartOptions] = useState<any>(null);
 
   const dbFilePath = graph.graphDBFilePath!;
+
+  useEffect(() => {
+    updateGraph(graphId, { title: "Capacity by Year" });
+  }, []);
 
   // Reset everything when database changes
   useEffect(() => {

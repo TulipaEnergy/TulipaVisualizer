@@ -17,8 +17,11 @@ interface DatabaseViewerProps {
 }
 
 const DatabaseViewer: React.FC<DatabaseViewerProps> = ({ graphId }) => {
-  const { isLoading: storeIsLoading, getGraphDatabase } =
-    useVisualizationStore();
+  const {
+    isLoading: storeIsLoading,
+    getGraphDatabase,
+    updateGraph,
+  } = useVisualizationStore();
   const dbFilePath = getGraphDatabase(graphId)!;
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -78,6 +81,10 @@ const DatabaseViewer: React.FC<DatabaseViewerProps> = ({ graphId }) => {
     setSqlQuery(query);
     executeQuery();
   };
+
+  useEffect(() => {
+    updateGraph(graphId, { title: "DuckDB query explorer" });
+  }, []);
 
   // update tables whenever the db file is changed
   useEffect(() => {
