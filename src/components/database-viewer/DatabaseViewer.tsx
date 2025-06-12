@@ -31,20 +31,29 @@ const DatabaseViewer: React.FC<DatabaseViewerProps> = ({ graphId }) => {
   const [tables, setTables] = useState<string[]>([]);
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
   const [queryHistory, setQueryHistory] = useState<string[]>(() => {
-    const saved = localStorage.getItem("queryHistory");
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const saved = localStorage.getItem("queryHistory");
+      return saved ? JSON.parse(saved) : [];
+    } catch (error) {
+      console.warn("Failed to parse query history from localStorage:", error);
+      return [];
+    }
   });
 
   // Execute SQL query
-  const executeQuery = async () => {
-    if (!sqlQuery.trim()) {
+  const executeQuery = async (sql: string = sqlQuery) => {
+    if (!sql.trim()) {
       setError("Query cannot be empty");
+      setQueryResult(null); // Clear any previous results
       return;
     }
 
+    setError(null); // Clear any previous errors
+    setQueryResult(null); // Clear previous results
+
     try {
       setIsLoading(true);
-      const table = await runCustomQuery(dbFilePath, sqlQuery);
+      const table = await runCustomQuery(dbFilePath, sql);
 
       // Extract column names from table schema
       const columns = table.schema.fields.map((field) => field.name);
@@ -60,7 +69,6 @@ const DatabaseViewer: React.FC<DatabaseViewerProps> = ({ graphId }) => {
       }
 
       setQueryResult({ columns, rows });
-      setError(null);
     } catch (error: any) {
       setError(`Query error: ${error.message || error}`);
       console.error("Query error details:", error);
@@ -74,12 +82,14 @@ const DatabaseViewer: React.FC<DatabaseViewerProps> = ({ graphId }) => {
   const handleTableSelect = (tableName: string) => {
     setSelectedTable(tableName);
     setSqlQuery(`SELECT * FROM ${tableName};`);
+    setError(null); // Clear any previous errors
   };
 
-  const showTableSchema = (tableName: string) => {
+  const showTableSchema = async (tableName: string) => {
     const query = `PRAGMA table_info('${tableName}');`;
     setSqlQuery(query);
-    executeQuery();
+    setError(null); // Clear any previous errors
+    await executeQuery(query);
   };
 
   useEffect(() => {

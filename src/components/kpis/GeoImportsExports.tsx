@@ -175,7 +175,7 @@ const EnergyFlow: React.FC<EnergyFlowProps> = ({ graphId }) => {
 
     if (isRegionalView) {
       mapName = "eu-provinces";
-      zoomLevel = 6;
+      zoomLevel = 0.8; // Reduced zoom for broader EU view
     }
     // ECharts option
     const mapOption = {
@@ -543,9 +543,8 @@ const EnergyFlow: React.FC<EnergyFlowProps> = ({ graphId }) => {
                                   size="xs"
                                   c="dimmed"
                                 >
-                                  • Import from {partner.partnerName}:{" "}
-                                  {partner.amount.toFixed(1)} TWh (
-                                  {partner.percentage.toFixed(1)}%)
+                                  Import from {partner.partnerName}:{" "}
+                                  {partner.amount.toFixed(1)} TWh
                                 </Text>
                               ))}
                             {region.exportBreakdown
@@ -556,9 +555,8 @@ const EnergyFlow: React.FC<EnergyFlowProps> = ({ graphId }) => {
                                   size="xs"
                                   c="dimmed"
                                 >
-                                  • Export to {partner.partnerName}:{" "}
-                                  {partner.amount.toFixed(1)} TWh (
-                                  {partner.percentage.toFixed(1)}%)
+                                  Export to {partner.partnerName}:{" "}
+                                  {partner.amount.toFixed(1)} TWh
                                 </Text>
                               ))}
                           </div>
@@ -572,13 +570,46 @@ const EnergyFlow: React.FC<EnergyFlowProps> = ({ graphId }) => {
           </Paper>
         </Stack>
       ) : (
-        <Flex h="100%" justify="center" align="center" mih="500px">
-          <Text c="dimmed">
-            {availableYears.length === 0
-              ? "No energy flow data available in this database"
-              : "Please select a year to view energy flow data"}
-          </Text>
-        </Flex>
+        <Stack gap="md">
+          {/* Summary statistics - show zeros when no data */}
+          <Group>
+            <Paper p="xs" withBorder>
+              <Text size="xs" c="dimmed">
+                Total Imports
+              </Text>
+              <Text fw={500}>0.0 TWh</Text>
+            </Paper>
+            <Paper p="xs" withBorder>
+              <Text size="xs" c="dimmed">
+                Total Exports
+              </Text>
+              <Text fw={500}>0.0 TWh</Text>
+            </Paper>
+            <Paper p="xs" withBorder>
+              <Text size="xs" c="dimmed">
+                Net Flow
+              </Text>
+              <Text fw={500} c="gray">
+                0.0 TWh
+              </Text>
+            </Paper>
+          </Group>
+
+          {/* Detailed breakdown section - show even when empty */}
+          <Paper p="md" withBorder radius="md">
+            <Text size="lg" fw={600} mb="md">
+              Detailed Energy Flow Analysis -{" "}
+              {isRegionalView ? "EU Provinces" : "Country"} Level
+            </Text>
+            <Flex h="200px" justify="center" align="center">
+              <Text c="dimmed">
+                {availableYears.length === 0
+                  ? "No energy flow data available in this database"
+                  : "Please select a year to view energy flow data"}
+              </Text>
+            </Flex>
+          </Paper>
+        </Stack>
       )}
     </Stack>
   );

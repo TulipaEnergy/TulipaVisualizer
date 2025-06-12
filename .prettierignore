@@ -6,3 +6,6 @@ dist
 node_modules
 .rustup
 cargo
+
+# git LFS files:
+*.geo.json

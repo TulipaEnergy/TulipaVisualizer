@@ -2,13 +2,16 @@ stages:
   - format # Always runs
   - docker-build # Runs iff -build-docker
   - build # Runs on main and in MR, but can be skipped with -draft, uses custom docker image
-  - test # Any tests go here
+  - test
 
 variables:
   CARGO_HOME: "/root/.cargo"
   RUSTUP_HOME: "/root/.rustup"
   DOCKER_IMAGE: "gitlab.ewi.tudelft.nl:4242/cse2000-software-project/2024-2025/cluster-k/11c/11c"
   GIT_CLEAN_FLAGS: "-ffdx -e .rustup/ -e src-tauri/target/"
+  FRONTEND_COVERAGE_PATH: "coverage/cobertura-coverage.xml"
+  BACKEND_COVERAGE_PATH: "cargo-coverage.xml"
+  MERGED_COVERAGE_PATH: "merged-coverage.xml"
 
 format-job:
   stage: format
@@ -19,27 +22,40 @@ format-job:
     - echo "Checking Prettier formatting..."
     - pwd
     - ls -a
-    - npx prettier . --check --ignore-path /builds/cse2000-software-project/2024-2025/cluster-k/11c/11c/.prettierignore # To fix automatically, use: npx prettier . --write
+    - npx prettier . --check --ignore-path /builds/cse2000-software-project/2024-2025/cluster-k/11c/11c/.prettierignore # To fix automatically, use: npm run format
 
 frontend-test-job:
   stage: test
   image: node:22
   rules:
-    - if: $CI_COMMIT_TITLE =~ /-skip-tests$/
-      when: never
-    - when: always
+    - !reference [build-n-lint-job, rules]
   script:
-    - echo "Running tests..."
+    - echo "Running frontend tests..."
     - npm ci --cache .npm --prefer-offline
     - npm run test:coverage
   artifacts:
     paths:
-      - coverage/
-    expire_in: 1 week
-    reports:
-      coverage_report:
-        coverage_format: cobertura
-        path: coverage/cobertura-coverage.xml
+      - "$FRONTEND_COVERAGE_PATH"
+  coverage: '/^Lines\s*:\s*(\d+\.\d+)%/'
+
+backend-test-job:
+  stage: test
+  image: $DOCKER_IMAGE:latest
+  rules:
+    - !reference [build-n-lint-job, rules]
+  script:
+    - echo "Running backend tests..."
+    - export PATH="$CARGO_HOME/bin:$PATH"
+    - rustup default stable
+    - rustup component add llvm-tools-preview
+    - cargo install cargo-llvm-cov
+    - curl -L "https://github.com/Benjamin1260/tulipa_output/releases/download/output/Norse_out.duckdb" -o "src-tauri/TESTDB.duckdb"
+    - npm run tauri:test
+    - cargo llvm-cov report --summary-only --manifest-path src-tauri/Cargo.toml
+  artifacts:
+    paths:
+      - "$BACKEND_COVERAGE_PATH"
+  coverage: '/TOTAL\s+\d+\s+\d+\s+\d+.\d+%\s+\d+\s+\d+\s+\d+.\d+%\s+\d+\s+\d+\s+(\d+.\d+%)/'
 
 docker-build-job:
   image: docker:latest
@@ -75,24 +91,3 @@ build-n-lint-job:
     - rustc -V
     - npm ci --cache .npm --prefer-offline
     - npm run tauri build
-
-backend-test-job:
-  stage: test
-  image: $DOCKER_IMAGE:latest
-  rules:
-    - !reference [build-n-lint-job, rules]
-  artifacts:
-    reports:
-      coverage_report:
-        coverage_format: cobertura
-        path: cargo-coverage.xml
-  coverage: '/TOTAL\s+\d+\s+\d+\s+\d+.\d+%\s+\d+\s+\d+\s+\d+.\d+%\s+\d+\s+\d+\s+(\d+.\d+%)/'
-  script:
-    - echo "Running tests..."
-    - export PATH="$CARGO_HOME/bin:$PATH"
-    - rustup default stable
-    - rustup component add llvm-tools-preview
-    - cargo install cargo-llvm-cov # for code coverage
-    - curl -L "https://github.com/Benjamin1260/tulipa_output/releases/download/output/Norse_out.duckdb" -o "src-tauri/.duckdb" #get db-file
-    - npm run tauri:test
-    - cargo llvm-cov report --summary-only --manifest-path src-tauri/Cargo.toml

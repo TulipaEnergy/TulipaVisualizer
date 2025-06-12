@@ -93,15 +93,26 @@ export const ResultsTable = ({
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
-                {displayedRows.map((row, rowIndex) => (
-                  <Table.Tr key={rowIndex + startIndex}>
-                    {row.map((cell, cellIndex) => (
-                      <Table.Td key={cellIndex}>
-                        {String(cell !== null ? cell : "NULL")}
-                      </Table.Td>
-                    ))}
+                {displayedRows.length > 0 ? (
+                  displayedRows.map((row, rowIndex) => (
+                    <Table.Tr key={rowIndex + startIndex}>
+                      {row.map((cell, cellIndex) => (
+                        <Table.Td key={cellIndex}>
+                          {String(cell !== null ? cell : "NULL")}
+                        </Table.Td>
+                      ))}
+                    </Table.Tr>
+                  ))
+                ) : (
+                  <Table.Tr>
+                    <Table.Td
+                      colSpan={result.columns.length}
+                      style={{ textAlign: "center" }}
+                    >
+                      <Text c="dimmed">No data returned</Text>
+                    </Table.Td>
                   </Table.Tr>
-                ))}
+                )}
               </Table.Tbody>
             </Table>
           </ScrollArea>

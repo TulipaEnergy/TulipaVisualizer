@@ -10,9 +10,13 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "tauri:test": "cargo llvm-cov --workspace --cobertura --output-path cargo-coverage.xml --manifest-path src-tauri/Cargo.toml",
-    "test": "vitest run",
+    "test": "vitest run --silent='passed-only'",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage --silent='passed-only'",
+    "test:coverage:ui": "vitest run --coverage && (xdg-open coverage/index.html || open coverage/index.html || start coverage/index.html)",
+    "test:coverage:watch": "vitest --coverage --watch",
+    "test:coverage:clean": "rm -rf coverage",
+    "format": "npx prettier . --write --end-of-line auto"
   },
   "dependencies": {
     "@mantine/core": "^8.0.1",
