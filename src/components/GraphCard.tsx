@@ -11,6 +11,7 @@ import {
   Paper,
   ActionIcon,
   Divider,
+  Button,
 } from "@mantine/core";
 import useVisualizationStore, { ChartType } from "../store/visualizationStore";
 import DatabaseViewer from "./database-viewer/DatabaseViewer";
@@ -50,6 +51,10 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
     { value: "residual-load", label: "Residual Load" },
     { value: "database", label: "SQL explorer" },
   ];
+
+  const chartTypesWithMetadata = new Set<string>(
+    chartTypes.map((t) => t.value).filter((t) => t != "database"),
+  );
 
   useEffect(() => {
     if (graph?.type == "database") {
@@ -200,9 +205,26 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
 
         <DatabaseSelector graphId={graphId} size="xs" showBadge={true} />
 
-        <FilteringScrollMenu graphId={graphId} />
+        {chartTypesWithMetadata.has(graph.type) ? (
+          <>
+            <FilteringScrollMenu graphId={graphId} />
 
-        <BreakdownMenu graphId={graphId} />
+            <BreakdownMenu graphId={graphId} />
+
+            <Button
+              size="xs"
+              variant="outline"
+              style={{ maxWidth: "200px" }}
+              onClick={() => {
+                updateGraph(graph.id, { lastApplyTimestamp: Date.now() });
+              }}
+            >
+              Apply filter and breakdown
+            </Button>
+          </>
+        ) : (
+          <></>
+        )}
 
         <Divider />
 

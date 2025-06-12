@@ -38,10 +38,11 @@ export interface GraphConfig {
   title: string;
   error: string | null;
   isLoading: boolean;
-  filtersByCategory: { [key: string]: string[] };
-  breakdownNodes: string[];
+  filtersByCategory: { [key: number]: number[] };
+  breakdownNodes: number[];
   options: ChartOptions | null;
   graphDBFilePath: string | null; // For when each graph has its own DB file
+  lastApplyTimestamp: number;
 }
 
 export interface VisualizationState {
@@ -71,11 +72,11 @@ export interface VisualizationState {
   getGraphDatabase: (graphId: string) => string | null;
   hasAnyDatabase: () => boolean;
 
-  mustGetFiltering: (id: string) => { [key: string]: string[] };
+  mustGetFiltering: (id: string) => { [key: number]: number[] };
   updateFiltersForCategory: (
     graphId: string,
-    categoryRootId: string,
-    newFilters: string[],
+    categoryRootId: number,
+    newFilters: number[],
   ) => void;
 }
 
@@ -107,6 +108,7 @@ const useVisualizationStore = create<VisualizationState>((set, get) => ({
             options: null,
             filtersByCategory: {},
             breakdownNodes: [],
+            lastApplyTimestamp: Date.now(),
           },
         ],
       };
@@ -176,14 +178,14 @@ const useVisualizationStore = create<VisualizationState>((set, get) => ({
     return res;
   },
 
-  mustGetFiltering(graphId: string): { [key: string]: string[] } {
+  mustGetFiltering(graphId: string): { [key: number]: number[] } {
     return get().graphs.find((g) => g.id === graphId)!.filtersByCategory;
   },
 
   updateFiltersForCategory(
     graphId: string,
-    categoryRootId: string,
-    newFilters: string[],
+    categoryRootId: number,
+    newFilters: number[],
   ) {
     set((state) => ({
       graphs: state.graphs.map((g) => {

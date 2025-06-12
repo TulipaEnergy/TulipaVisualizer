@@ -175,6 +175,7 @@ const SupplyStackedBarSeries: React.FC<SupplyStackedBarSeriesProps> = ({
               type: "slider",
               orient: "horizontal",
               bottom: "40px",
+              brushSelect: false,
             },
             {
               type: "slider",

@@ -130,6 +130,7 @@ const SystemCosts: React.FC<SystemCostsProps> = ({ graphId }) => {
               bottom: "40px",
               orient: "horizontal",
               minSpan: Math.floor(100 / years.length) - 1,
+              brushSelect: false,
             },
             {
               orient: "vertical",
