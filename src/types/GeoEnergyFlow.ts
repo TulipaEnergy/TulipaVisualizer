@@ -5,7 +5,7 @@ export interface Region {
   id: number;
   name: string;
   parent_id: number | null;
-  level: number; // 0 for regions, 1 for countries
+  level: number; // 0 for EU provinces, 1 for countries
 }
 
 // Processed country-level data for visualization
@@ -33,6 +33,6 @@ export interface EnergyFlowBreakdown {
 // Options for the energy flow chart
 export interface EnergyFlowOptions {
   year?: number;
-  categoryLevel?: number; // 0 for regions, 1 for countries
+  categoryLevel?: number; // 0 for EU provinces, 1 for countries
   selectedRegions?: string[]; // Names of selected regions/countries
 }

@@ -119,26 +119,16 @@ const EnergyFlow: React.FC<EnergyFlowProps> = ({ graphId }) => {
         setWorldMapLoaded(true);
         console.log("World map registered successfully");
 
-        // Load regional maps for regions (level 0)
-        // Netherlands provinces
-        const nlResponse = await fetch(
-          "/src/assets/geo/netherlands-provinces.geo.json",
-        );
-        const nlGeoJSON = await nlResponse.json();
+        // Load EU provinces map for regions (level 0)
+        const euResponse = await fetch("/src/assets/geo/eu_provinces.geo.json");
+        const euGeoJSON = await euResponse.json();
 
-        // Configure the GeoJSON to use 'statnaam' as the name field for ECharts
-        if (nlGeoJSON.features) {
-          nlGeoJSON.features.forEach((feature: any) => {
-            if (feature.properties && feature.properties.statnaam) {
-              feature.properties.name = feature.properties.statnaam;
-            }
-          });
-        }
-
-        echarts.registerMap("netherlands-regions", nlGeoJSON);
+        // The EU provinces GeoJSON already uses 'name' as the property for ECharts
+        // No need to modify the properties structure
+        echarts.registerMap("eu-provinces", euGeoJSON);
 
         setRegionalMapLoaded(true);
-        console.log("Regional maps registered successfully");
+        console.log("EU provinces map registered successfully");
       } catch (error) {
         console.error("Failed to load maps:", error);
         setErrorData(`Failed to load maps: ${error}`);
@@ -184,14 +174,14 @@ const EnergyFlow: React.FC<EnergyFlowProps> = ({ graphId }) => {
     let zoomLevel = 1.2;
 
     if (isRegionalView) {
-      mapName = "netherlands-regions";
-      zoomLevel = 1;
+      mapName = "eu-provinces";
+      zoomLevel = 6;
     }
     // ECharts option
     const mapOption = {
       backgroundColor: "transparent",
       title: {
-        text: `Energy Flow - ${isRegionalView ? "Regional" : "Country"} Level (${(graph.options as EnergyFlowOptions)?.year})`,
+        text: `Energy Flow - ${isRegionalView ? "EU Provinces" : "Country"} Level (${(graph.options as EnergyFlowOptions)?.year})`,
         left: "center",
         top: 20,
         textStyle: {
@@ -383,7 +373,7 @@ const EnergyFlow: React.FC<EnergyFlowProps> = ({ graphId }) => {
             }
             onChange={handleCategoryLevelChange}
             data={[
-              { value: "0", label: "Regions" },
+              { value: "0", label: "EU Provinces" },
               { value: "1", label: "Countries" },
             ]}
             size="xs"
@@ -469,7 +459,7 @@ const EnergyFlow: React.FC<EnergyFlowProps> = ({ graphId }) => {
           <Paper p="md" withBorder radius="md">
             <Text size="lg" fw={600} mb="md">
               Detailed Energy Flow Analysis -{" "}
-              {isRegionalView ? "Regional" : "Country"} Level
+              {isRegionalView ? "EU Provinces" : "Country"} Level
             </Text>
             <Grid>
               {energyData.map((region) => {
