@@ -24,11 +24,22 @@ const REGIONS: Region[] = [
   { id: 4, name: "Belgium", parent_id: null, level: 1 },
 ];
 
-// Mapping between database region names and GeoJSON feature names
+// Mapping between database region names and EU provinces GeoJSON feature names
 const REGION_NAME_MAPPING: Record<string, string> = {
-  "South-Holland": "Zuid-Holland",
-  "North-Holland": "Noord-Holland",
+  // Dutch provinces - mapping from database names to EU provinces GeoJSON names
+  "South-Holland": "South Holland",
+  "North-Holland": "North Holland",
+  Utrecht: "Utrecht",
+  Gelderland: "Gelderland",
+  Overijssel: "Overijssel",
+  // Add more Dutch provinces as needed
+  "Zuid-Holland": "South Holland", // Alternative name mapping
+  "Noord-Holland": "North Holland", // Alternative name mapping
+
+  // Belgian provinces
   Antwerp: "Antwerp", // Keep as is for Belgium regions
+
+  // Countries
   Netherlands: "Netherlands", // Keep as is for country level
   Belgium: "Belgium", // Keep as is for country level
 };
