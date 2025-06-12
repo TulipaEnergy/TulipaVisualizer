@@ -6,6 +6,7 @@ import {
   Stack,
   Select,
   Group,
+  Switch,
 } from "@mantine/core";
 import { useState, useEffect } from "react";
 import ReactECharts from "echarts-for-react";
@@ -31,6 +32,7 @@ const StoragePrices: React.FC<StoragePricesProps> = ({ graphId }) => {
   const [resolution, setResolution] = useState<Resolution>(Resolution.Hours);
   const [year, setYear] = useState<number | null>(null);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
+  const [checked, setChecked] = useState<boolean>(false);
 
   const dbPath = getGraphDatabase(graphId);
 
@@ -72,17 +74,27 @@ const StoragePrices: React.FC<StoragePricesProps> = ({ graphId }) => {
         setLoadingData(true);
 
         if (year === null) return;
-        const data: StoragePriceDurationSeriesRow[] =
+        var data: StoragePriceDurationSeriesRow[] =
           await getStoragePriceDurationSeries(dbPath, resolution, year);
+
+        if (checked == true) {
+          data = data.sort((a, b) => {
+            return b.y_axis - a.y_axis;
+          });
+        }
 
         const groupedByAsset = new Map<
           string,
           { name: string; value: [number, number, number] }[]
         >();
+        const currXEndAsset = new Map<string, number>();
         for (const d of data) {
+          var currXEnd = currXEndAsset.get(d.asset) || 0;
           const key = `${d.milestone_year}, ${resolution} ${d.global_start}-${d.global_end}`;
-          const xEnd = d.global_end;
-          const width = d.global_end - d.global_start;
+          const width = Number(d.global_end - d.global_start);
+          const xEnd = currXEnd + width;
+          currXEnd = currXEnd + width;
+          currXEndAsset.set(d.asset, currXEnd);
 
           const entry = {
             name: `${d.asset} (${key})`,
@@ -188,7 +200,7 @@ const StoragePrices: React.FC<StoragePricesProps> = ({ graphId }) => {
     };
 
     fetchDataAndConfigureChart();
-  }, [dbPath, resolution, year]); // Refreshes whenever you select a diff db file
+  }, [dbPath, resolution, year, checked]); // Refreshes whenever you select a diff db file
 
   if (loadingData && year !== null) {
     return (
@@ -225,7 +237,7 @@ const StoragePrices: React.FC<StoragePricesProps> = ({ graphId }) => {
 
   return (
     <Stack>
-      <Group>
+      <Group justify="apart" align="flex-end">
         <Select
           label="Resolution"
           value={resolution}
@@ -265,9 +277,14 @@ const StoragePrices: React.FC<StoragePricesProps> = ({ graphId }) => {
           placeholder="Select year"
           disabled={availableYears.length === 0}
         />
-        {/* <Button size="xs" onClick={resetZoom}> */}
-        {/* Reset Zoom */}
-        {/* </Button> */}
+        <Switch
+          label="Duration Curve"
+          onLabel="ON"
+          offLabel="OFF"
+          checked={checked}
+          style={{ maxWidth: 160 }}
+          onChange={(event) => setChecked(event.currentTarget.checked)}
+        />
       </Group>
       {chartOptions ? (
         <Paper

@@ -6,6 +6,7 @@ import {
   Stack,
   Select,
   Group,
+  Switch,
 } from "@mantine/core";
 import { useState, useEffect } from "react";
 import ReactECharts from "echarts-for-react";
@@ -33,6 +34,7 @@ const ProductionPricesDurationSeries: React.FC<
   const [resolution, setResolution] = useState<Resolution>(Resolution.Hours);
   const [year, setYear] = useState<number | null>(null);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
+  const [checked, setChecked] = useState<boolean>(false);
 
   const dbPath = getGraphDatabase(graphId);
 
@@ -72,17 +74,28 @@ const ProductionPricesDurationSeries: React.FC<
       try {
         setLoadingData(true);
         if (year === null) return;
-        const data: ProductionPriceDurationSeriesRow[] =
+        var data: ProductionPriceDurationSeriesRow[] =
           await getProductionPriceDurationSeries(dbPath, resolution, year);
+
+        if (checked == true) {
+          data = data.sort((a, b) => {
+            return b.y_axis - a.y_axis;
+          });
+        }
 
         const groupedByAsset = new Map<
           string,
           { name: string; value: [number, number, number] }[]
         >();
+        const currXEndAsset = new Map<string, number>();
+        //var currXEnd: number = 0;
         for (const d of data) {
+          var currXEnd = currXEndAsset.get(d.asset) || 0;
           const key = `${d.milestone_year}, ${resolution} ${d.global_start}-${d.global_end}`;
-          const xEnd = d.global_end;
-          const width = d.global_end - d.global_start;
+          const width = Number(d.global_end - d.global_start);
+          const xEnd = currXEnd + width;
+          currXEnd = currXEnd + width;
+          currXEndAsset.set(d.asset, currXEnd);
 
           const entry = {
             name: `${d.asset} (${key})`,
@@ -188,7 +201,7 @@ const ProductionPricesDurationSeries: React.FC<
     };
 
     fetchData();
-  }, [dbPath, resolution, year]);
+  }, [dbPath, resolution, year, checked]);
 
   if (loadingData && year !== null) {
     return (
@@ -224,7 +237,7 @@ const ProductionPricesDurationSeries: React.FC<
 
   return (
     <Stack>
-      <Group>
+      <Group justify="apart" align="flex-end">
         <Select
           label="Resolution"
           value={resolution}
@@ -263,6 +276,14 @@ const ProductionPricesDurationSeries: React.FC<
           style={{ maxWidth: 160 }}
           placeholder="Select year"
           disabled={availableYears.length === 0}
+        />
+        <Switch
+          label="Duration Curve"
+          onLabel="ON"
+          offLabel="OFF"
+          checked={checked}
+          style={{ maxWidth: 160 }}
+          onChange={(event) => setChecked(event.currentTarget.checked)}
         />
       </Group>
       {chartOptions ? (
