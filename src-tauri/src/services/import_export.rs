@@ -23,13 +23,13 @@ pub fn get_export(db_path: String, cat_name: String) -> Result<Response, String>
     return serialize_recordbatch(res.0, res.1);
 }
 
-fn get_category_from_id(db_path: String, id: u32) -> Result<String, String> {
-    let row_mapper = |row: &duckdb::Row<'_>| {let res: String = row.get(0)?; Ok(res)};
-    let res: Vec<String> = run_query_row(db_path, CATEGORY_FROM_ID_SQL.to_string(), vec![Value::from(id)], row_mapper)?;
-    let cat: &String = res.first().ok_or("id not found!")?;
+// fn get_category_from_id(db_path: String, id: u32) -> Result<String, String> {
+//     let row_mapper = |row: &duckdb::Row<'_>| {let res: String = row.get(0)?; Ok(res)};
+//     let res: Vec<String> = run_query_row(db_path, CATEGORY_FROM_ID_SQL.to_string(), vec![Value::from(id)], row_mapper)?;
+//     let cat: &String = res.first().ok_or("id not found!")?;
 
-    return Ok(cat.to_string());
-}
+//     return Ok(cat.to_string());
+// }
 
 // given an id, gets the corresponding category
 fn get_id_from_category(db_path: String, cat: String) -> Result<u32, String> {
@@ -45,7 +45,7 @@ fn get_id_from_category(db_path: String, cat: String) -> Result<u32, String> {
 
 // --- QUERIES ---
 
-const CATEGORY_FROM_ID_SQL: &str = "SELECT name FROM category WHERE id = ?";
+// const CATEGORY_FROM_ID_SQL: &str = "SELECT name FROM category WHERE id = ?";
 const ID_FROM_CATEGORY_SQL: &str = "SELECT id FROM category WHERE name = ?";
 
 const IMPORT_EXPORT_SQL_TEMPLATE: &str = 

@@ -121,7 +121,7 @@ mod tests {
     use super::*;
     use serial_test::serial;
 
-    const DB_PATH: &str = ".duckdb";
+    const DB_PATH: &str = "TESTDB.duckdb";
     const MEM_DB_PATH: &str = "mem.duckdb";
     const CREATE_DEMO_TABLE_SQL: &str = "CREATE TABLE demoTable(id INTEGER, name VARCHAR);";
     const INSERT_DEMO_DATA_SQL: &str = "INSERT INTO demoTable VALUES (1, 'Belgium'), (2, 'Netherlands'), (3, 'France'), (4, 'Germany');";

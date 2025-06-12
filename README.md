@@ -130,37 +130,7 @@ src-tauri/
 
 ## Testing
 
-The project uses Vitest as the test runner, with React Testing Library for component testing and Jest DOM for DOM assertions.
-
-### Test Structure
-
-- Unit tests for components are located in `src/components/__tests__/`
-- Unit tests for hooks are located in `src/hooks/__tests__/`
-- Unit tests for utilities are located next to the files they test
-
-### Writing Tests
-
-We follow these testing principles:
-
-- Test behavior, not implementation
-- Each test should be independent
-- Use descriptive test names
-- Mock external dependencies
-
-Example test structure:
-
-```tsx
-import { render, screen } from "@testing-library/react";
-import { describe, it, expect } from "vitest";
-import MyComponent from "../MyComponent";
-
-describe("MyComponent", () => {
-  it("renders correctly", () => {
-    render(<MyComponent />);
-    expect(screen.getByText("Expected text")).toBeInTheDocument();
-  });
-});
-```
+See [Testing Guide](Testing.md)
 
 ---
 

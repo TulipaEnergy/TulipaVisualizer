@@ -117,20 +117,23 @@ const useVisualizationStore = create<VisualizationState>((set, get) => ({
 
   removeGraph: (id) =>
     set((state) => ({
+      ...state,
       graphs: state.graphs.filter((graph) => graph.id !== id),
     })),
 
   updateGraph: (id, updates) =>
     set((state) => ({
+      ...state,
       graphs: state.graphs.map((graph) =>
         graph.id === id ? { ...graph, ...updates } : graph,
       ),
     })),
 
-  addDatabase: async (filePath: string) => {
+  addDatabase: (filePath: string) => {
     set((state) => {
       if (!state.databases.includes(filePath)) {
         return {
+          ...state,
           databases: [...state.databases, filePath],
         };
       }
@@ -138,19 +141,23 @@ const useVisualizationStore = create<VisualizationState>((set, get) => ({
     });
   },
 
-  removeDatabase: async (filePath: string) => {
+  removeDatabase: (filePath: string) => {
     set((state) => ({
-      databases: state.databases.filter((db) => db != filePath),
-      graphs: state.graphs.filter((g) => g.graphDBFilePath != filePath),
+      ...state,
+      databases: state.databases.filter((db) => db !== filePath),
+      graphs: state.graphs.filter((g) => g.graphDBFilePath !== filePath),
     }));
   },
 
   setGraphDatabase: (graphId: string, dbPath: string) => {
     set((state) => ({
+      ...state,
       graphs: state.graphs.map((g) => {
-        if (g.id == graphId) {
-          g.graphDBFilePath = dbPath;
-          return g;
+        if (g.id === graphId) {
+          return {
+            ...g,
+            graphDBFilePath: dbPath,
+          };
         }
         return g;
       }),
@@ -188,8 +195,9 @@ const useVisualizationStore = create<VisualizationState>((set, get) => ({
     newFilters: number[],
   ) {
     set((state) => ({
+      ...state,
       graphs: state.graphs.map((g) => {
-        if (g.id == graphId) {
+        if (g.id === graphId) {
           return {
             ...g,
             filtersByCategory: {

@@ -54,7 +54,9 @@ const FilteringScrollMenu: React.FC<BreakdownProps> = ({ graphId }) => {
         </Text>
         <Select
           size="xs"
-          data={Object.keys(data).map((v) => ({ label: v, value: v }))}
+          data={
+            data ? Object.keys(data).map((v) => ({ label: v, value: v })) : []
+          }
           value={metadataTree}
           onChange={handleSelectionChange}
           placeholder="Select category"

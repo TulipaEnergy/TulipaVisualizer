@@ -28,12 +28,13 @@ export const QueryEditor = ({
   setQueryHistory,
 }: QueryEditorProps) => {
   const handleExecute = () => {
-    if (sqlQuery.trim()) {
-      onExecute();
-      // Add to history if not already the latest
-      if (queryHistory.length === 0 || queryHistory[0] !== sqlQuery) {
-        setQueryHistory((prev: string[]) => [sqlQuery, ...prev.slice(0, 9)]);
-      }
+    onExecute();
+    // Add to history if not already the latest and query is not empty
+    if (
+      sqlQuery.trim() &&
+      (queryHistory.length === 0 || queryHistory[0] !== sqlQuery)
+    ) {
+      setQueryHistory((prev: string[]) => [sqlQuery, ...prev.slice(0, 9)]);
     }
   };
 
