@@ -6,6 +6,7 @@ import {
   Stack,
   Select,
   Group,
+  Switch,
 } from "@mantine/core";
 import { useState, useEffect } from "react";
 import ReactECharts from "echarts-for-react";
@@ -34,6 +35,7 @@ const TransportationPricesDurationSeries: React.FC<
   const [availableYears, setAvailableYears] = useState<number[]>([]);
   const [carrier, setCarrier] = useState<string | null>(null);
   const [availableCarriers, setAvailableCarriers] = useState<string[]>([]);
+  const [checked, setChecked] = useState<boolean>(false);
 
   const dbPath = getGraphDatabase(graphId);
 
@@ -96,7 +98,7 @@ const TransportationPricesDurationSeries: React.FC<
       try {
         setLoadingData(true);
         if (year === null || carrier === null) return;
-        const data: TransportationPriceDurationSeriesRow[] =
+        var data: TransportationPriceDurationSeriesRow[] =
           await getTransportationPriceDurationSeries(
             dbPath,
             year,
@@ -104,14 +106,23 @@ const TransportationPricesDurationSeries: React.FC<
             resolution,
           );
 
+        if (checked == true) {
+          data = data.sort((a, b) => {
+            return b.y_axis - a.y_axis;
+          });
+        }
         const groupedByRoute = new Map<
           string,
           { name: string; value: [number, number, number] }[]
         >();
+        const currXEndAsset = new Map<string, number>();
         for (const d of data) {
+          var currXEnd = currXEndAsset.get(d.route) || 0;
           const key = `${d.milestone_year}, ${resolution} ${d.global_start}-${d.global_end}`;
-          const xEnd = d.global_end;
-          const width = d.global_end - d.global_start;
+          const width = Number(d.global_end - d.global_start);
+          const xEnd = currXEnd + width;
+          currXEnd = currXEnd + width;
+          currXEndAsset.set(d.route, currXEnd);
 
           const entry = {
             name: `${d.route} (${key})`,
@@ -217,7 +228,7 @@ const TransportationPricesDurationSeries: React.FC<
     };
 
     fetchData();
-  }, [dbPath, resolution, year, carrier]);
+  }, [dbPath, resolution, year, carrier, checked]);
 
   if (loadingData && year !== null && carrier !== null) {
     return (
@@ -253,7 +264,7 @@ const TransportationPricesDurationSeries: React.FC<
 
   return (
     <Stack>
-      <Group>
+      <Group justify="apart" align="flex-end">
         <Select
           label="Resolution"
           value={resolution}
@@ -311,6 +322,14 @@ const TransportationPricesDurationSeries: React.FC<
           style={{ maxWidth: 160 }}
           placeholder="Select carrier"
           disabled={availableCarriers.length === 0}
+        />
+        <Switch
+          label="Duration Curve"
+          onLabel="ON"
+          offLabel="OFF"
+          checked={checked}
+          style={{ maxWidth: 160 }}
+          onChange={(event) => setChecked(event.currentTarget.checked)}
         />
       </Group>
       {chartOptions ? (
