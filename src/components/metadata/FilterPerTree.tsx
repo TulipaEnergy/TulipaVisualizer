@@ -4,7 +4,14 @@ import { TreeSelect, TreeSelectChangeEvent } from "primereact/treeselect";
 import { TreeNode } from "primereact/treenode";
 import { useState } from "react";
 import useVisualizationStore from "../../store/visualizationStore";
-import { SelectedFilteringKeys } from "../../types/metadata";
+import { mustGetKey } from "../../services/metadata";
+
+interface SelectedFilteringKeys {
+  [key: string]: {
+    checked: boolean;
+    partialChecked: boolean;
+  };
+}
 
 interface FilterPerTreeProps {
   graphId: string;
@@ -12,13 +19,9 @@ interface FilterPerTreeProps {
   categoryRoot: TreeNode;
 }
 
-function mustGetKey(n: TreeNode): string {
-  return n.key! as string;
-}
-
 function reduceNodeArrayToLabels(nodes: TreeNode[]): string[] {
   const displayedLabels: string[] = [];
-  const displayedKeys = new Set<string>();
+  const displayedKeys = new Set<number>();
 
   for (const curNode of nodes) {
     if (!displayedKeys.has(mustGetKey(curNode))) {
@@ -39,9 +42,9 @@ function reduceNodeArrayToLabels(nodes: TreeNode[]): string[] {
   return displayedLabels;
 }
 
-function reduceNodeArrayToKeys(nodes: TreeNode[]): string[] {
-  const storedKeys: string[] = [];
-  const displayedKeys = new Set<string>();
+function reduceNodeArrayToKeys(nodes: TreeNode[]): number[] {
+  const storedKeys: number[] = [];
+  const displayedKeys = new Set<number>();
 
   for (const curNode of nodes) {
     if (!displayedKeys.has(mustGetKey(curNode))) {
@@ -127,10 +130,10 @@ const FilterPerTree: React.FC<FilterPerTreeProps> = ({
           const selectorState = e.value as SelectedFilteringKeys;
 
           // disregard all keys which are not checked, or are only partially checked
-          const selectedCheckedKeysSet: Set<string> = new Set(
-            Object.keys(selectorState).filter(
-              (key) => selectorState[key].checked,
-            ),
+          const selectedCheckedKeysSet: Set<number> = new Set(
+            Object.keys(selectorState)
+              .filter((key) => selectorState[key].checked)
+              .map((t) => Number(t)),
           );
 
           // conver the set of checked keys to an array of nodes

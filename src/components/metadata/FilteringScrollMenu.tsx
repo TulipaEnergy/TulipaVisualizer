@@ -4,14 +4,14 @@ import { IconFilter } from "@tabler/icons-react";
 import { useState } from "react";
 import FilterPerTree from "./FilterPerTree";
 import { getAllMetadata } from "../../services/metadata";
-import { MetadataTrees } from "../../types/metadata";
+import { MetaTreeRootsByCategoryName } from "../../types/metadata";
 
 interface FilteringProps {
   graphId: string;
 }
 
 const FilteringScrollMenu: React.FC<FilteringProps> = ({ graphId }) => {
-  const [data, setData] = useState<MetadataTrees>({});
+  const [data, setData] = useState<MetaTreeRootsByCategoryName>({});
 
   useEffect(() => {
     (async () => {

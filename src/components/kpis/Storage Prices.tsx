@@ -25,7 +25,8 @@ interface StoragePricesProps {
 type EChartsOption = echarts.EChartsOption;
 
 const StoragePrices: React.FC<StoragePricesProps> = ({ graphId }) => {
-  const { getGraphDatabase, updateGraph } = useVisualizationStore();
+  const { getGraphDatabase, updateGraph, mustGetGraph } =
+    useVisualizationStore();
   const [loadingData, setLoadingData] = useState<boolean>(true);
   const [errorData, setErrorData] = useState<string | null>(null);
   const [chartOptions, setChartOptions] = useState<EChartsOption | null>(null);
@@ -35,6 +36,7 @@ const StoragePrices: React.FC<StoragePricesProps> = ({ graphId }) => {
   const [checked, setChecked] = useState<boolean>(false);
 
   const dbPath = getGraphDatabase(graphId);
+  const graph = mustGetGraph(graphId);
 
   useEffect(() => {
     updateGraph(graphId, { title: "Assets Storage Price Duration Series" });
@@ -57,6 +59,8 @@ const StoragePrices: React.FC<StoragePricesProps> = ({ graphId }) => {
 
   useEffect(() => {
     const fetchDataAndConfigureChart = async () => {
+      // use graph.filtersByCategory and graph.breakdownNodes here
+
       setErrorData(null);
       if (!dbPath) {
         setErrorData("No database selected");
@@ -144,6 +148,7 @@ const StoragePrices: React.FC<StoragePricesProps> = ({ graphId }) => {
             {
               type: "slider",
               orient: "horizontal",
+              brushSelect: false,
             },
             {
               type: "slider",
@@ -200,7 +205,9 @@ const StoragePrices: React.FC<StoragePricesProps> = ({ graphId }) => {
     };
 
     fetchDataAndConfigureChart();
-  }, [dbPath, resolution, year, checked]); // Refreshes whenever you select a diff db file
+  }, [dbPath, resolution, year, graph.lastApplyTimestamp]);
+  // do not include the entire graph as a dependency, since that would trigger
+  // a recomputation with each metadata setting change
 
   if (loadingData && year !== null) {
     return (

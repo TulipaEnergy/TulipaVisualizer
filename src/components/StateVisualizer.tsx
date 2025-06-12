@@ -25,7 +25,7 @@ const StateVisualizer: React.FC = () => {
         <Accordion.Panel>
           <Box style={{ maxHeight: "40vh", overflow: "auto" }}>
             <Code block color="var(--mantine-color-gray-0)">
-              {JSON.stringify(visualizationState, null, 2)}{" "}
+              {JSON.stringify(visualizationState, null, 2)}
             </Code>
           </Box>
         </Accordion.Panel>

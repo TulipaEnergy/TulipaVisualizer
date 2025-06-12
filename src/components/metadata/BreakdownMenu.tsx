@@ -4,16 +4,20 @@ import { TreeSelect, TreeSelectChangeEvent } from "primereact/treeselect";
 import { TreeNode } from "primereact/treenode";
 import { useState } from "react";
 import useVisualizationStore from "../../store/visualizationStore";
-import { SelectedBreakdownKeys, MetadataTrees } from "../../types/metadata";
-import { getAllMetadata } from "../../services/metadata";
+import { MetaTreeRootsByCategoryName } from "../../types/metadata";
+import { getAllMetadata, mustGetKey } from "../../services/metadata";
 import { IconArrowsSplit } from "@tabler/icons-react";
+
+interface SelectedBreakdownKeys {
+  [key: string]: boolean;
+}
 
 interface BreakdownProps {
   graphId: string;
 }
 
 const FilteringScrollMenu: React.FC<BreakdownProps> = ({ graphId }) => {
-  const [data, setData] = useState<MetadataTrees>({});
+  const [data, setData] = useState<MetaTreeRootsByCategoryName>({});
   const [metadataTree, setMetadataTree] = useState<string | null>(null);
   const [selectorState, setSelectorState] = useState<SelectedBreakdownKeys>({});
   const { updateGraph } = useVisualizationStore();
@@ -79,9 +83,9 @@ const FilteringScrollMenu: React.FC<BreakdownProps> = ({ graphId }) => {
               const selectorState = e.value as SelectedBreakdownKeys;
 
               updateGraph(graphId, {
-                breakdownNodes: Object.keys(selectorState).filter(
-                  (key) => selectorState[key],
-                ),
+                breakdownNodes: Object.keys(selectorState)
+                  .filter((key) => selectorState[key])
+                  .map((t) => Number(t)),
               });
 
               setSelectorState(selectorState);
@@ -98,25 +102,27 @@ const FilteringScrollMenu: React.FC<BreakdownProps> = ({ graphId }) => {
             panelStyle={{ marginTop: "10px" }}
             filter
             valueTemplate={(selectedNodes) => {
-              const selectedNodesArray: TreeNode[] = Array.isArray(
-                selectedNodes,
-              )
-                ? selectedNodes
-                : [selectedNodes];
+              let selectedNodesArray: TreeNode[];
+              if (Array.isArray(selectedNodes)) {
+                selectedNodesArray = selectedNodes;
+              } else {
+                selectedNodesArray = [selectedNodes];
+              }
+
               if (selectedNodesArray.length === 0) {
                 return <Text size="xs">...</Text>;
               }
 
-              const selectedNodesSet = new Set(
-                selectedNodesArray.map((node) => node.key),
+              const selectedNodesSet = new Set<number>(
+                selectedNodesArray.map((node) => mustGetKey(node)),
               );
-              const parentNodesSet = new Set<string>();
+              const parentNodesSet = new Set<number>();
 
               selectedNodesArray.forEach((node) => {
                 if (node.children) {
                   node.children.forEach((child) => {
-                    if (selectedNodesSet.has(child.key)) {
-                      parentNodesSet.add(node.key! as string);
+                    if (selectedNodesSet.has(mustGetKey(child))) {
+                      parentNodesSet.add(mustGetKey(node));
                     }
                   });
                 }
@@ -124,18 +130,18 @@ const FilteringScrollMenu: React.FC<BreakdownProps> = ({ graphId }) => {
 
               return (
                 <Group gap="xs" wrap="nowrap" style={{ paddingRight: "3rem" }}>
-                  {selectedNodesArray.map((i) => {
+                  {selectedNodesArray.map((node) => {
                     return (
                       <Badge
-                        key={i.label}
+                        key={node.label}
                         color="blue"
                         variant="light"
                         size="xs"
                         style={{ minWidth: "fit-content" }}
                       >
-                        {parentNodesSet.has(i.key! as string)
-                          ? i.label + "-other"
-                          : i.label}
+                        {parentNodesSet.has(mustGetKey(node))
+                          ? node.label + "-other"
+                          : node.label}
                       </Badge>
                     );
                   })}

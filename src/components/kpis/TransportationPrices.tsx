@@ -172,6 +172,7 @@ const TransportationPricesDurationSeries: React.FC<
             {
               type: "slider",
               orient: "horizontal",
+              brushSelect: false,
             },
             {
               type: "slider",
