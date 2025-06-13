@@ -21,6 +21,7 @@ import {
   EnergyFlowOptions,
   CountryEnergyFlow,
 } from "../../types/GeoEnergyFlow";
+import { readJSON } from "../../gateway/io";
 
 interface EnergyFlowProps {
   graphId: string;
@@ -113,20 +114,16 @@ const EnergyFlow: React.FC<EnergyFlowProps> = ({ graphId }) => {
     const loadMaps = async () => {
       try {
         // Load world map for countries (level 1)
-        const worldResponse = await fetch("/src/assets/geo/world.geo.json");
-        const worldGeoJSON = await worldResponse.json();
+        const worldGeoJSON = await readJSON("assets/geo/world.geo.json");
         echarts.registerMap("world", worldGeoJSON);
         setWorldMapLoaded(true);
         console.log("World map registered successfully");
 
         // Load EU provinces map for regions (level 0)
-        const euResponse = await fetch("/src/assets/geo/eu_provinces.geo.json");
-        const euGeoJSON = await euResponse.json();
-
+        const euGeoJSON = await readJSON("assets/geo/eu_provinces.geo.json");
         // The EU provinces GeoJSON already uses 'name' as the property for ECharts
         // No need to modify the properties structure
         echarts.registerMap("eu-provinces", euGeoJSON);
-
         setRegionalMapLoaded(true);
         console.log("EU provinces map registered successfully");
       } catch (error) {
