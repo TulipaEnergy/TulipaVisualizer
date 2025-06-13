@@ -1,6 +1,6 @@
 import useVisualizationStore from "../store/visualizationStore";
 import { Paper, Text, Title, Image, Anchor, Flex, Group } from "@mantine/core";
-import logo from "../assets/logo.png";
+import logo from "../assets/tulipaLogo.png";
 
 const Toolbar: React.FC = () => {
   const { isLoading, hasAnyDatabase } = useVisualizationStore();

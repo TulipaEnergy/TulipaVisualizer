@@ -1,8 +1,8 @@
 [package]
-name = "tauri-app"
-version = "0.1.0"
-description = "A Tauri App"
-authors = ["you"]
+name = "Tulipa-Energy-Visualizer"
+version = "1.0.0"
+description = "Visualizer for the Tulipa Energy System Optimization Model"
+authors = ["com.TNO-TUDelft.CSE2000.Group-11c.2025"]
 license = "Apache-2.0"
 edition = "2021"
 
