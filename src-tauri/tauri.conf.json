@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "tauri-app",
-  "version": "0.1.0",
-  "identifier": "SP-group11c-Tulipa",
+  "productName": "Tulipa Energy Visualizer",
+  "version": "1.0.0",
+  "identifier": "com.TNO-TUDelft.CSE2000.Group-11c.2025",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -12,9 +12,9 @@
   "app": {
     "windows": [
       {
-        "title": "tauri-app",
-        "width": 800,
-        "height": 600
+        "title": "Energy Visualizer",
+        "width": 1000,
+        "height": 800
       }
     ],
     "security": {

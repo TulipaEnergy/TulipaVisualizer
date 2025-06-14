@@ -3,6 +3,24 @@
 version = 4
 
 [[package]]
+name = "Tulipa-Energy-Visualizer"
+version = "1.0.0"
+dependencies = [
+ "arrow-ipc",
+ "duckdb",
+ "mockall",
+ "once_cell",
+ "serde",
+ "serde_json",
+ "serial_test",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-dialog",
+ "tauri-plugin-fs",
+ "tauri-plugin-opener",
+]
+
+[[package]]
 name = "addr2line"
 version = "0.24.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4437,24 +4455,6 @@ dependencies = [
  "webview2-com",
  "window-vibrancy",
  "windows 0.61.1",
-]
-
-[[package]]
-name = "tauri-app"
-version = "0.1.0"
-dependencies = [
- "arrow-ipc",
- "duckdb",
- "mockall",
- "once_cell",
- "serde",
- "serde_json",
- "serial_test",
- "tauri",
- "tauri-build",
- "tauri-plugin-dialog",
- "tauri-plugin-fs",
- "tauri-plugin-opener",
 ]
 
 [[package]]

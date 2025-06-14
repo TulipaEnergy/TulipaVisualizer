@@ -1,7 +1,7 @@
 {
-  "name": "tauri-app",
+  "name": "tulipa.energy.visualizer",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.0",
   "type": "module",
   "license": "Apache-2.0",
   "scripts": {
@@ -16,7 +16,8 @@
     "test:coverage:ui": "vitest run --coverage && (xdg-open coverage/index.html || open coverage/index.html || start coverage/index.html)",
     "test:coverage:watch": "vitest --coverage --watch",
     "test:coverage:clean": "rm -rf coverage",
-    "format": "npx prettier . --write --end-of-line auto"
+    "format": "npx prettier . --write --end-of-line auto",
+    "clean": "rm -rf coverage && rm -rf dist && rm -rf node_modules && rm -rf src-tauri/target"
   },
   "dependencies": {
     "@mantine/core": "^8.0.1",
