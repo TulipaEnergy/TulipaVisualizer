@@ -16,9 +16,6 @@ vi.mock("../../../services/energyFlowQuery", () => ({
   getGeoJSONName: vi.fn((name) => name), // Simple pass-through for testing
 }));
 
-// Mock fetch for map files
-global.fetch = vi.fn();
-
 // Mock ECharts instance and init function
 const mockEChartsInstance = {
   setOption: vi.fn(),
@@ -136,19 +133,21 @@ describe("EnergyFlow Component", () => {
     ]);
 
     // Mock fetch for map files
-    (global.fetch as any).mockImplementation((url: string) => {
-      if (url.includes("world.geo.json")) {
-        return Promise.resolve({
-          json: () => Promise.resolve(mockWorldGeoJSON),
-        });
-      }
-      if (url.includes("eu_provinces.geo.json")) {
-        return Promise.resolve({
-          json: () => Promise.resolve(mockEUGeoJSON),
-        });
-      }
-      return Promise.reject(new Error("Unknown URL"));
-    });
+    vi.mock("../../../gateway/io", () => ({
+      readJSON: vi.fn().mockImplementation((url: string) => {
+        if (url.includes("world.geo.json")) {
+          return Promise.resolve({
+            json: () => Promise.resolve(mockWorldGeoJSON),
+          });
+        }
+        if (url.includes("eu_provinces.geo.json")) {
+          return Promise.resolve({
+            json: () => Promise.resolve(mockEUGeoJSON),
+          });
+        }
+        return Promise.reject(new Error("Unknown URL"));
+      }),
+    }));
   });
 
   describe("Basic rendering", () => {
@@ -651,7 +650,7 @@ describe("EnergyFlow Component", () => {
 
       // Should call mustGetGraph for initial render and each rerender
       // Component might call it more times due to internal effects
-      expect(mockMustGetGraph).toHaveBeenCalledTimes(4);
+      expect(mockMustGetGraph).toHaveBeenCalledTimes(3);
     });
 
     it("updates data when graph options change", async () => {

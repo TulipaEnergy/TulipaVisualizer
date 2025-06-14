@@ -1,4 +1,6 @@
 import { open } from "@tauri-apps/plugin-dialog";
+import { resolveResource } from "@tauri-apps/api/path";
+import { readTextFile } from "@tauri-apps/plugin-fs";
 
 export async function triggerDuckDBFileDialog(): Promise<string | null> {
   return await open({
@@ -10,4 +12,10 @@ export async function triggerDuckDBFileDialog(): Promise<string | null> {
       },
     ],
   });
+}
+
+// provide relative path from 11c/src-tauri/tauri.conf.json
+export async function readJSON(path: string) {
+  const resourcePath = await resolveResource(path);
+  return JSON.parse(await readTextFile(resourcePath));
 }
