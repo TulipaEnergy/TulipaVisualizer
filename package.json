@@ -25,6 +25,7 @@
     "@tabler/icons-react": "^3.31.0",
     "@tauri-apps/api": "^2.5.0",
     "@tauri-apps/plugin-dialog": "^2.2.1",
+    "@tauri-apps/plugin-fs": "^2.3.0",
     "@tauri-apps/plugin-opener": "^2",
     "@types/react-datepicker": "^6.2.0",
     "apache-arrow": "^19.0.1",
