@@ -44,18 +44,19 @@ describe("Transport Price Query Service", () => {
     const mockDbPath = "/path/to/test.duckdb";
     const mockYear = 2023;
     const mockCarrier = "electricity";
+    const mockColumnType = "min";
 
     it("should fetch transportation price data for yearly resolution", async () => {
       const mockData: TransportationPriceDurationSeriesRow[] = [
         {
-          route: "region_a_to_region_b",
+          carrier: "electricity",
           milestone_year: 2023,
           global_start: 0,
           global_end: 8760,
           y_axis: 25.5,
         },
         {
-          route: "region_b_to_region_c",
+          carrier: "electricity",
           milestone_year: 2023,
           global_start: 0,
           global_end: 8760,
@@ -70,14 +71,17 @@ describe("Transport Price Query Service", () => {
         mockYear,
         mockCarrier,
         Resolution.Years,
+        mockColumnType,
       );
 
       expect(genericApacheIPC).toHaveBeenCalledWith(
-        "get_transportation_price_yearly",
+        "get_transportation_price_resolution",
         {
           dbPath: mockDbPath,
           year: mockYear,
           carrier: mockCarrier,
+          resolution: "years_table",
+          columnType: mockColumnType,
         },
       );
       expect(result).toEqual(mockData);
@@ -86,14 +90,14 @@ describe("Transport Price Query Service", () => {
     it("should fetch transportation price data for hourly resolution", async () => {
       const mockData: TransportationPriceDurationSeriesRow[] = [
         {
-          route: "region_a_to_region_b",
+          carrier: "electricity",
           milestone_year: 2023,
           global_start: 0,
           global_end: 1,
           y_axis: 27.1,
         },
         {
-          route: "region_a_to_region_b",
+          carrier: "electricity",
           milestone_year: 2023,
           global_start: 1,
           global_end: 2,
@@ -108,6 +112,7 @@ describe("Transport Price Query Service", () => {
         mockYear,
         mockCarrier,
         Resolution.Hours,
+        mockColumnType,
       );
 
       expect(genericApacheIPC).toHaveBeenCalledWith(
@@ -117,6 +122,7 @@ describe("Transport Price Query Service", () => {
           year: mockYear,
           carrier: mockCarrier,
           resolution: "hours_table",
+          columnType: mockColumnType,
         },
       );
       expect(result).toEqual(mockData);
@@ -125,7 +131,7 @@ describe("Transport Price Query Service", () => {
     it("should fetch transportation price data for daily resolution", async () => {
       const mockData: TransportationPriceDurationSeriesRow[] = [
         {
-          route: "region_c_to_region_d",
+          carrier: "gas",
           milestone_year: 2023,
           global_start: 0,
           global_end: 24,
@@ -140,6 +146,7 @@ describe("Transport Price Query Service", () => {
         mockYear,
         "gas",
         Resolution.Days,
+        mockColumnType,
       );
 
       expect(genericApacheIPC).toHaveBeenCalledWith(
@@ -149,6 +156,7 @@ describe("Transport Price Query Service", () => {
           year: mockYear,
           carrier: "gas",
           resolution: "days_table",
+          columnType: mockColumnType,
         },
       );
       expect(result).toEqual(mockData);
@@ -157,7 +165,7 @@ describe("Transport Price Query Service", () => {
     it("should fetch transportation price data for weekly resolution", async () => {
       const mockData: TransportationPriceDurationSeriesRow[] = [
         {
-          route: "region_a_to_region_b",
+          carrier: "electricity",
           milestone_year: 2023,
           global_start: 0,
           global_end: 168,
@@ -172,6 +180,7 @@ describe("Transport Price Query Service", () => {
         mockYear,
         mockCarrier,
         Resolution.Weeks,
+        mockColumnType,
       );
 
       expect(genericApacheIPC).toHaveBeenCalledWith(
@@ -181,6 +190,7 @@ describe("Transport Price Query Service", () => {
           year: mockYear,
           carrier: mockCarrier,
           resolution: "weeks_table",
+          columnType: mockColumnType,
         },
       );
       expect(result).toEqual(mockData);
@@ -189,7 +199,7 @@ describe("Transport Price Query Service", () => {
     it("should fetch transportation price data for monthly resolution", async () => {
       const mockData: TransportationPriceDurationSeriesRow[] = [
         {
-          route: "region_e_to_region_f",
+          carrier: "region_e_to_region_f",
           milestone_year: 2023,
           global_start: 0,
           global_end: 744,
@@ -204,6 +214,7 @@ describe("Transport Price Query Service", () => {
         mockYear,
         "hydrogen",
         Resolution.Months,
+        mockColumnType,
       );
 
       expect(genericApacheIPC).toHaveBeenCalledWith(
@@ -213,6 +224,7 @@ describe("Transport Price Query Service", () => {
           year: mockYear,
           carrier: "hydrogen",
           resolution: "months_table",
+          columnType: mockColumnType,
         },
       );
       expect(result).toEqual(mockData);
@@ -227,6 +239,7 @@ describe("Transport Price Query Service", () => {
           mockYear,
           mockCarrier,
           invalidResolution,
+          mockColumnType,
         ),
       ).rejects.toThrow(
         "Invalid resolution specified. Use 'hours', 'days', 'weeks', 'months' or 'years'.",
@@ -245,6 +258,7 @@ describe("Transport Price Query Service", () => {
         mockYear,
         mockCarrier,
         Resolution.Hours,
+        mockColumnType,
       );
 
       expect(result).toEqual([]);
@@ -253,7 +267,7 @@ describe("Transport Price Query Service", () => {
     it("should handle transportation price data with zero values", async () => {
       const mockDataWithZeros: TransportationPriceDurationSeriesRow[] = [
         {
-          route: "region_a_to_region_b",
+          carrier: "region_a_to_region_b",
           milestone_year: 2023,
           global_start: 0,
           global_end: 1,
@@ -268,6 +282,7 @@ describe("Transport Price Query Service", () => {
         mockYear,
         mockCarrier,
         Resolution.Hours,
+        mockColumnType,
       );
 
       expect(result).toEqual(mockDataWithZeros);
@@ -276,7 +291,7 @@ describe("Transport Price Query Service", () => {
     it("should handle transportation price data with negative values", async () => {
       const mockDataWithNegatives: TransportationPriceDurationSeriesRow[] = [
         {
-          route: "region_a_to_region_b",
+          carrier: "region_a_to_region_b",
           milestone_year: 2023,
           global_start: 0,
           global_end: 1,
@@ -291,6 +306,7 @@ describe("Transport Price Query Service", () => {
         mockYear,
         mockCarrier,
         Resolution.Hours,
+        mockColumnType,
       );
 
       expect(result).toEqual(mockDataWithNegatives);
@@ -300,7 +316,7 @@ describe("Transport Price Query Service", () => {
       const carriers = ["electricity", "gas", "hydrogen", "oil"];
       const mockData: TransportationPriceDurationSeriesRow[] = [
         {
-          route: "region_a_to_region_b",
+          carrier: "region_a_to_region_b",
           milestone_year: 2023,
           global_start: 0,
           global_end: 8760,
@@ -316,14 +332,17 @@ describe("Transport Price Query Service", () => {
           mockYear,
           carrier,
           Resolution.Years,
+          mockColumnType,
         );
 
         expect(genericApacheIPC).toHaveBeenCalledWith(
-          "get_transportation_price_yearly",
+          "get_transportation_price_resolution",
           {
             dbPath: mockDbPath,
             year: mockYear,
             carrier: carrier,
+            resolution: "years_table",
+            columnType: mockColumnType,
           },
         );
         expect(result).toEqual(mockData);
@@ -334,7 +353,7 @@ describe("Transport Price Query Service", () => {
       const specialCarrier = "LNG-carrier_type_1";
       const mockData: TransportationPriceDurationSeriesRow[] = [
         {
-          route: "port_a_to_port_b",
+          carrier: "port_a_to_port_b",
           milestone_year: 2023,
           global_start: 0,
           global_end: 8760,
@@ -349,15 +368,16 @@ describe("Transport Price Query Service", () => {
         mockYear,
         specialCarrier,
         Resolution.Years,
+        mockColumnType,
       );
 
       expect(result).toEqual(mockData);
     });
 
-    it("should handle routes with special characters", async () => {
+    it("should handle carriers with special characters", async () => {
       const mockData: TransportationPriceDurationSeriesRow[] = [
         {
-          route: "region-a@north_to_region-b@south",
+          carrier: "region-a@north_to_region-b@south",
           milestone_year: 2023,
           global_start: 0,
           global_end: 1,
@@ -372,6 +392,7 @@ describe("Transport Price Query Service", () => {
         mockYear,
         mockCarrier,
         Resolution.Hours,
+        mockColumnType,
       );
 
       expect(result).toEqual(mockData);
@@ -387,6 +408,7 @@ describe("Transport Price Query Service", () => {
           mockYear,
           mockCarrier,
           Resolution.Hours,
+          mockColumnType,
         ),
       ).rejects.toThrow("Database connection failed");
 
@@ -397,6 +419,7 @@ describe("Transport Price Query Service", () => {
           year: mockYear,
           carrier: mockCarrier,
           resolution: "hours_table",
+          columnType: mockColumnType,
         },
       );
     });
@@ -411,6 +434,7 @@ describe("Transport Price Query Service", () => {
           1999,
           mockCarrier,
           Resolution.Years,
+          mockColumnType,
         ),
       ).rejects.toThrow("Year not found in database");
     });
@@ -425,6 +449,7 @@ describe("Transport Price Query Service", () => {
           mockYear,
           "nonexistent_carrier",
           Resolution.Years,
+          mockColumnType,
         ),
       ).rejects.toThrow("Carrier not found in database");
     });
@@ -632,6 +657,7 @@ describe("Transport Price Query Service", () => {
   describe("Integration scenarios", () => {
     it("should handle complete workflow with years, carriers, and price data", async () => {
       const mockDbPath = "/path/to/test.duckdb";
+      const mockColumnType = "min";
 
       // Mock available years
       const mockYearData: YearJson[] = [{ year: 2022 }, { year: 2023 }];
@@ -645,7 +671,7 @@ describe("Transport Price Query Service", () => {
       // Mock transportation price data
       const mockPriceData: TransportationPriceDurationSeriesRow[] = [
         {
-          route: "region_a_to_region_b",
+          carrier: "region_a_to_region_b",
           milestone_year: 2023,
           global_start: 0,
           global_end: 8760,
@@ -668,6 +694,7 @@ describe("Transport Price Query Service", () => {
         latestYear,
         firstCarrier,
         Resolution.Years,
+        mockColumnType,
       );
 
       expect(availableYears).toEqual(mockYearData);
@@ -697,6 +724,7 @@ describe("Transport Price Query Service", () => {
         2023,
         "electricity",
         Resolution.Hours,
+        "max",
       );
 
       expect(availableYears).toEqual([]);
@@ -708,10 +736,11 @@ describe("Transport Price Query Service", () => {
       const mockDbPath = "/path/to/test.duckdb";
       const testYear = 2023;
       const testCarrier = "electricity";
+      const testColumnType = "min";
 
       const mockHourlyData: TransportationPriceDurationSeriesRow[] = [
         {
-          route: "region_a_to_region_b",
+          carrier: "region_a_to_region_b",
           milestone_year: 2023,
           global_start: 0,
           global_end: 1,
@@ -721,7 +750,7 @@ describe("Transport Price Query Service", () => {
 
       const mockYearlyData: TransportationPriceDurationSeriesRow[] = [
         {
-          route: "region_a_to_region_b",
+          carrier: "region_a_to_region_b",
           milestone_year: 2023,
           global_start: 0,
           global_end: 8760,
@@ -739,12 +768,14 @@ describe("Transport Price Query Service", () => {
         testYear,
         testCarrier,
         Resolution.Hours,
+        testColumnType,
       );
       const yearlyData = await getTransportationPriceDurationSeries(
         mockDbPath,
         testYear,
         testCarrier,
         Resolution.Years,
+        testColumnType,
       );
 
       expect(hourlyData).toEqual(mockHourlyData);
@@ -759,15 +790,18 @@ describe("Transport Price Query Service", () => {
           year: testYear,
           carrier: testCarrier,
           resolution: "hours_table",
+          columnType: testColumnType,
         },
       );
       expect(genericApacheIPC).toHaveBeenNthCalledWith(
         2,
-        "get_transportation_price_yearly",
+        "get_transportation_price_resolution",
         {
           dbPath: mockDbPath,
           year: testYear,
           carrier: testCarrier,
+          resolution: "years_table",
+          columnType: testColumnType,
         },
       );
     });
@@ -775,10 +809,11 @@ describe("Transport Price Query Service", () => {
     it("should handle comparison between different carriers", async () => {
       const mockDbPath = "/path/to/test.duckdb";
       const testYear = 2023;
+      const testColumnType = "max";
 
       const mockElectricityData: TransportationPriceDurationSeriesRow[] = [
         {
-          route: "region_a_to_region_b",
+          carrier: "region_a_to_region_b",
           milestone_year: 2023,
           global_start: 0,
           global_end: 8760,
@@ -788,7 +823,7 @@ describe("Transport Price Query Service", () => {
 
       const mockGasData: TransportationPriceDurationSeriesRow[] = [
         {
-          route: "region_a_to_region_b",
+          carrier: "region_a_to_region_b",
           milestone_year: 2023,
           global_start: 0,
           global_end: 8760,
@@ -798,7 +833,7 @@ describe("Transport Price Query Service", () => {
 
       const mockHydrogenData: TransportationPriceDurationSeriesRow[] = [
         {
-          route: "region_a_to_region_b",
+          carrier: "region_a_to_region_b",
           milestone_year: 2023,
           global_start: 0,
           global_end: 8760,
@@ -817,18 +852,21 @@ describe("Transport Price Query Service", () => {
         testYear,
         "electricity",
         Resolution.Years,
+        testColumnType,
       );
       const gasData = await getTransportationPriceDurationSeries(
         mockDbPath,
         testYear,
         "gas",
         Resolution.Years,
+        testColumnType,
       );
       const hydrogenData = await getTransportationPriceDurationSeries(
         mockDbPath,
         testYear,
         "hydrogen",
         Resolution.Years,
+        testColumnType,
       );
 
       expect(electricityData).toEqual(mockElectricityData);

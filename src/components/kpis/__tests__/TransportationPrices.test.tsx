@@ -48,14 +48,14 @@ describe("TransportationPrices Component", () => {
 
   const mockTransportationData = [
     {
-      route: "Route_1",
+      carrier: "electricity",
       milestone_year: 2023,
       global_start: 0,
       global_end: 5,
       y_axis: 10.5,
     },
     {
-      route: "Route_2",
+      carrier: "gas",
       milestone_year: 2023,
       global_start: 2,
       global_end: 8,
@@ -241,6 +241,7 @@ describe("TransportationPrices Component", () => {
         2023, // first year
         "Carrier_A", // first carrier
         Resolution.Days,
+        "min", // default column type
       );
     });
   });
@@ -280,6 +281,7 @@ describe("TransportationPrices Component", () => {
         2023, // first year from mock data
         "Carrier_A", // first carrier from mock data
         Resolution.Hours, // default resolution
+        "min",
       );
     });
   });
@@ -319,6 +321,7 @@ describe("TransportationPrices Component", () => {
         2023, // first year from mock data
         "Carrier_A", // first carrier from mock data
         Resolution.Hours, // default resolution
+        "min",
       );
     });
   });
@@ -353,7 +356,7 @@ describe("TransportationPrices Component", () => {
 
     expect(chartOption.xAxis.name).toBe("Time in hours");
     expect(chartOption.yAxis.name).toBe("Price");
-    expect(chartOption.series).toHaveLength(2); // Two routes
+    expect(chartOption.series).toHaveLength(2);
   });
 
   it("shows no data message when no chart data is available", async () => {
@@ -468,27 +471,27 @@ describe("TransportationPrices Component", () => {
     consoleSpy.mockRestore();
   });
 
-  it("groups transportation data by route correctly", async () => {
-    const multiRouteData = [
+  it("Calculates data points correctly", async () => {
+    const multiCarrierData = [
       {
-        route: "Route_A",
+        carrier: "electricity",
         milestone_year: 2023,
         global_start: 0,
-        global_end: 5,
+        global_end: 1,
         y_axis: 10.5,
       },
       {
-        route: "Route_A",
+        carrier: "electricity",
         milestone_year: 2023,
-        global_start: 5,
-        global_end: 10,
+        global_start: 4,
+        global_end: 6,
         y_axis: 12.0,
       },
       {
-        route: "Route_B",
+        carrier: "electricity",
         milestone_year: 2023,
-        global_start: 2,
-        global_end: 8,
+        global_start: 1,
+        global_end: 2,
         y_axis: 15.2,
       },
     ];
@@ -501,7 +504,7 @@ describe("TransportationPrices Component", () => {
     );
     vi.mocked(
       transportPriceQuery.getTransportationPriceDurationSeries,
-    ).mockResolvedValue(multiRouteData);
+    ).mockResolvedValue(multiCarrierData);
 
     renderWithProviders(<TransportationPrices graphId="test-graph" />, {
       initialStoreState: mockStoreWithDatabase,
@@ -519,15 +522,11 @@ describe("TransportationPrices Component", () => {
       chartElement.getAttribute("data-option") || "{}",
     );
 
-    // Should have 2 series (one for each route)
-    expect(chartOption.series).toHaveLength(2);
-    expect(chartOption.series[0].name).toBe("Route_A");
-    expect(chartOption.series[1].name).toBe("Route_B");
+    expect(chartOption.series).toHaveLength(1);
+    expect(chartOption.series[0].name).toBe("electricity");
 
-    // Route_A should have 2 data points
-    expect(chartOption.series[0].data).toHaveLength(2);
-    // Route_B should have 1 data point
-    expect(chartOption.series[1].data).toHaveLength(1);
+    // Electricity should have 4 data points
+    expect(chartOption.series[0].data).toHaveLength(4);
   });
 
   it("updates chart title with resolution information", async () => {

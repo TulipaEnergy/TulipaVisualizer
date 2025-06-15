@@ -13,6 +13,7 @@ pub fn get_renewables(db_path: String, year: u32, resolution: u32) -> Result<Res
         &["asset"],
         "sum",
         &resolution.to_string(),
+        false,
     );
 
     let res: (Vec<RecordBatch>, Schema) =
@@ -28,6 +29,7 @@ pub fn get_nonrenewables(db_path: String, year: u32, resolution: u32) -> Result<
         &["asset"],
         "sum",
         &resolution.to_string(),
+        false,
     );
 
     let res: (Vec<RecordBatch>, Schema) =

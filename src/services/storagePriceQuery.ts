@@ -5,19 +5,11 @@ export async function getStoragePriceDurationSeries(
   dbPath: string,
   resolution: Resolution,
   year: number,
+  storageType: string,
 ): Promise<StoragePriceDurationSeriesRow[]> {
   if (!(resolution in resolutionToTable)) {
     throw new Error(
       "Invalid resolution specified. Use 'hours', 'days', 'weeks', 'months' or 'years'.",
-    );
-  }
-  if (resolution === Resolution.Years) {
-    return genericApacheIPC<StoragePriceDurationSeriesRow>(
-      "get_storage_price_yearly",
-      {
-        dbPath: dbPath,
-        year: year,
-      },
     );
   }
 
@@ -27,6 +19,7 @@ export async function getStoragePriceDurationSeries(
       dbPath: dbPath,
       year: year,
       resolution: resolutionToTable[resolution],
+      storageType: storageType,
     },
   );
 }

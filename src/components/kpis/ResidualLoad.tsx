@@ -15,6 +15,7 @@ import {
   getNonRenewables,
   getRenewables,
   getSupplyYears,
+  SupplyRow,
 } from "../../services/residualLoadQuery";
 import useVisualizationStore from "../../store/visualizationStore";
 import { Resolution } from "../../types/resolution";
@@ -71,10 +72,33 @@ const SupplyStackedBarSeries: React.FC<SupplyStackedBarSeriesProps> = ({
         setLoading(true);
         setError(null);
 
-        const [renewablesData, nonData] = await Promise.all([
+        var [renewablesData, nonData] = await Promise.all([
           getRenewables(dbPath, resolution, year),
           getNonRenewables(dbPath, resolution, year),
         ]);
+        function expandData(data: SupplyRow[]): SupplyRow[] {
+          const expanded: SupplyRow[] = [];
+
+          for (const row of data) {
+            const { global_start, global_end, y_axis, ...rest } = row;
+            const duration = global_end - global_start;
+
+            if (duration === 0) continue;
+
+            for (let t = global_start; t < global_end; t++) {
+              expanded.push({
+                ...rest,
+                global_start: Number(t),
+                global_end: Number(t) + 1,
+                y_axis,
+              });
+            }
+          }
+
+          return expanded;
+        }
+        renewablesData = expandData(renewablesData);
+        nonData = expandData(nonData);
         const allData = [...renewablesData, ...nonData]; // merge renewables and nonrenewables
 
         const times = Array.from(

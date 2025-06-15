@@ -69,9 +69,10 @@ describe("Production Price Query Service", () => {
       );
 
       expect(genericApacheIPC).toHaveBeenCalledWith(
-        "get_production_price_yearly",
+        "get_production_price_resolution",
         {
           dbPath: mockDbPath,
+          resolution: "years_table",
           year: mockYear,
         },
       );
@@ -552,9 +553,10 @@ describe("Production Price Query Service", () => {
       );
       expect(genericApacheIPC).toHaveBeenNthCalledWith(
         2,
-        "get_production_price_yearly",
+        "get_production_price_resolution",
         {
           dbPath: mockDbPath,
+          resolution: "years_table",
           year: testYear,
         },
       );
