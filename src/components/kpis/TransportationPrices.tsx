@@ -7,6 +7,7 @@ import {
   Select,
   Group,
   Switch,
+  SegmentedControl,
 } from "@mantine/core";
 import { useState, useEffect } from "react";
 import ReactECharts from "echarts-for-react";
@@ -36,6 +37,7 @@ const TransportationPricesDurationSeries: React.FC<
   const [carrier, setCarrier] = useState<string | null>(null);
   const [availableCarriers, setAvailableCarriers] = useState<string[]>([]);
   const [checked, setChecked] = useState<boolean>(false);
+  const [columnType, setColumnType] = useState<string>("min");
 
   const dbPath = getGraphDatabase(graphId);
 
@@ -104,55 +106,86 @@ const TransportationPricesDurationSeries: React.FC<
             year,
             carrier,
             resolution,
+            columnType,
           );
 
-        if (checked == true) {
-          data = data.sort((a, b) => {
-            return b.y_axis - a.y_axis;
-          });
-        }
-        const groupedByRoute = new Map<
-          string,
-          { name: string; value: [number, number, number] }[]
-        >();
-        const currXEndAsset = new Map<string, number>();
-        for (const d of data) {
-          var currXEnd = currXEndAsset.get(d.route) || 0;
-          const key = `${d.milestone_year}, ${resolution} ${d.global_start}-${d.global_end}`;
-          const width = Number(d.global_end - d.global_start);
-          const xEnd = currXEnd + width;
-          currXEnd = currXEnd + width;
-          currXEndAsset.set(d.route, currXEnd);
+        const expandedData: TransportationPriceDurationSeriesRow[] = [];
 
-          const entry = {
-            name: `${d.route} (${key})`,
-            value: [xEnd, width, d.y_axis] as [number, number, number],
-          };
-          if (!groupedByRoute.has(d.route)) {
-            groupedByRoute.set(d.route, []);
+        for (const row of data) {
+          const { global_start, global_end, y_axis, ...rest } = row;
+          const duration = global_end - global_start;
+
+          if (duration == 0) continue;
+
+          for (let t = global_start; t < global_end; t++) {
+            expandedData.push({
+              ...rest,
+              global_start: Number(t),
+              global_end: Number(t) + 1,
+              y_axis,
+            });
           }
-          groupedByRoute.get(d.route)!.push(entry);
         }
+        data = expandedData;
+        let times: number[];
+
+        if (checked) {
+          const totalByTime = new Map<number, number>();
+          for (const d of data) {
+            const t = Number(d.global_start);
+            totalByTime.set(t, (totalByTime.get(t) ?? 0) + d.y_axis);
+          }
+          times = Array.from(totalByTime.entries())
+            .sort((a, b) => b[1] - a[1])
+            .map(([t]) => t);
+        } else {
+          times = Array.from(
+            new Set(data.map((d) => Number(d.global_start))),
+          ).sort((a, b) => a - b);
+        }
+        const byCarrier = new Map<string, Map<number, number>>();
+        data.forEach((d) => {
+          const start = Number(d.global_start);
+          const value = d.y_axis;
+          const carrier = d.carrier;
+          if (!byCarrier.has(carrier)) byCarrier.set(carrier, new Map());
+          byCarrier.get(carrier)!.set(start, value);
+        });
+
+        const series = Array.from(byCarrier.entries()).map(
+          ([carrier, map]) => ({
+            name: carrier,
+            type: "bar",
+            stack: "total",
+            data: times.map((t) => map.get(t)),
+          }),
+        );
 
         const chartOption = {
+          barCategoryGap: "0%",
+          barGap: "0%",
+
           tooltip: {
-            trigger: "item",
-            formatter: (params: any) => {
-              const y = params.value[2];
-              return `
-                <strong>${params.name}</strong><br/>
-                Price: ${y.toFixed(4)}
-              `;
+            trigger: "axis",
+            axisPointer: { type: "shadow" },
+            formatter: (params: any[]) => {
+              const t = Number(params[0].axisValue);
+              const dur = 1;
+              const unit = resolution;
+              const header = `<strong>Price (${unit} ${t}-${t + dur})</strong>`;
+
+              const lines = params
+                .filter((p) => p.value !== undefined && p.value !== 0)
+                .map((p) => `${p.marker} ${p.seriesName}: ${p.value}`);
+              return lines.length > 0 ? [header, ...lines].join("<br/>") : "";
             },
           },
           xAxis: {
-            type: "value",
+            type: "category",
             name: `Time in ${resolution}`,
             nameLocation: "middle",
             nameGap: 30,
-            axisLabel: {
-              formatter: (val: number) => val.toFixed(1),
-            },
+            data: times.sort((a, b) => a - b).map((t) => t.toString()),
           },
           yAxis: {
             type: "value",
@@ -185,38 +218,7 @@ const TransportationPricesDurationSeries: React.FC<
               type: "inside",
             },
           ],
-          series: Array.from(groupedByRoute.entries()).map(([asset, data]) => ({
-            type: "custom",
-            name: asset,
-            clip: true,
-            renderItem: (params: any, api: any) => {
-              params = params; // done to escape build fail for not read value
-              const x = api.value(0);
-              const width = api.value(1);
-              const y = api.value(2);
-
-              const xStart = api.coord([x - width, 0])[0];
-              const xEnd = api.coord([x, 0])[0];
-              const yCoord = api.coord([0, y])[1];
-              const yBase = api.coord([0, 0])[1];
-
-              return {
-                type: "rect",
-                shape: {
-                  x: xStart,
-                  y: yCoord,
-                  width: xEnd - xStart,
-                  height: yBase - yCoord,
-                },
-                style: api.style(),
-              };
-            },
-            encode: {
-              x: 0,
-              y: 2,
-            },
-            data,
-          })),
+          series: series,
         };
 
         setChartOptions(chartOption);
@@ -229,7 +231,7 @@ const TransportationPricesDurationSeries: React.FC<
     };
 
     fetchData();
-  }, [dbPath, resolution, year, carrier, checked]);
+  }, [dbPath, resolution, year, carrier, checked, columnType]);
 
   if (loadingData && year !== null && carrier !== null) {
     return (
@@ -323,6 +325,14 @@ const TransportationPricesDurationSeries: React.FC<
           style={{ maxWidth: 160 }}
           placeholder="Select carrier"
           disabled={availableCarriers.length === 0}
+        />
+        <SegmentedControl
+          value={columnType}
+          onChange={setColumnType}
+          data={[
+            { label: "Min", value: "min" },
+            { label: "Max", value: "max" },
+          ]}
         />
         <Switch
           label="Duration Curve"

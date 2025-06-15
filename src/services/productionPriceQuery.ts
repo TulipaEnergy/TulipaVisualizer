@@ -11,15 +11,6 @@ export async function getProductionPriceDurationSeries(
       "Invalid resolution specified. Use 'hours', 'days', 'weeks', 'months' or 'years'.",
     );
   }
-  if (resolution === Resolution.Years) {
-    return genericApacheIPC<ProductionPriceDurationSeriesRow>(
-      "get_production_price_yearly",
-      {
-        dbPath: dbPath,
-        year: year,
-      },
-    );
-  }
 
   return genericApacheIPC<ProductionPriceDurationSeriesRow>(
     "get_production_price_resolution",

@@ -41,6 +41,7 @@ describe("Storage Price Query Service", () => {
   describe("getStoragePriceDurationSeries", () => {
     const mockDbPath = "/path/to/test.duckdb";
     const mockYear = 2023;
+    const mockStorageType = "battery";
 
     it("should fetch storage price data for yearly resolution", async () => {
       const mockData: StoragePriceDurationSeriesRow[] = [
@@ -66,13 +67,16 @@ describe("Storage Price Query Service", () => {
         mockDbPath,
         Resolution.Years,
         mockYear,
+        mockStorageType,
       );
 
       expect(genericApacheIPC).toHaveBeenCalledWith(
-        "get_storage_price_yearly",
+        "get_storage_price_resolution",
         {
           dbPath: mockDbPath,
           year: mockYear,
+          resolution: "years_table",
+          storageType: mockStorageType,
         },
       );
       expect(result).toEqual(mockData);
@@ -102,6 +106,7 @@ describe("Storage Price Query Service", () => {
         mockDbPath,
         Resolution.Hours,
         mockYear,
+        mockStorageType,
       );
 
       expect(genericApacheIPC).toHaveBeenCalledWith(
@@ -110,6 +115,7 @@ describe("Storage Price Query Service", () => {
           dbPath: mockDbPath,
           year: mockYear,
           resolution: "hours_table",
+          storageType: mockStorageType,
         },
       );
       expect(result).toEqual(mockData);
@@ -132,6 +138,7 @@ describe("Storage Price Query Service", () => {
         mockDbPath,
         Resolution.Days,
         mockYear,
+        mockStorageType,
       );
 
       expect(genericApacheIPC).toHaveBeenCalledWith(
@@ -140,6 +147,7 @@ describe("Storage Price Query Service", () => {
           dbPath: mockDbPath,
           year: mockYear,
           resolution: "days_table",
+          storageType: mockStorageType,
         },
       );
       expect(result).toEqual(mockData);
@@ -162,6 +170,7 @@ describe("Storage Price Query Service", () => {
         mockDbPath,
         Resolution.Weeks,
         mockYear,
+        mockStorageType,
       );
 
       expect(genericApacheIPC).toHaveBeenCalledWith(
@@ -170,6 +179,7 @@ describe("Storage Price Query Service", () => {
           dbPath: mockDbPath,
           year: mockYear,
           resolution: "weeks_table",
+          storageType: mockStorageType,
         },
       );
       expect(result).toEqual(mockData);
@@ -192,6 +202,7 @@ describe("Storage Price Query Service", () => {
         mockDbPath,
         Resolution.Months,
         mockYear,
+        mockStorageType,
       );
 
       expect(genericApacheIPC).toHaveBeenCalledWith(
@@ -200,6 +211,7 @@ describe("Storage Price Query Service", () => {
           dbPath: mockDbPath,
           year: mockYear,
           resolution: "months_table",
+          storageType: mockStorageType,
         },
       );
       expect(result).toEqual(mockData);
@@ -209,7 +221,12 @@ describe("Storage Price Query Service", () => {
       const invalidResolution = "invalid_resolution" as Resolution;
 
       await expect(
-        getStoragePriceDurationSeries(mockDbPath, invalidResolution, mockYear),
+        getStoragePriceDurationSeries(
+          mockDbPath,
+          invalidResolution,
+          mockYear,
+          mockStorageType,
+        ),
       ).rejects.toThrow(
         "Invalid resolution specified. Use 'hours', 'days', 'weeks', 'months' or 'years'.",
       );
@@ -226,6 +243,7 @@ describe("Storage Price Query Service", () => {
         mockDbPath,
         Resolution.Hours,
         mockYear,
+        mockStorageType,
       );
 
       expect(result).toEqual([]);
@@ -248,6 +266,7 @@ describe("Storage Price Query Service", () => {
         mockDbPath,
         Resolution.Hours,
         mockYear,
+        mockStorageType,
       );
 
       expect(result).toEqual(mockDataWithZeros);
@@ -270,6 +289,7 @@ describe("Storage Price Query Service", () => {
         mockDbPath,
         Resolution.Hours,
         mockYear,
+        mockStorageType,
       );
 
       expect(result).toEqual(mockDataWithNegatives);
@@ -280,7 +300,12 @@ describe("Storage Price Query Service", () => {
       vi.mocked(genericApacheIPC).mockRejectedValueOnce(mockError);
 
       await expect(
-        getStoragePriceDurationSeries(mockDbPath, Resolution.Hours, mockYear),
+        getStoragePriceDurationSeries(
+          mockDbPath,
+          Resolution.Hours,
+          mockYear,
+          mockStorageType,
+        ),
       ).rejects.toThrow("Database connection failed");
 
       expect(genericApacheIPC).toHaveBeenCalledWith(
@@ -289,6 +314,7 @@ describe("Storage Price Query Service", () => {
           dbPath: mockDbPath,
           year: mockYear,
           resolution: "hours_table",
+          storageType: mockStorageType,
         },
       );
     });
@@ -298,7 +324,12 @@ describe("Storage Price Query Service", () => {
       vi.mocked(genericApacheIPC).mockRejectedValueOnce(mockError);
 
       await expect(
-        getStoragePriceDurationSeries(mockDbPath, Resolution.Years, 1999),
+        getStoragePriceDurationSeries(
+          mockDbPath,
+          Resolution.Years,
+          1999,
+          mockStorageType,
+        ),
       ).rejects.toThrow("Year not found in database");
     });
 
@@ -319,6 +350,7 @@ describe("Storage Price Query Service", () => {
         mockDbPath,
         Resolution.Hours,
         mockYear,
+        mockStorageType,
       );
 
       expect(result).toEqual(mockData);
@@ -355,6 +387,7 @@ describe("Storage Price Query Service", () => {
         mockDbPath,
         Resolution.Hours,
         mockYear,
+        mockStorageType,
       );
 
       expect(result).toEqual(mockData);
@@ -463,6 +496,7 @@ describe("Storage Price Query Service", () => {
   describe("Integration scenarios", () => {
     it("should handle complete workflow with years and storage price data", async () => {
       const mockDbPath = "/path/to/test.duckdb";
+      const mockStorageType = "battery";
 
       // Mock available years
       const mockYearData: YearJson[] = [{ year: 2022 }, { year: 2023 }];
@@ -489,6 +523,7 @@ describe("Storage Price Query Service", () => {
         mockDbPath,
         Resolution.Years,
         latestYear,
+        mockStorageType,
       );
 
       expect(availableYears).toEqual(mockYearData);
@@ -498,6 +533,7 @@ describe("Storage Price Query Service", () => {
 
     it("should handle workflow when no data is available", async () => {
       const mockDbPath = "/path/to/empty.duckdb";
+      const mockStorageType = "battery";
 
       // Mock empty years and price data
       const mockEmptyYears: YearJson[] = [];
@@ -512,6 +548,7 @@ describe("Storage Price Query Service", () => {
         mockDbPath,
         Resolution.Hours,
         2023,
+        mockStorageType,
       );
 
       expect(availableYears).toEqual([]);
@@ -521,6 +558,7 @@ describe("Storage Price Query Service", () => {
     it("should handle different resolutions for same year", async () => {
       const mockDbPath = "/path/to/test.duckdb";
       const testYear = 2023;
+      const testStorageType = "battery";
 
       const mockHourlyData: StoragePriceDurationSeriesRow[] = [
         {
@@ -551,11 +589,13 @@ describe("Storage Price Query Service", () => {
         mockDbPath,
         Resolution.Hours,
         testYear,
+        testStorageType,
       );
       const yearlyData = await getStoragePriceDurationSeries(
         mockDbPath,
         Resolution.Years,
         testYear,
+        testStorageType,
       );
 
       expect(hourlyData).toEqual(mockHourlyData);
@@ -569,14 +609,17 @@ describe("Storage Price Query Service", () => {
           dbPath: mockDbPath,
           year: testYear,
           resolution: "hours_table",
+          storageType: testStorageType,
         },
       );
       expect(genericApacheIPC).toHaveBeenNthCalledWith(
         2,
-        "get_storage_price_yearly",
+        "get_storage_price_resolution",
         {
           dbPath: mockDbPath,
           year: testYear,
+          resolution: "years_table",
+          storageType: testStorageType,
         },
       );
     });
@@ -584,6 +627,7 @@ describe("Storage Price Query Service", () => {
     it("should handle comparison between different storage technologies", async () => {
       const mockDbPath = "/path/to/test.duckdb";
       const testYear = 2023;
+      const testStorageType = "battery";
 
       const mockData: StoragePriceDurationSeriesRow[] = [
         {
@@ -615,6 +659,7 @@ describe("Storage Price Query Service", () => {
         mockDbPath,
         Resolution.Years,
         testYear,
+        testStorageType,
       );
 
       expect(priceData).toEqual(mockData);

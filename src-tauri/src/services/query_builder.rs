@@ -4,9 +4,19 @@ pub fn build_resolution_query(
     group_cols: &[&str],
     agg: &str,
     resolution: &str,
+    clustered: bool,
 ) -> String {
+    let combine_sql: String;
+    if clustered {
+        combine_sql = "WITH ".to_string()
+            + CLUSTURED_YEAR_RESOLUTIONS_SQL
+            + &LAST_PART_SQL.replace("{final}", "final_clustered");
+    } else {
+        combine_sql = REP_PERIOD_RESOLUTION_SQL.to_string()
+            + &LAST_PART_SQL.replace("{final}", "final_rep_periods");
+    }
     let group_cols_sql = group_cols.join(", ");
-        RESOLUTION_SQL
+        combine_sql
             .replace("{group_cols}", &group_cols_sql)
             .replace("{value_col}", value_col)
             .replace("{source_table}", source_table)
@@ -14,10 +24,31 @@ pub fn build_resolution_query(
             .replace("{period_length}", resolution)
 }
 
+pub fn build_resolution_query_both(
+    source_table: &str,
+    source_table_1: &str,
+    value_col: &str,
+    group_cols: &[&str],
+    agg: &str,
+    resolution: &str,
+) -> String {
+
+  let combine_sql = REP_PERIOD_RESOLUTION_SQL.to_string()
+      + &CLUSTURED_YEAR_RESOLUTIONS_SQL.replace("{source_table}", "{source_table_1}")
+      + BOTH_RESOLUTIONS_SQL
+      + &LAST_PART_SQL.replace("{final}", "final");
+  let group_cols_sql = group_cols.join(", ");
+    combine_sql
+        .replace("{group_cols}", &group_cols_sql)
+        .replace("{value_col}", value_col)
+        .replace("{source_table}", source_table)
+        .replace("{source_table_1}", source_table_1)
+        .replace("{agg}", agg)
+        .replace("{period_length}", resolution)
+}
+
 // --- QUERIES ---
-
-
-const RESOLUTION_SQL: &str = "
+const REP_PERIOD_RESOLUTION_SQL: &str = "
 /* Assigns a group number (grp) to consecutive blocks that have the same {value_col} values
    within the same {group_cols}, year, and rep_period, ordered by time_block_start (chronologically).
 */
@@ -123,7 +154,7 @@ numbered_blocks AS (
   FROM raw
 ),
 /* Combines the consecutive blocks with the same y_axis values. */
-final AS (
+final_rep_periods AS (
   SELECT
     {group_cols},
     milestone_year,
@@ -139,14 +170,78 @@ final AS (
     y_axis,
     grp
 ),
-/* Calculates the total duration (in hours) of each period per {group_cols} and milestone_year. */
+";
+
+static CLUSTURED_YEAR_RESOLUTIONS_SQL: &str = "
+  /* Generates a row for each period instead of having
+  a single row per consecutive periods with the same price */
+  pre_processed AS (
+    SELECT
+      {group_cols},
+      year AS milestone_year,
+      period,
+      SUM({value_col}) AS y_axis
+    FROM {source_table},
+    LATERAL UNNEST(GENERATE_SERIES(period_block_start, period_block_end)) AS period(period)
+    WHERE year = ?
+    GROUP BY
+      {group_cols},
+      milestone_year,
+      period
+  ),
+  /* Prepares the data to be in the needed format for the next query */
+  final_clustered AS (
+    SELECT DISTINCT
+      {group_cols},
+      milestone_year,
+      m.period,
+      0 AS start_hour,
+      (d.num_timesteps * d.resolution) AS end_hour,
+      y_axis
+    FROM pre_processed AS pre
+    JOIN rep_periods_mapping AS m ON pre.milestone_year = m.year AND pre.period = m.period
+    JOIN rep_periods_data AS d ON m.year = d.year AND m.rep_period = d.rep_period
+  ),
+";
+
+const BOTH_RESOLUTIONS_SQL: &str = "
+/* Combines the clustered and non-clustered data into a single table.*/
+final AS (
+  SELECT
+    final_clustered.{group_cols},
+    final_clustered.milestone_year,
+    final_rep_periods.period,
+    final_rep_periods.start_hour,
+    final_rep_periods.end_hour,
+    (final_rep_periods.y_axis + final_clustered.y_axis) AS y_axis
+    FROM final_rep_periods
+  JOIN final_clustered ON final_rep_periods.{group_cols} = final_clustered.{group_cols}
+    AND final_rep_periods.milestone_year = final_clustered.milestone_year
+    AND final_rep_periods.period = final_clustered.period
+  
+  UNION ALL
+  SELECT * FROM final_rep_periods
+  WHERE {group_cols} NOT IN (
+    SELECT {group_cols} FROM final_clustered
+  )
+  UNION ALL
+  SELECT * FROM final_clustered
+  WHERE {group_cols} NOT IN (
+    SELECT {group_cols} FROM final_rep_periods
+  )
+
+  ),
+";
+
+static LAST_PART_SQL: &str = "
+  /* Calculates the total duration (in hours) of each period per {group_cols} and milestone_year. */
 period_durations AS (
   SELECT
     {group_cols},
     milestone_year,
     period,
     MAX(end_hour) AS period_duration
-  FROM final
+  FROM {final}
   GROUP BY 
     {group_cols},
     milestone_year,
@@ -164,7 +259,7 @@ final_with_offsets AS (
       AND d.milestone_year = f.milestone_year
       AND d.period < f.period
     ), 0) AS offset_val
-  FROM final AS f
+  FROM {final} AS f
 ),
 /* Add the offsets to the local start and end hours to create a global timeline.
 */

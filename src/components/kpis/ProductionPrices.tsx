@@ -18,8 +18,6 @@ import {
 import useVisualizationStore from "../../store/visualizationStore";
 import { Resolution } from "../../types/resolution";
 
-type EChartsOption = echarts.EChartsOption;
-
 interface ProductionPricesDurationSeriesProps {
   graphId: string;
 }
@@ -77,55 +75,83 @@ const ProductionPricesDurationSeries: React.FC<
         var data: ProductionPriceDurationSeriesRow[] =
           await getProductionPriceDurationSeries(dbPath, resolution, year);
 
-        if (checked == true) {
-          data = data.sort((a, b) => {
-            return b.y_axis - a.y_axis;
-          });
-        }
+        const expandedData: ProductionPriceDurationSeriesRow[] = [];
 
-        const groupedByAsset = new Map<
-          string,
-          { name: string; value: [number, number, number] }[]
-        >();
-        const currXEndAsset = new Map<string, number>();
-        //var currXEnd: number = 0;
-        for (const d of data) {
-          var currXEnd = currXEndAsset.get(d.asset) || 0;
-          const key = `${d.milestone_year}, ${resolution} ${d.global_start}-${d.global_end}`;
-          const width = Number(d.global_end - d.global_start);
-          const xEnd = currXEnd + width;
-          currXEnd = currXEnd + width;
-          currXEndAsset.set(d.asset, currXEnd);
+        for (const row of data) {
+          const { global_start, global_end, y_axis, ...rest } = row;
+          const duration = global_end - global_start;
 
-          const entry = {
-            name: `${d.asset} (${key})`,
-            value: [xEnd, width, d.y_axis] as [number, number, number],
-          };
-          if (!groupedByAsset.has(d.asset)) {
-            groupedByAsset.set(d.asset, []);
+          if (duration == 0) continue;
+
+          for (let t = global_start; t < global_end; t++) {
+            expandedData.push({
+              ...rest,
+              global_start: Number(t),
+              global_end: Number(t) + 1,
+              y_axis,
+            });
           }
-          groupedByAsset.get(d.asset)!.push(entry);
+        }
+        data = expandedData;
+        let times: number[];
+
+        if (checked) {
+          const totalByTime = new Map<number, number>();
+          for (const d of data) {
+            const t = Number(d.global_start);
+            totalByTime.set(t, (totalByTime.get(t) ?? 0) + d.y_axis);
+          }
+          times = Array.from(totalByTime.entries())
+            .sort((a, b) => b[1] - a[1])
+            .map(([t]) => t);
+        } else {
+          times = Array.from(
+            new Set(data.map((d) => Number(d.global_start))),
+          ).sort((a, b) => a - b);
         }
 
-        const chartOption: EChartsOption = {
+        const byAsset = new Map<string, Map<number, number>>();
+        data.forEach((d) => {
+          const start = Number(d.global_start);
+          const value = d.y_axis;
+          const asset = d.asset;
+          if (!byAsset.has(asset)) byAsset.set(asset, new Map());
+          byAsset.get(asset)!.set(start, value);
+        });
+
+        const series = Array.from(byAsset.entries()).map(([asset, map]) => ({
+          name: asset,
+          type: "bar",
+          stack: "total",
+          data: times.map((t) => map.get(t)),
+        }));
+
+        const options = {
+          barCategoryGap: "0%",
+          barGap: "0%",
+
           tooltip: {
-            trigger: "item",
-            formatter: (params: any) => {
-              const y = params.value[2];
-              return `
-                <strong>${params.name}</strong><br/>
-                Price: ${y.toFixed(4)}
-              `;
+            trigger: "axis",
+            axisPointer: { type: "shadow" },
+            formatter: (params: any[]) => {
+              const t = Number(params[0].axisValue);
+              const dur = 1;
+              const unit = resolution;
+              const header = `<strong>Price (${unit} ${t}-${t + dur})</strong>`;
+
+              const lines = params
+                .filter((p) => p.value !== undefined && p.value !== 0)
+                .map((p) => `${p.marker} ${p.seriesName}: ${p.value}`);
+              return lines.length > 0 ? [header, ...lines].join("<br/>") : "";
             },
           },
+
           xAxis: {
-            type: "value",
+            type: "category",
             name: `Time in ${resolution}`,
             nameLocation: "middle",
             nameGap: 30,
-            axisLabel: {
-              formatter: (val: number) => val.toFixed(1),
-            },
+            data: times.sort((a, b) => a - b).map((t) => t.toString()),
           },
           yAxis: {
             type: "value",
@@ -158,41 +184,10 @@ const ProductionPricesDurationSeries: React.FC<
               type: "inside",
             },
           ],
-          series: Array.from(groupedByAsset.entries()).map(([asset, data]) => ({
-            type: "custom",
-            name: asset,
-            clip: true,
-            renderItem: (params: any, api: any) => {
-              params = params; // done to escape build fail for not read value
-              const x = api.value(0);
-              const width = api.value(1);
-              const y = api.value(2);
-
-              const xStart = api.coord([x - width, 0])[0];
-              const xEnd = api.coord([x, 0])[0];
-              const yCoord = api.coord([0, y])[1];
-              const yBase = api.coord([0, 0])[1];
-
-              return {
-                type: "rect",
-                shape: {
-                  x: xStart,
-                  y: yCoord,
-                  width: xEnd - xStart,
-                  height: yBase - yCoord,
-                },
-                style: api.style(),
-              };
-            },
-            encode: {
-              x: 0,
-              y: 2,
-            },
-            data,
-          })),
+          series: series,
         };
 
-        setChartOptions(chartOption);
+        setChartOptions(options);
       } catch (err) {
         setErrorData("Failed to load production prices.");
         console.error(err);

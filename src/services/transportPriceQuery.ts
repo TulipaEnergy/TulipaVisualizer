@@ -6,20 +6,11 @@ export async function getTransportationPriceDurationSeries(
   year: number,
   carrier: string,
   resolution: Resolution,
+  columnType: string,
 ): Promise<TransportationPriceDurationSeriesRow[]> {
   if (!(resolution in resolutionToTable)) {
     throw new Error(
       "Invalid resolution specified. Use 'hours', 'days', 'weeks', 'months' or 'years'.",
-    );
-  }
-  if (resolution === Resolution.Years) {
-    return genericApacheIPC<TransportationPriceDurationSeriesRow>(
-      "get_transportation_price_yearly",
-      {
-        dbPath: dbPath,
-        year: year,
-        carrier: carrier,
-      },
     );
   }
 
@@ -30,6 +21,7 @@ export async function getTransportationPriceDurationSeries(
       year: year,
       carrier: carrier,
       resolution: resolutionToTable[resolution],
+      columnType: columnType,
     },
   );
 }
@@ -59,7 +51,7 @@ export type YearJson = {
 };
 
 export type TransportationPriceDurationSeriesRow = {
-  route: string;
+  carrier: string;
   milestone_year: number;
   global_start: number;
   global_end: number;
