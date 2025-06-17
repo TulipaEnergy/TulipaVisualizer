@@ -30,3 +30,4 @@ commit.md
 .cursor
 .scannerwork
 sonar-project.properties
+docs/rustdoc

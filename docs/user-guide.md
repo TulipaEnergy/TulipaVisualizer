@@ -1,0 +1,517 @@
+# Energy Model Visualizer - User Guide
+
+## Table of Contents
+
+1. [Introduction & Overview](#introduction--overview)
+2. [System Requirements](#system-requirements)
+3. [Installation Guide](#installation-guide)
+4. [Getting Started](#getting-started)
+5. [Core Features](#core-features)
+6. [Advanced Features](#advanced-features)
+7. [Data Visualization Types](#data-visualization-types)
+8. [Data Interpretation Guide](#data-interpretation-guide)
+9. [Troubleshooting](#troubleshooting)
+10. [Support](#support)
+
+## Introduction & Overview
+
+### What is the Energy Model Visualizer?
+
+The Energy Model Visualizer is a cross-platform desktop application designed to visualize and analyze output data from the [Tulipa Energy Model](https://tulipaenergy.github.io/TulipaEnergyModel.jl/dev/). The application provides interactive visualizations for energy system optimization results, enabling researchers and analysts to understand complex energy scenarios through intuitive charts, maps, and data exploration tools.
+
+### Key Features
+
+- **Interactive Data Visualization**: Multiple chart types including capacity analysis, cost breakdowns, and geographic energy flows
+- **Multi-Database Support**: Load and compare multiple `.duckdb` files simultaneously
+- **Geographic Visualization**: EU-wide energy flow mapping with province-level detail
+- **Flexible Time Analysis**: Support for hourly, daily, and monthly data resolutions
+- **SQL Query Interface**: Direct database exploration with custom SQL queries
+- **Export Capabilities**: Save visualizations and data in various formats
+- **Cross-Platform**: Native performance on Windows, macOS, and Linux
+
+### System Architecture
+
+The application uses a modern hybrid architecture:
+- **Frontend**: React/TypeScript with Mantine UI components and Apache ECharts for visualizations
+- **Backend**: Rust/Tauri framework with DuckDB for high-performance data processing
+- **Communication**: Secure IPC (Inter-Process Communication) between frontend and backend
+- **Data Storage**: Uses DuckDB files (.duckdb) containing Tulipa Energy Model output data
+
+## System Requirements
+
+### Hardware Requirements
+
+- **RAM**: Minimum 4GB, recommended 8GB or more for large datasets
+- **Storage**: At least 2GB free space, additional space for database files (typically 50-500MB per file)
+- **CPU**: Modern multi-core processor (x64 architecture)
+- **Graphics**: Hardware acceleration support for smooth chart rendering
+
+### Operating System Compatibility
+
+- **Windows**: Windows 10 (version 1909) or later
+- **macOS**: macOS 10.15 (Catalina) or later
+- **Linux**: Ubuntu 18.04, Debian 10, or equivalent distributions with WebKit2GTK support
+
+### Browser Engine Requirements
+
+The application uses the system's native WebView:
+- **Windows**: Requires Microsoft Edge WebView2 Runtime (automatically installed with Windows 11)
+- **macOS**: Uses system WebView (built-in)
+- **Linux**: Requires WebKit2GTK 4.1 or later
+
+## Installation Guide
+
+### Download and Installation
+
+1. **Download the Application**
+   - Visit the project repository or distribution platform
+   - Download the appropriate installer for your operating system:
+     - Windows: `.exe` installer
+     - macOS: `.dmg` bundle
+     - Linux: `.deb`, `.rpm`, or `.AppImage`
+
+2. **Windows Installation**
+   ```
+   1. Run the downloaded .exe installer
+   2. Follow the installation wizard prompts
+   3. The installer will automatically download WebView2 if needed
+   4. Launch the application from the Start Menu or Desktop shortcut
+   ```
+
+3. **macOS Installation**
+   ```
+   1. Open the downloaded .dmg file
+   2. Drag the application to the Applications folder
+   3. Right-click the application and select "Open" (first launch only)
+   4. Confirm you want to open the application from an identified developer
+   ```
+
+4. **Linux Installation**
+   
+   For `.deb` packages (Ubuntu/Debian):
+   ```bash
+   sudo dpkg -i energy-visualizer.deb
+   sudo apt-get install -f  # Install dependencies if needed
+   ```
+   
+   For `.AppImage`:
+   ```bash
+   chmod +x energy-visualizer.AppImage
+   ./energy-visualizer.AppImage
+   ```
+
+### Verification
+
+After installation, verify the application works correctly:
+1. Launch the Energy Model Visualizer
+2. You should see the main interface with an "Upload Database File" button
+3. The application window should be responsive and display without errors
+
+## Getting Started
+
+### First-Time Usage
+
+1. **Launch the Application**
+   - Start the Energy Model Visualizer from your applications menu or desktop shortcut
+   - The application opens with a clean interface ready for database loading
+
+2. **Understanding the Interface**
+   - **Left Panel**: Database list and file management
+   - **Center Area**: Visualization workspace (initially empty)
+   - **Toolbar**: Application controls and options
+
+### File Format Requirements
+
+The application works with `.duckdb` files containing Tulipa Energy Model output data. These files must include specific tables and schema structures generated by the Tulipa Energy Model.
+
+**Supported File Characteristics:**
+- File extension: `.duckdb`
+- Maximum file size: 500MB (larger files may impact performance)
+- Required tables: Various energy model output tables (capacity, flows, costs, etc.)
+- Encoding: UTF-8
+
+### Loading Your First Database
+
+1. **Click "Upload Database File"**
+   - A file dialog will open
+   - Navigate to your `.duckdb` file location
+   - Select the file and click "Open"
+
+2. **Database Loading Process**
+   - The application validates the file structure
+   - Database metadata is extracted and cached
+   - The file path appears in the "Loaded Databases" list
+
+3. **Ready for Visualization**
+   - Click "Add Graph" to create your first visualization
+   - Select a chart type from the dropdown menu
+   - Configure visualization parameters as needed
+
+## Core Features
+
+### Database File Management
+
+**Loading Databases**
+- Use the "Upload Database File" button to select `.duckdb` files
+- Multiple databases can be loaded simultaneously
+- Each database appears in the "Loaded Databases" list
+
+**Database Information**
+- View database file paths and metadata
+- Remove databases using the trash icon
+- Database status indicators show loading/error states
+
+**File Validation**
+- Automatic validation of file format and structure
+- Clear error messages for incompatible files
+- Graceful handling of corrupted or incomplete databases
+
+### Visualization Creation
+
+**Adding Graphs**
+- Click "Add Graph" to create new visualizations
+- Each graph is independent and configurable
+- Graphs can use different databases for comparison
+
+**Chart Type Selection**
+Available visualization types:
+- **Asset Capacity**: Analyze capacity changes over time
+- **System Costs**: Breakdown of system costs by category
+- **Production Prices**: Price duration series and trends
+- **Storage Prices**: Storage cost analysis over time
+- **Transportation Prices**: Transportation cost visualization
+- **Geographical Imports/Exports**: EU-wide energy flow maps
+- **Residual Load**: Supply and demand balance analysis
+- **SQL Explorer**: Direct database query interface
+
+**Graph Configuration**
+- Assign specific databases to each graph
+- Configure time ranges and data resolution
+- Apply filters based on assets, regions, or categories
+- Customize chart appearance and styling
+
+### Data Filtering and Selection
+
+**Asset Filtering**
+- Filter visualizations by specific energy assets
+- Multi-select capabilities for comparing multiple assets
+- Search functionality for large asset lists
+
+**Time Range Selection**
+- Choose specific years or time periods
+- Support for milestone years and custom ranges
+- Resolution options: hourly, daily, monthly, yearly
+
+**Geographic Filtering**
+- Select specific EU provinces or countries
+- Multi-level geographic hierarchy (province/country)
+- Interactive map-based selection
+
+### Interactive Controls
+
+**Zoom and Pan**
+- Mouse wheel zooming on charts and maps
+- Click and drag to pan across visualizations
+- Reset view controls for returning to default zoom
+
+**Data Point Inspection**
+- Hover tooltips showing detailed values
+- Click interactions for drilling down into data
+- Cross-filtering between related visualizations
+
+## Advanced Features
+
+### Multi-Database Comparison
+
+**Side-by-Side Analysis**
+- Load multiple databases representing different scenarios
+- Create identical visualizations for different databases
+- Visual comparison of results across scenarios
+
+**Synchronized Controls**
+- Link time ranges across multiple graphs
+- Synchronized filtering and selection
+- Coordinated view updates
+
+### Export and Data Sharing
+
+**Visualization Export**
+- Save charts as PNG, SVG, or PDF files
+- High-resolution export for publications
+- Customizable export dimensions and quality
+
+**Data Export**
+- Export underlying data as CSV or JSON
+- Filtered data export based on current view
+- Metadata export for reproducibility
+
+### Geographic Energy Flow Visualization
+
+**EU Province Mapping**
+- Detailed European province boundaries
+- Energy import/export flow visualization
+- Interactive province selection and highlighting
+
+**Flow Direction Analysis**
+- Visual representation of energy flows between regions
+- Flow magnitude indicated by line thickness or color
+- Time-series animation of flow patterns
+
+**Congestion Analysis**
+- Identification of energy bottlenecks
+- Capacity constraint visualization
+- Critical path analysis for energy distribution
+
+## Data Visualization Types
+
+### Asset Capacity Analysis
+
+**Purpose**: Analyze energy asset capacity evolution over time
+**Features**:
+- Initial vs. final capacity comparison
+- Investment and decommissioning tracking
+- Multi-year capacity planning visualization
+- Asset-specific capacity trajectories
+
+**Use Cases**:
+- Capacity expansion planning
+- Investment timeline analysis
+- Decommissioning schedule review
+
+### System Cost Breakdown
+
+**Purpose**: Understand total system costs across different categories
+**Features**:
+- Fixed asset costs vs. operational costs
+- Cost breakdown by carrier type
+- Year-over-year cost comparison
+- Unit commitment cost analysis
+
+**Use Cases**:
+- Budget planning and allocation
+- Cost optimization identification
+- Economic scenario comparison
+
+### Production Price Analysis
+
+**Purpose**: Analyze electricity production prices over time
+**Features**:
+- Price duration curves
+- Hourly, daily, and monthly resolution
+- Min/max price analysis
+- Temporal price pattern identification
+
+**Use Cases**:
+- Market price forecasting
+- Economic dispatch analysis
+- Revenue optimization
+
+### Storage Price Dynamics
+
+**Purpose**: Examine storage system economics
+**Features**:
+- Short-term vs. long-term storage analysis
+- Storage price duration series
+- Seasonal storage pattern analysis
+- Storage deployment optimization
+
+**Use Cases**:
+- Storage investment decisions
+- Grid balancing cost analysis
+- Seasonal energy management
+
+### Transportation Cost Analysis
+
+**Purpose**: Evaluate energy transportation and transmission costs
+**Features**:
+- Carrier-specific transportation costs
+- Regional transportation price differences
+- Infrastructure cost analysis
+- Network congestion pricing
+
+**Use Cases**:
+- Infrastructure investment planning
+- Grid expansion cost-benefit analysis
+- Transmission pricing strategy
+
+### Geographic Energy Flow Mapping
+
+**Purpose**: Visualize energy flows across European regions
+**Features**:
+- Province-level flow visualization
+- Import/export balance mapping
+- Interactive geographic exploration
+- Flow magnitude and direction display
+
+**Use Cases**:
+- Grid planning and optimization
+- Cross-border energy trade analysis
+- Regional energy security assessment
+
+### Residual Load Analysis
+
+**Purpose**: Analyze supply-demand balance and renewable integration
+**Features**:
+- Renewable vs. non-renewable supply breakdown
+- Residual load calculation and visualization
+- Supply adequacy analysis
+- Flexibility requirement identification
+
+**Use Cases**:
+- Renewable integration planning
+- Grid flexibility analysis
+- Demand response optimization
+
+## Data Interpretation Guide
+
+### Understanding Chart Types
+
+**Bar Charts**
+- Compare values across categories or time periods
+- Height indicates magnitude of values
+- Color coding distinguishes different data series
+- Error bars show uncertainty or ranges where applicable
+
+**Line Charts**
+- Show trends and changes over time
+- Multiple lines for comparing different scenarios
+- Smooth curves indicate interpolated data
+- Sharp changes highlight significant events or policy impacts
+
+**Stacked Charts**
+- Show composition and total values simultaneously
+- Each segment represents a component of the total
+- Useful for understanding relative contributions
+- Color legends identify different categories
+
+**Geographic Maps**
+- Spatial distribution of energy flows and assets
+- Color intensity indicates magnitude of values
+- Flow lines show direction and volume of energy transfers
+- Interactive selection for detailed regional analysis
+
+### Key Performance Indicators (KPIs)
+
+**Capacity Utilization**
+- Ratio of actual to maximum capacity usage
+- Higher values indicate efficient asset utilization
+- Low values may suggest overinvestment or constraints
+
+**System Cost Efficiency**
+- Total cost per unit of energy delivered
+- Compare across scenarios to identify optimal configurations
+- Consider both capital and operational costs
+
+**Price Volatility**
+- Range and variability of energy prices
+- High volatility indicates market stress or supply/demand imbalances
+- Price duration curves help identify extreme price events
+
+**Energy Flow Balance**
+- Net imports vs. exports by region
+- Identifies energy surplus and deficit areas
+- Critical for energy security assessment
+
+### Common Patterns and Insights
+
+**Seasonal Patterns**
+- Regular annual cycles in supply and demand
+- Storage charging/discharging patterns
+- Renewable generation seasonality
+
+**Daily Patterns**
+- Peak demand periods and off-peak generation
+- Load balancing requirements
+- Optimal timing for flexible operations
+
+**Investment Timing**
+- Capacity addition schedules
+- Technology deployment waves
+- Infrastructure upgrade patterns
+
+## Troubleshooting
+
+### Common Issues and Solutions
+
+**Database Loading Problems**
+
+*Issue*: "Error selecting file" or "Failed to upload database"
+- **Cause**: Incompatible file format or corrupted database
+- **Solution**: Verify the file is a valid `.duckdb` file generated by Tulipa Energy Model
+- **Prevention**: Use only officially generated Tulipa output files
+
+*Issue*: Application becomes unresponsive during file loading
+- **Cause**: Large database file or insufficient memory
+- **Solution**: Close other applications to free memory, try a smaller database file
+- **Prevention**: Ensure your system meets memory requirements
+
+**Visualization Errors**
+
+*Issue*: Charts not displaying or showing "No data available"
+- **Cause**: Missing required tables or incompatible data schema
+- **Solution**: Check database contains all required tables, verify data integrity
+- **Prevention**: Use databases from compatible Tulipa Energy Model versions
+
+*Issue*: Geographic map not loading or displaying incorrectly
+- **Cause**: Missing geographic data files or rendering issues
+- **Solution**: Restart application, ensure geographic assets are properly installed
+- **Prevention**: Install application from official sources
+
+**Performance Issues**
+
+*Issue*: Slow chart rendering or interface lag
+- **Cause**: Large datasets or hardware limitations
+- **Solution**: Reduce time range, filter data, close unused graphs
+- **Prevention**: Use appropriate data resolution for your analysis needs
+
+*Issue*: Application crash or freeze
+- **Cause**: Memory exhaustion or software conflict
+- **Solution**: Restart application, free system memory, update to latest version
+- **Prevention**: Monitor memory usage, avoid loading multiple large databases
+
+### Error Messages
+
+**File Format Errors**
+- "Unsupported file format": File is not a valid DuckDB database
+- "Database schema mismatch": Database structure incompatible with application
+- "Corrupted database file": File is damaged or incomplete
+
+**Data Processing Errors**
+- "Query execution failed": SQL query cannot be processed
+- "Insufficient data for visualization": Not enough data points for selected parameters
+- "Memory allocation failed": System resources exhausted
+
+**Network and System Errors**
+- "Permission denied": File access restrictions
+- "Disk space insufficient": Not enough storage for temporary files
+- "System compatibility issue": Operating system or dependency problem
+
+### Getting Help
+
+**Self-Diagnosis Steps**
+1. Check system requirements compatibility
+2. Verify database file integrity
+3. Test with a smaller, known-good database file
+4. Review error messages for specific issues
+5. Check available system memory and disk space
+
+**Performance Optimization**
+- Close unused applications to free memory
+- Use appropriate data resolution (hourly vs. daily vs. monthly)
+- Filter data to focus on relevant time periods and assets
+- Remove completed graphs to reduce memory usage
+
+## Support
+
+### Documentation Resources
+
+- **Technical Documentation**: See developer guides for advanced configuration
+- **API Reference**: Complete IPC command documentation for integration
+- **Testing Guide**: Comprehensive testing patterns and examples
+
+### Version Information
+
+- **Application Version**: 1.0.0
+- **Supported Tulipa Versions**: Compatible with standard Tulipa Energy Model outputs
+- **Update Policy**: Manual updates through new installer downloads
+- **License**: Apache License 2.0

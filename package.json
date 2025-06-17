@@ -17,7 +17,11 @@
     "test:coverage:watch": "vitest --coverage --watch",
     "test:coverage:clean": "rm -rf coverage",
     "format": "npx prettier . --write --end-of-line auto",
-    "clean": "rm -rf coverage && rm -rf dist && rm -rf node_modules && rm -rf src-tauri/target"
+    "clean": "rm -rf coverage && rm -rf dist && rm -rf node_modules && rm -rf src-tauri/target",
+    "docs:rust": "cd src-tauri && cargo doc --no-deps --document-private-items",
+    "docs:rust:copy": "mkdir -p docs/rustdoc && cp -r src-tauri/target/doc/* docs/rustdoc/",
+    "docs:rust:build": "npm run docs:rust && npm run docs:rust:copy",
+    "docs:rust:open": "npm run docs:rust:build && (xdg-open docs/rustdoc/tauri_app_lib/index.html || open docs/rustdoc/tauri_app_lib/index.html || start docs/rustdoc/tauri_app_lib/index.html)"
   },
   "dependencies": {
     "@mantine/core": "^8.0.1",
