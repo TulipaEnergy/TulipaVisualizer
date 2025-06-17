@@ -51,6 +51,36 @@ vi.mock("@tauri-apps/plugin-opener", () => {
   };
 });
 
+// Mock the Tauri fs plugin
+vi.mock("@tauri-apps/plugin-fs", () => {
+  return {
+    readTextFile: vi.fn(() => Promise.resolve("{}")),
+    writeTextFile: vi.fn(() => Promise.resolve()),
+    readFile: vi.fn(() => Promise.resolve(new Uint8Array())),
+    writeFile: vi.fn(() => Promise.resolve()),
+    exists: vi.fn(() => Promise.resolve(false)),
+  };
+});
+
+// Mock the Tauri path API
+vi.mock("@tauri-apps/api/path", () => {
+  return {
+    resolveResource: vi.fn((path: string) => Promise.resolve(path)),
+    appDir: vi.fn(() => Promise.resolve("/mock/app/dir")),
+    downloadDir: vi.fn(() => Promise.resolve("/mock/download/dir")),
+  };
+});
+
+// Mock the gateway/io module to avoid Tauri import issues
+vi.mock("../gateway/io", () => {
+  return {
+    triggerDuckDBFileDialog: vi.fn(() =>
+      Promise.resolve("/mock/path/to/database.duckdb"),
+    ),
+    readJSON: vi.fn(() => Promise.resolve({})),
+  };
+});
+
 // Setup to handle ECharts (which uses canvas)
 global.matchMedia =
   global.matchMedia ||

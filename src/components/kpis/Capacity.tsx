@@ -8,26 +8,23 @@ import {
   Group,
   Flex,
 } from "@mantine/core";
-import { fetchAvailableYears } from "../../services/capacityQuery";
 import type {
   EChartsOption,
   BarSeriesOption,
   TooltipComponentOption,
 } from "echarts";
-import { getCapacity } from "../../services/capacityQuery";
 import useVisualizationStore, {
   CapacityOptions,
 } from "../../store/visualizationStore";
 import ReactECharts from "echarts-for-react";
 import { getAssets } from "../../services/metadata";
+import { getCapacity } from "../../services/capacityQuery";
 
 const capacityGraph = async (
   asset: string,
-  startYear: number,
-  endYear: number,
-  db: string,
+  dbPath: string,
 ): Promise<EChartsOption> => {
-  const data = await getCapacity(db, asset, startYear, endYear);
+  const data = await getCapacity(dbPath, asset);
   const round2 = (v: number) => Math.round(v * 100) / 100; // round to 2 decimals
   const years = data.map((d) => d.year.toString());
   const final_capacities = data.map((d) => round2(d.final_capacity));
@@ -205,7 +202,6 @@ const Capacity: React.FC<CapacityProps> = ({ graphId }) => {
   const graph = mustGetGraph(graphId);
 
   const [assets, setAssets] = useState<string[]>([]);
-  const [availableYears, setAvailableYears] = useState<number[]>([]);
 
   const [errorData, setErrorData] = useState<string | null>(null);
   const [chartOptions, setChartOptions] = useState<any>(null);
@@ -246,49 +242,13 @@ const Capacity: React.FC<CapacityProps> = ({ graphId }) => {
       const asset = (graph.options as CapacityOptions)?.asset;
 
       if (!asset) {
-        console.log("NO ASSET, RESETTING YEARS");
-        setAvailableYears([]);
+        console.log("NO ASSET, RESETTING OPTIONS");
         setChartOptions(null);
         return;
       }
 
-      try {
-        const years = await fetchAvailableYears(dbFilePath, asset);
-        setAvailableYears(Array.from(years));
-
-        // Check if current year selections are still valid, and reset if not
-        let needsUpdate = false;
-        const newOptions = { ...(graph.options as CapacityOptions) };
-
-        if (
-          newOptions.startYear != null &&
-          !years.includes(newOptions.startYear)
-        ) {
-          newOptions.startYear = undefined;
-          needsUpdate = true;
-        }
-
-        if (newOptions.endYear != null && !years.includes(newOptions.endYear)) {
-          newOptions.endYear = undefined;
-          needsUpdate = true;
-        }
-
-        if (needsUpdate) {
-          console.log("UPDATING YEARS");
-          updateGraph(graphId, { options: newOptions });
-        }
-      } catch (err) {
-        console.error("Failed to fetch available years:", err);
-        setAvailableYears([]);
-        setErrorData(`Failed to load available years: ${err}`);
-      }
-
       // Check if all required inputs are available. If any is missing, it shows it on the UI.
-      if (
-        !(graph.options as CapacityOptions)?.asset ||
-        !(graph.options as CapacityOptions).startYear ||
-        !(graph.options as CapacityOptions).endYear
-      ) {
+      if (!(graph.options as CapacityOptions)?.asset) {
         console.log("NO GRAPH OPTIONS");
         setChartOptions(null);
         return;
@@ -298,12 +258,7 @@ const Capacity: React.FC<CapacityProps> = ({ graphId }) => {
       try {
         console.log("GENERATING GRAPH for: " + JSON.stringify(graph.options));
         const capacityOptions = graph.options as CapacityOptions;
-        const option = await capacityGraph(
-          capacityOptions.asset!,
-          capacityOptions.startYear!,
-          capacityOptions.endYear!,
-          dbFilePath,
-        );
+        const option = await capacityGraph(capacityOptions.asset!, dbFilePath);
         setChartOptions(option);
       } catch (err) {
         console.error("Error fetching or processing data for chart:", err);
@@ -324,24 +279,6 @@ const Capacity: React.FC<CapacityProps> = ({ graphId }) => {
     }
   };
 
-  const handleStartChange = (value: string | null) => {
-    const year = value ? parseInt(value, 10) : null;
-    if (year != null) {
-      updateGraph(graph.id, {
-        options: { ...(graph.options as CapacityOptions), startYear: year },
-      });
-    }
-  };
-
-  const handleEndChange = (value: string | null) => {
-    const year = value ? parseInt(value, 10) : null;
-    if (year != null) {
-      updateGraph(graph.id, {
-        options: { ...(graph.options as CapacityOptions), endYear: year },
-      });
-    }
-  };
-
   return (
     <Stack>
       <Group>
@@ -350,40 +287,6 @@ const Capacity: React.FC<CapacityProps> = ({ graphId }) => {
           onChange={handleAssetChange}
           data={assets.map((a) => ({ value: a, label: a }))}
           placeholder={assets.length ? "Select asset" : ""}
-          size="xs"
-          style={{ width: 140 }}
-        />
-
-        <Select
-          placeholder="Start Year"
-          value={
-            (graph.options as CapacityOptions)?.startYear?.toString() || null
-          }
-          onChange={handleStartChange}
-          data={availableYears
-            .filter((y) =>
-              (graph.options as CapacityOptions)?.endYear != null
-                ? y <= (graph.options as CapacityOptions).endYear!
-                : true,
-            )
-            .map((y) => ({ value: y.toString(), label: y.toString() }))}
-          size="xs"
-          style={{ width: 140 }}
-        />
-
-        <Select
-          placeholder="End Year"
-          value={
-            (graph.options as CapacityOptions)?.endYear?.toString() || null
-          }
-          onChange={handleEndChange}
-          data={availableYears
-            .filter((y) =>
-              (graph.options as CapacityOptions)?.startYear != null
-                ? y >= (graph.options as CapacityOptions).startYear!
-                : true,
-            )
-            .map((y) => ({ value: y.toString(), label: y.toString() }))}
           size="xs"
           style={{ width: 140 }}
         />
