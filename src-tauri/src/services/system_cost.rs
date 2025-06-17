@@ -3,6 +3,12 @@ use tauri::ipc::Response;
 use crate::duckdb_conn::{run_query_rb, serialize_recordbatch};
 use crate::services::metadata::check_column_in_table;
 
+/// Calculates fixed asset costs with discount factor applications.
+/// 
+/// Fixed asset costs include:
+/// - Capital expenditure (CAPEX) for asset construction
+/// - Fixed operation and maintenance (O&M) costs
+/// - Discount factors applied based on commission year and milestone year
 #[tauri::command]
 pub fn get_fixed_asset_cost(db_path: String) -> Result<Response, String> {
     println!("querying system costs (fixed asset)");
@@ -12,6 +18,12 @@ pub fn get_fixed_asset_cost(db_path: String) -> Result<Response, String> {
     return serialize_recordbatch(res.0, res.1);
 }
 
+/// Calculates fixed flow costs for transmission and transport infrastructure.
+/// 
+/// Fixed flow costs include:
+/// - Transmission line construction costs
+/// - Fixed maintenance costs for transport infrastructure
+/// - Capacity-based cost calculations
 #[tauri::command]
 pub fn get_fixed_flow_cost(db_path: String) -> Result<Response, String> {
     println!("querying flow costs (fixed)");
@@ -21,6 +33,12 @@ pub fn get_fixed_flow_cost(db_path: String) -> Result<Response, String> {
     return serialize_recordbatch(res.0, res.1);
 }
 
+/// Calculates variable flow costs based on energy transport volumes.
+/// 
+/// Variable flow costs include:
+/// - Energy transmission costs per MWh
+/// - Variable O&M costs for transport operations
+/// - Time-weighted cost calculations using representative periods
 #[tauri::command]
 pub fn get_variable_flow_cost(db_path: String) -> Result<Response, String> {
     let res: (Vec<RecordBatch>, Schema) = run_query_rb(db_path, format!("{DISCOUNT_FACTOR_FLOWS_CTE}{VARIABLE_FLOW_COST_SQL}"), [].to_vec())?;
@@ -28,6 +46,10 @@ pub fn get_variable_flow_cost(db_path: String) -> Result<Response, String> {
     return serialize_recordbatch(res.0, res.1);
 }
 
+/// Calculates unit commitment costs with conditional query adaptation.
+/// 
+/// Handles different database schemas by checking for solution column availability.
+/// Falls back to simplified query when optimization solution data is not available.
 #[tauri::command]
 pub fn get_unit_on_cost(db_path: String) -> Result<Response, String> {
     let query = if check_column_in_table(db_path.clone(), "var_units_on", "solution")? {
@@ -46,6 +68,12 @@ pub fn get_unit_on_cost(db_path: String) -> Result<Response, String> {
 
 // --- QUERIES ---
 
+/// Common Table Expression (CTE) for calculating discount factors for flow-based costs.
+/// 
+/// Financial Calculation Methodology:
+/// - Applies compound discount rate formula: (1 + discount_rate)^-(year - commission_year)
+/// - Accounts for asset lifetime and commission timing
+/// - Handles multi-year scenarios with milestone year progression
 const DISCOUNT_FACTOR_FLOWS_CTE: &str = "
 -- see DISCOUNT_FACTOR_ASSETS_CTE for explanations
 WITH MilestoneYearsWithNext AS (
@@ -100,6 +128,13 @@ DiscountFactorPerYearAndFlow AS (
 )
 ";
 
+/// SQL query for variable flow cost calculation with time-weighted representative periods.
+/// 
+/// Cost Components:
+/// - Variable cost per unit of flow ($/MWh)
+/// - Time block duration weighting
+/// - Representative period weights for annual scaling
+/// - Optimization solution values for actual flows
 const VARIABLE_FLOW_COST_SQL: &str = "
 -- using DISCOUNT_FACTOR_FLOWS_CTE
 SELECT
@@ -127,6 +162,12 @@ GROUP BY
     f.carrier;
 ";
 
+/// SQL query for fixed flow cost calculation based on transmission capacity.
+/// 
+/// Cost Components:
+/// - Fixed cost per unit of capacity ($/MW)
+/// - Import and export capacity units
+/// - 0.5 factor for bidirectional flow cost allocation
 const FIXED_FLOW_COST_SQL: &str = "
 -- using DISCOUNT_FACTOR_FLOWS_CTE
 SELECT
@@ -154,6 +195,15 @@ GROUP BY
     f.carrier;
 ";
 
+/// Common Table Expression for calculating discount factors for asset-based costs.
+/// 
+/// Implementation of TulipaEnergyModel.jl discounting methodology:
+/// https://tulipaenergy.github.io/TulipaEnergyModel.jl/dev/40-formulation/#Discounting-Factor-for-Operation-Costs
+/// 
+/// Discount Factor Calculation:
+/// - Accounts for asset commission year and technical lifetime
+/// - Applies compound interest formula for present value calculation
+/// - Handles milestone year progression in multi-year scenarios
 const DISCOUNT_FACTOR_ASSETS_CTE: &str = "
 WITH MilestoneYearsWithNext AS (
     -- e.g. for Multi-Year scenario:

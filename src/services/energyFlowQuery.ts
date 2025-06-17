@@ -15,7 +15,6 @@ export type ImportExportRow = {
   tot_flow: number;
 };
 
-// Hardcoded regions/countries data as provided
 const REGIONS: Region[] = [
   { id: 0, name: "South-Holland", parent_id: 3, level: 0 },
   { id: 1, name: "North-Holland", parent_id: 3, level: 0 },
@@ -24,7 +23,6 @@ const REGIONS: Region[] = [
   { id: 4, name: "Belgium", parent_id: null, level: 1 },
 ];
 
-// Mapping between database region names and EU provinces GeoJSON feature names
 const REGION_NAME_MAPPING: Record<string, string> = {
   // Dutch provinces - mapping from database names to EU provinces GeoJSON names
   "South-Holland": "South Holland",
@@ -44,22 +42,29 @@ const REGION_NAME_MAPPING: Record<string, string> = {
   Belgium: "Belgium", // Keep as is for country level
 };
 
-// Get the GeoJSON compatible name for a region
+/**
+ * Transforms database region names to GeoJSON-compatible identifiers.
+ * Handles naming inconsistencies between energy model data and geographic visualization data.
+ */
 export function getGeoJSONName(databaseName: string): string {
   return REGION_NAME_MAPPING[databaseName] || databaseName;
 }
 
-// Get available regions by level
+/**
+ * Retrieves regions filtered by hierarchical level for geographic analysis.
+ * Used for multi-scale visualization (province vs country level).
+ */
 export function getRegionsByLevel(level: number): Region[] {
   return REGIONS.filter((r) => r.level === level);
 }
 
-// Get all regions
+/**
+ * Returns complete region hierarchy for administrative boundary visualization.
+ */
 export function getAllRegions(): Region[] {
   return [...REGIONS];
 }
 
-// Get energy flow data with simplified logic - no aggregation
 export async function getEnergyFlowData(
   dbFilePath: string,
   categoryLevel: number,
@@ -73,7 +78,7 @@ export async function getEnergyFlowData(
 
     for (const region of targetRegions) {
       try {
-        // Get import data using direct apacheIPC call
+        // Parallel data fetching for imports and exports
         const importRes: Table<any> = await apacheIPC("get_import", {
           dbPath: dbFilePath,
           catName: region.name,
@@ -84,7 +89,6 @@ export async function getEnergyFlowData(
           return d.year === year;
         });
 
-        // Get export data using direct apacheIPC call
         const exportRes: Table<any> = await apacheIPC("get_export", {
           dbPath: dbFilePath,
           catName: region.name,
@@ -94,7 +98,8 @@ export async function getEnergyFlowData(
         const yearExports = exportData.filter((d) => {
           return d.year === year;
         });
-        // Calculate totals
+
+        // Aggregate total flows for region-level metrics
         const totalImports = yearImports.reduce((sum, record) => {
           const flow = record.tot_flow || 0;
           return sum + flow;
@@ -106,6 +111,7 @@ export async function getEnergyFlowData(
         }, 0);
 
         // Process import breakdown (imports = flow INTO this region)
+        // Using Map for O(1) partner lookup and aggregation
         const importBreakdown: EnergyFlowBreakdown[] = [];
         const importByPartner = new Map<
           string,
@@ -135,6 +141,7 @@ export async function getEnergyFlowData(
         }
 
         // Process export breakdown (exports = flow FROM this region)
+        // Mirror logic for export flow analysis
         const exportBreakdown: EnergyFlowBreakdown[] = [];
         const exportByPartner = new Map<
           string,
@@ -163,7 +170,7 @@ export async function getEnergyFlowData(
           exportBreakdown.push(breakdown);
         }
 
-        // Sort breakdowns by amount
+        // Sort breakdowns by amount for prioritized visualization
         importBreakdown.sort((a, b) => b.amount - a.amount);
         exportBreakdown.sort((a, b) => b.amount - a.amount);
 
@@ -186,7 +193,7 @@ export async function getEnergyFlowData(
             ? regionError.stack
             : "No stack available",
         );
-        // Continue with other regions
+        // Error isolation: Continue processing other regions
       }
     }
 

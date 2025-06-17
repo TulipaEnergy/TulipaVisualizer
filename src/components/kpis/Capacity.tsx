@@ -29,6 +29,8 @@ const capacityGraph = async (
 ): Promise<EChartsOption> => {
   const data = await getCapacity(db, asset, startYear, endYear);
   const round2 = (v: number) => Math.round(v * 100) / 100; // round to 2 decimals
+
+  // Data transformation for visualization
   const years = data.map((d) => d.year.toString());
   const final_capacities = data.map((d) => round2(d.final_capacity));
   const initial_capacities = data.map((d) => round2(d.initial_capacity));
@@ -39,7 +41,10 @@ const capacityGraph = async (
     d.decommission >= 0 ? -round2(d.decommission) : null,
   );
 
-  // Canvas helper for stripes
+  /**
+   * Creates canvas-based stripe patterns for investment/decommission visualization.
+   * Provides visual distinction between different capacity change types.
+   */
   function createStripeCanvas(color: string) {
     const c = document.createElement("canvas");
     c.width = c.height = 4;
@@ -53,7 +58,7 @@ const capacityGraph = async (
     return c;
   }
 
-  // The 4 bars
+  // Four-series stacked bar configuration for capacity evolution
   const series: BarSeriesOption[] = [
     {
       name: "Initial Capacity",
@@ -102,6 +107,10 @@ const capacityGraph = async (
     },
   ];
 
+  /**
+   * Custom tooltip configuration with pattern-aware styling.
+   * Recreates visual patterns in tooltip for consistency with chart.
+   */
   const tooltip: TooltipComponentOption = {
     trigger: "axis",
     axisPointer: { type: "shadow" },
@@ -115,7 +124,7 @@ const capacityGraph = async (
           return;
         }
 
-        // choose plain color vs striped CSS
+        // Recreate stripe patterns in tooltip using CSS gradients
         let styleStr: string;
         if (item.seriesName === "Investment") {
           styleStr = `
@@ -204,24 +213,24 @@ const Capacity: React.FC<CapacityProps> = ({ graphId }) => {
 
   const graph = mustGetGraph(graphId);
 
+  // Local state for UI data and chart configuration
   const [assets, setAssets] = useState<string[]>([]);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
-
   const [errorData, setErrorData] = useState<string | null>(null);
   const [chartOptions, setChartOptions] = useState<any>(null);
 
   const dbFilePath = graph.graphDBFilePath!;
 
+  // Initialize component with default title
   useEffect(() => {
     updateGraph(graphId, { title: "Capacity by Year" });
   }, []);
 
-  // Reset everything when database changes
+  // Database change handler: reset state and reload assets
   useEffect(() => {
     console.log("DB CHANGED");
-    // reset data
+    // Reset error and chart state
     setErrorData(null);
-    // reset state
     updateGraph(graphId, { options: null });
 
     (async () => {
@@ -235,11 +244,11 @@ const Capacity: React.FC<CapacityProps> = ({ graphId }) => {
     })();
   }, [dbFilePath]);
 
-  // Attempt to generate chart
+  // Chart generation effect: handles data loading and validation
   useEffect(() => {
     console.log("GENERATING GRAPH");
     (async () => {
-      // Clear previous error and old chart
+      // Clear previous state
       setErrorData(null);
       setChartOptions(null);
 
@@ -253,10 +262,11 @@ const Capacity: React.FC<CapacityProps> = ({ graphId }) => {
       }
 
       try {
+        // Load available years for selected asset
         const years = await fetchAvailableYears(dbFilePath, asset);
         setAvailableYears(Array.from(years));
 
-        // Check if current year selections are still valid, and reset if not
+        // Validate current year selections against available data
         let needsUpdate = false;
         const newOptions = { ...(graph.options as CapacityOptions) };
 
@@ -283,7 +293,7 @@ const Capacity: React.FC<CapacityProps> = ({ graphId }) => {
         setErrorData(`Failed to load available years: ${err}`);
       }
 
-      // Check if all required inputs are available. If any is missing, it shows it on the UI.
+      // Validate required inputs before chart generation
       if (
         !(graph.options as CapacityOptions)?.asset ||
         !(graph.options as CapacityOptions).startYear ||
@@ -294,7 +304,7 @@ const Capacity: React.FC<CapacityProps> = ({ graphId }) => {
         return;
       }
 
-      // All required inputs have values.
+      // Generate chart with validated inputs
       try {
         console.log("GENERATING GRAPH for: " + JSON.stringify(graph.options));
         const capacityOptions = graph.options as CapacityOptions;
@@ -313,6 +323,7 @@ const Capacity: React.FC<CapacityProps> = ({ graphId }) => {
     })();
   }, [graph.options]);
 
+  // Event handlers for user interactions
   const handleAssetChange = (value: string | null) => {
     if (value) {
       updateGraph(graph.id, {
@@ -344,6 +355,7 @@ const Capacity: React.FC<CapacityProps> = ({ graphId }) => {
 
   return (
     <Stack>
+      {/* User input controls with cross-validation */}
       <Group>
         <Select
           value={(graph.options as CapacityOptions)?.asset || null}
@@ -389,6 +401,7 @@ const Capacity: React.FC<CapacityProps> = ({ graphId }) => {
         />
       </Group>
 
+      {/* Conditional rendering: error state, chart, or configuration prompt */}
       {errorData ? (
         <Container
           size="xl"

@@ -14,7 +14,6 @@ export async function triggerDuckDBFileDialog(): Promise<string | null> {
   });
 }
 
-// provide relative path from 11c/src-tauri/tauri.conf.json
 export async function readJSON(path: string) {
   const resourcePath = await resolveResource(path);
   return JSON.parse(await readTextFile(resourcePath));

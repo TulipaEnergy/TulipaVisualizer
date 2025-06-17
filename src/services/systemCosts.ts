@@ -13,6 +13,7 @@ export async function getAssetCostsByYear(
     dbPath: dbPath,
   });
 
+  // Create unified year timeline from both cost categories
   const years: number[] = [
     ...new Set(
       uoc.map((i) => i.milestone_year).concat(afc.map((i) => i.milestone_year)),
@@ -55,6 +56,7 @@ export async function getFlowCostsByYear(
     const flow_fixed_costs_by_carrier: { [carrier: string]: number } = {};
     const flow_variable_costs_by_carrier: { [carrier: string]: number } = {};
 
+    // Aggregate fixed costs by carrier, filtering positive values only
     ff.filter((d) => d.milestone_year === year).forEach((item) => {
       if (item.flow_fixed_cost > 0) {
         flow_fixed_costs_by_carrier[item.carrier] =
@@ -63,6 +65,7 @@ export async function getFlowCostsByYear(
       }
     });
 
+    // Aggregate variable costs by carrier, filtering positive values only
     fv.filter((d) => d.milestone_year === year).forEach((item) => {
       if (item.flow_variable_cost > 0) {
         flow_variable_costs_by_carrier[item.carrier] =
@@ -79,6 +82,10 @@ export async function getFlowCostsByYear(
   });
 }
 
+/**
+ * Extracts unique energy carriers from flow cost data for UI filtering.
+ * Provides sorted list of all carriers with associated costs in the dataset.
+ */
 export function getUniqueCarriers(data: FlowSystemCostPerYear[]): string[] {
   const carriers = new Set<string>();
   data.forEach((item) => {
@@ -92,6 +99,10 @@ export function getUniqueCarriers(data: FlowSystemCostPerYear[]): string[] {
   return Array.from(carriers).sort();
 }
 
+/**
+ * Combines year ranges from asset and flow cost data for comprehensive timeline analysis.
+ * Ensures UI components can handle full temporal scope of optimization results.
+ */
 export function getUniqueYears(
   assetData: AssetSystemCostPerYear[],
   flowData: FlowSystemCostPerYear[],

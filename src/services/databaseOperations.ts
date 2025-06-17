@@ -2,7 +2,6 @@ import { apacheIPC } from "../gateway/db";
 import { triggerDuckDBFileDialog } from "../gateway/io";
 import { Table } from "apache-arrow";
 
-// File upload operations
 export async function uploadDatabaseFile(): Promise<string | null> {
   try {
     const selected = await triggerDuckDBFileDialog();
@@ -13,7 +12,6 @@ export async function uploadDatabaseFile(): Promise<string | null> {
   }
 }
 
-// Execute custom SQL query on a specific database by path
 export async function runCustomQuery(
   dbPath: string,
   query: string,
@@ -30,13 +28,12 @@ export async function runCustomQuery(
   });
 }
 
-// Utility function to get column names and provide lazy access to table data
 export function extractTableData(table: Table<any>): {
   columns: string[];
   getRow: (index: number) => any[] | null;
   numRows: number;
 } {
-  // Extract column names
+  // Extract column names for table header rendering
   const columns = table.schema.fields.map((field) => field.name);
 
   // Return an object with column names and a function to lazily access rows

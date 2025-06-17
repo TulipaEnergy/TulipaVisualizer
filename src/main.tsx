@@ -7,6 +7,16 @@ import App from "./App";
 import "./styles/index.css";
 import "primereact/resources/themes/lara-light-blue/theme.css";
 
+/**
+ * React application entry point for the Energy Model Visualizer.
+ *
+ * Initialization:
+ * - Sets up Mantine UI component library with default theme
+ * - Renders main App component into DOM root element
+ * - Integrates with Tauri's WebView for desktop application functionality
+ *
+ */
+
 // Create a custom theme (optional)
 const theme = createTheme({
   primaryColor: "blue",

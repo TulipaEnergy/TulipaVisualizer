@@ -36,6 +36,7 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
 
   const graph = mustGetGraph(graphId);
 
+  // Interactive resize state management
   const [height, setHeight] = useState(400);
   const [isResizing, setIsResizing] = useState(false);
   const [isFullWidth, setIsFullWidth] = useState(false);
@@ -56,6 +57,7 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
     chartTypes.map((t) => t.value).filter((t) => t != "database"),
   );
 
+  // Dynamic height adjustment based on chart type
   useEffect(() => {
     if (graph?.type == "database") {
       setHeight(1200);
@@ -64,7 +66,7 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
     }
   }, [graph?.type]);
 
-  // Handle resize functionality
+  // Mouse-based resize interaction handling
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (isResizing) {
@@ -95,7 +97,7 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
     };
   }, [isResizing, graphId]);
 
-  // Handle ECharts resize when dimensions change
+  // ECharts automatic resize handling for responsive charts
   useEffect(() => {
     if (chartRef.current) {
       const resizeObserver = new ResizeObserver(() => {

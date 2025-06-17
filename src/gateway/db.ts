@@ -1,7 +1,6 @@
 import { invoke, InvokeArgs } from "@tauri-apps/api/core";
 import { tableFromIPC, Table } from "apache-arrow";
 
-// helper to abstract from invoke and IPC
 export async function apacheIPC(
   cmd: string,
   args?: InvokeArgs,

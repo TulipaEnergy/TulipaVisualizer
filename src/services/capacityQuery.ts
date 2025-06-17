@@ -15,11 +15,19 @@ export async function getCapacity(
   });
 }
 
+/**
+ * Structured capacity data returned from backend analysis.
+ * Negative values (-1) indicate data not available in database schema.
+ */
 type CapacityJson = {
   year: number;
+  /** New capacity investments (MW), -1 if not available */
   investment: number;
+  /** Capacity decommissions (MW), -1 if not available */
   decommission: number;
+  /** Capacity at start of year (MW) */
   initial_capacity: number;
+  /** Capacity at end of year (MW) */
   final_capacity: number;
 };
 

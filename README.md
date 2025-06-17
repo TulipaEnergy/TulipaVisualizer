@@ -37,6 +37,7 @@ The **Energy Model Visualizer** is a cross-platform desktop application designed
 ## Key Features
 
 ### 📊 **Comprehensive Data Visualization**
+
 - **Capacity Analysis**: Asset investment, decommissioning, and capacity evolution
 - **System Costs**: Fixed, variable, and unit commitment cost breakdowns
 - **Price Analysis**: Production, storage, and transportation price dynamics
@@ -44,22 +45,26 @@ The **Energy Model Visualizer** is a cross-platform desktop application designed
 - **Geographic Flows**: EU energy import/export visualization
 
 ### 🔄 **Multi-Database Support**
+
 - Load and compare multiple `.duckdb` files simultaneously
 - Side-by-side scenario comparison
 - Synchronized filtering and time range selection
 
 ### ⚡ **High-Performance Analytics**
+
 - Connection pooling for multi-database operations
 - Apache Arrow data serialization for efficient transfer
 - Configurable time resolution (hourly to yearly aggregation)
 
 ### 🎛️ **Interactive Controls**
+
 - Dynamic filtering by assets, years, and categories
 - Zoom and pan capabilities for detailed analysis
 - Export functionality for charts and data
 - Responsive design for various screen sizes
 
 ### 🔒 **Security & Privacy**
+
 - Local-only data processing (no external data transmission)
 - File system access validation
 - SQL injection prevention
@@ -67,6 +72,7 @@ The **Energy Model Visualizer** is a cross-platform desktop application designed
 ## Quick Start
 
 ### System Requirements
+
 - **Windows**: Windows 10 (1909) or later, WebView2
 - **macOS**: macOS 10.15 (Catalina) or later
 - **Linux**: Modern distribution with WebKit2GTK 4.1
@@ -84,6 +90,7 @@ For detailed installation instructions, see the [User Guide](docs/user-guide.md)
 ## Documentation
 
 ### 📖 **User Documentation**
+
 - **[User Guide](docs/user-guide.md)** - Complete user manual with step-by-step instructions
   - Installation and setup
   - File format requirements
@@ -92,7 +99,9 @@ For detailed installation instructions, see the [User Guide](docs/user-guide.md)
   - Troubleshooting
 
 ### 🛠️ **Developer Documentation**
+
 - **[Frontend Developer Guide](docs/developer-guide-frontend.md)** - React/TypeScript development
+
   - Architecture and patterns
   - Component development
   - State management with Zustand
@@ -107,6 +116,7 @@ For detailed installation instructions, see the [User Guide](docs/user-guide.md)
   - Build and deployment
 
 ### 📋 **API Documentation**
+
 - **[API Reference](docs/api-reference.md)** - Complete IPC command reference
   - All available commands with parameters
   - Request/response formats
@@ -115,11 +125,13 @@ For detailed installation instructions, see the [User Guide](docs/user-guide.md)
   - Usage examples
 
 ### 📐 **Project Documentation**
+
 - **[Documentation Plan](docs/documentation-plan.md)** - Documentation structure and standards
 - **[Documentation Maintenance Guide](docs/documentation-maintenance.md)** - How to maintain and update documentation
 - **[Testing Guide](Testing.md)** - Testing approaches and setup
 
 ### 🔧 **Generated Documentation**
+
 - **[RustDoc API Documentation](docs/rustdoc/tauri_app_lib/index.html)** - Generated Rust backend documentation
   - Complete API reference for all backend modules
   - Service layer documentation with examples
@@ -147,20 +159,24 @@ For detailed installation instructions, see the [User Guide](docs/user-guide.md)
 ### Setup Instructions
 
 1. **Clone the repository**
+
    ```bash
    git clone <repository-url>
    cd energy-model-visualizer
    ```
 
 2. **Install JavaScript dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Start development server**
+
    ```bash
    npm run tauri dev
    ```
+
    This launches both frontend and backend with hot reload.
 
 4. **Build for production**
@@ -203,6 +219,7 @@ For detailed development setup, see the [Frontend](docs/developer-guide-frontend
 ## Development Commands
 
 ### Frontend Development
+
 ```bash
 npm run dev           # Start Vite development server
 npm run build         # Build frontend for production
@@ -212,12 +229,14 @@ npm run type-check    # TypeScript type checking
 ```
 
 ### Full Application Development
+
 ```bash
 npm run tauri dev     # Start full application in development mode
 npm run tauri build   # Build complete application for distribution
 ```
 
 ### Backend Development
+
 ```bash
 cd src-tauri
 cargo build           # Build Rust backend
@@ -227,6 +246,7 @@ cargo doc --open      # Generate and open Rust documentation
 ```
 
 ### Testing
+
 ```bash
 npm test              # Run all tests once
 npm run test:watch    # Run tests in watch mode
@@ -234,12 +254,14 @@ npm run test:coverage # Run tests with coverage report
 ```
 
 ### Code Quality
+
 ```bash
 npx prettier . --write --end-of-line auto  #Format code using Prettier
 npm run lint:fix      # Fix ESLint issues automatically
 ```
 
 ### Documentation
+
 ```bash
 npm run docs:rust:build    # Generate and copy RustDoc documentation
 npm run docs:rust:open     # Generate and open RustDoc in browser
@@ -253,7 +275,6 @@ The project includes comprehensive testing at multiple levels:
 - **Frontend**: Vitest + React Testing Library for component and integration tests
 - **Backend**: Rust native testing with mock databases
 - **E2E**: Planned Playwright integration for full application testing
-
 
 For detailed development guidelines, see the [Developer Guides](docs/).
 

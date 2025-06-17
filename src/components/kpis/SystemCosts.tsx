@@ -30,13 +30,14 @@ const SystemCosts: React.FC<SystemCostsProps> = ({ graphId }) => {
     updateGraph(graphId, { title: "Asset & Flow Operation Costs" });
   }, []);
 
+  // Data loading and chart generation effect
   useEffect(() => {
     (async () => {
       // Reset states at the beginning of each fetch
       setLoadingData(true);
       setErrorData(null);
 
-      // DB File should always be provided - see assertion in GraphCard
+      // Database validation
       if (!dbFilePath) {
         setErrorData("No database selected");
         setLoadingData(false);
@@ -56,31 +57,33 @@ const SystemCosts: React.FC<SystemCostsProps> = ({ graphId }) => {
             axisPointer: {
               type: "shadow",
             },
+            // Custom formatter for comprehensive cost breakdown display
             formatter: function (params: any[]) {
               let totalCost = 0;
               let tooltipContent = `<strong>${params[0].name}</strong><br/>`;
 
-              // Sort params to group fixed and variable costs, and then by carrier
+              // Sort parameters for logical cost category grouping
               const sortedParams = [...params].sort((a, b) => {
                 const nameA = a.seriesName.toLowerCase();
                 const nameB = b.seriesName.toLowerCase();
 
-                // Prioritize Asset costs
+                // Prioritize Asset costs first
                 if (nameA.includes("asset") && !nameB.includes("asset"))
                   return -1;
                 if (!nameA.includes("asset") && nameB.includes("asset"))
                   return 1;
 
-                // Then group fixed vs variable
+                // Then group fixed vs variable costs
                 if (nameA.includes("fixed") && !nameB.includes("fixed"))
                   return -1;
                 if (!nameA.includes("fixed") && nameB.includes("fixed"))
                   return 1;
 
-                // Then by carrier name
+                // Finally sort by carrier name alphabetically
                 return nameA.localeCompare(nameB);
               });
 
+              // Build tooltip content with cost summation
               sortedParams.forEach((item) => {
                 if (
                   item.value !== null &&
@@ -125,6 +128,7 @@ const SystemCosts: React.FC<SystemCostsProps> = ({ graphId }) => {
               formatter: "{value}",
             },
           },
+          // Interactive data zoom for temporal analysis
           dataZoom: [
             {
               bottom: "40px",
@@ -162,6 +166,7 @@ const SystemCosts: React.FC<SystemCostsProps> = ({ graphId }) => {
     })();
   }, [dbFilePath]); // Refreshes whenever you select a diff db file
 
+  // Loading state display
   if (loadingData) {
     return (
       <Container
@@ -178,6 +183,7 @@ const SystemCosts: React.FC<SystemCostsProps> = ({ graphId }) => {
     );
   }
 
+  // Error state display
   if (errorData) {
     return (
       <Container

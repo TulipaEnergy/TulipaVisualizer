@@ -13,6 +13,19 @@ import "@mantine/core/styles.css"; // Import Mantine core styles
 import "./styles/index.css";
 import GraphCard from "./components/GraphCard";
 
+/**
+ * Main application component implementing a two-panel layout for the Energy Model Visualizer.
+ *
+ * Layout Architecture:
+ * - Fixed left sidebar (25% width) for database management
+ * - Scrollable main content area (75% width) for visualization graphs
+ * - Fixed toolbar at top spanning full width
+ *
+ * State Management:
+ * - Uses Zustand store for global application state
+ * - Reactive UI updates based on database connection status
+ * - Dynamic graph management with add/remove capabilities
+ */
 export default function App() {
   const { addGraph, graphs, hasAnyDatabase } = useVisualizationStore();
 
@@ -25,7 +38,7 @@ export default function App() {
           paddingTop: "80px",
         }}
       >
-        {/* Fixed Left Sidebar */}
+        {/* Fixed Left Sidebar - Database Management */}
         <Box
           style={{
             position: "fixed",
@@ -46,7 +59,7 @@ export default function App() {
           </Paper>
         </Box>
 
-        {/* Main Content Area */}
+        {/* Main Content Area - Visualization Graphs */}
         <Box
           style={{
             marginLeft: "25%",
@@ -65,6 +78,7 @@ export default function App() {
               padding: "0 16px",
             }}
           >
+            {/* Conditional rendering based on database availability */}
             {hasAnyDatabase() && (
               <>
                 <Stack gap="md" align="center" style={{ width: "100%" }}>
@@ -86,6 +100,7 @@ export default function App() {
                     </Button>
                   </Box>
 
+                  {/* Responsive grid layout for visualization cards */}
                   <SimpleGrid
                     cols={{ base: 1, sm: 2 }}
                     spacing="md"

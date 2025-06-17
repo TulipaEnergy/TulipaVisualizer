@@ -11,6 +11,7 @@ const DatabaseList: React.FC = () => {
     <Stack gap="md">
       <UploadButton />
 
+      {/* Empty state with user guidance */}
       {databases.length === 0 ? (
         <Card withBorder radius="md" p="md">
           <Text size="sm" c="dimmed" ta="center">
@@ -19,6 +20,7 @@ const DatabaseList: React.FC = () => {
         </Card>
       ) : (
         <>
+          {/* Database list header with count indicator */}
           <Text size="sm" fw={500}>
             Loaded Databases ({databases.length})
           </Text>
@@ -33,6 +35,7 @@ const DatabaseList: React.FC = () => {
                 <Text size="sm" fw={500}>
                   {db}
                 </Text>
+                {/* Database removal with event propagation control */}
                 <Tooltip label="Remove database" position="top">
                   <ActionIcon
                     size="sm"

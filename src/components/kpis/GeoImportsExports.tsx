@@ -32,6 +32,7 @@ const EnergyFlow: React.FC<EnergyFlowProps> = ({ graphId }) => {
 
   const graph = mustGetGraph(graphId);
 
+  // State management for geographic visualization
   const [availableYears, setAvailableYears] = useState<number[]>([]);
   const [energyData, setEnergyData] = useState<CountryEnergyFlow[]>([]);
   const [errorData, setErrorData] = useState<string | null>(null);
@@ -39,6 +40,7 @@ const EnergyFlow: React.FC<EnergyFlowProps> = ({ graphId }) => {
   const [worldMapLoaded, setWorldMapLoaded] = useState<boolean>(false);
   const [regionalMapLoaded, setRegionalMapLoaded] = useState<boolean>(false);
 
+  // Chart instance management for proper cleanup and updates
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstanceRef = useRef<echarts.ECharts | null>(null);
 
@@ -48,14 +50,13 @@ const EnergyFlow: React.FC<EnergyFlowProps> = ({ graphId }) => {
     updateGraph(graphId, { title: "Geographical explorer" });
   }, []);
 
-  // Reset everything when database changes
+  // Database change handler: reset state and reload available years
   useEffect(() => {
     console.log("ENERGY FLOW: DB CHANGED");
-    // Reset data
+    // Reset visualization state
     setErrorData(null);
     setEnergyData([]);
     setAvailableYears([]);
-    // Reset state
     updateGraph(graphId, { options: null });
 
     // Load available years from database
@@ -73,10 +74,10 @@ const EnergyFlow: React.FC<EnergyFlowProps> = ({ graphId }) => {
     })();
   }, [dbFilePath]);
 
-  // Generate chart when options change
+  // Chart data generation effect: loads and processes energy flow data
   useEffect(() => {
     (async () => {
-      // Clear previous error and data
+      // Clear previous state
       setErrorData(null);
       setEnergyData([]);
 
@@ -92,7 +93,7 @@ const EnergyFlow: React.FC<EnergyFlowProps> = ({ graphId }) => {
       try {
         setIsLoading(true);
 
-        // Get energy flow data (simplified - no aggregation)
+        // Fetch energy flow data with geographic aggregation
         const flowData = await getEnergyFlowData(
           dbFilePath,
           categoryLevel,
@@ -109,7 +110,6 @@ const EnergyFlow: React.FC<EnergyFlowProps> = ({ graphId }) => {
     })();
   }, [graph.options]);
 
-  // Load map data when component mounts
   useEffect(() => {
     const loadMaps = async () => {
       try {
@@ -135,7 +135,6 @@ const EnergyFlow: React.FC<EnergyFlowProps> = ({ graphId }) => {
     loadMaps();
   }, []);
 
-  // Initialize and update chart
   useEffect(() => {
     const categoryLevel =
       (graph.options as EnergyFlowOptions)?.categoryLevel ?? 1;
@@ -146,27 +145,27 @@ const EnergyFlow: React.FC<EnergyFlowProps> = ({ graphId }) => {
       return;
     }
 
-    // Dispose previous chart instance
+    // Dispose previous chart instance to prevent memory leaks
     if (chartInstanceRef.current) {
       chartInstanceRef.current.dispose();
     }
 
-    // Initialize new chart
+    // Initialize new chart with responsive configuration
     const chart = echarts.init(chartRef.current);
     chartInstanceRef.current = chart;
 
-    // Prepare map data for ECharts
+    // Transform energy data for ECharts geo visualization
     const chartMapData = energyData.map((item) => ({
       name: getGeoJSONName(item.countryName), // Use mapped name for GeoJSON compatibility
       value: item.totalExports - item.totalImports, // Net energy flow
     }));
 
-    // Calculate min/max for color scale
+    // Calculate dynamic color scale based on data range
     const values = chartMapData.map((d) => d.value);
     const minValue = values.length > 0 ? Math.min(...values) : -100;
     const maxValue = values.length > 0 ? Math.max(...values) : 100;
 
-    // Choose map based on category level
+    // Configure map type and zoom level based on analysis scale
     let mapName = "world";
     let zoomLevel = 1.2;
 
@@ -174,7 +173,8 @@ const EnergyFlow: React.FC<EnergyFlowProps> = ({ graphId }) => {
       mapName = "eu-provinces";
       zoomLevel = 0.8; // Reduced zoom for broader EU view
     }
-    // ECharts option
+
+    // ECharts configuration with geographic visualization
     const mapOption = {
       backgroundColor: "transparent",
       title: {

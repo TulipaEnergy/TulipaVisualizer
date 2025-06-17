@@ -1,6 +1,10 @@
 import { genericApacheIPC } from "../gateway/db";
 import { Resolution } from "../types/resolution";
 
+/**
+ * Time resolution mapping for temporal aggregation strategies.
+ * Maps user-friendly resolution names to hour-based aggregation factors.
+ */
 const resolutionToTable: Record<Resolution, number> = {
   [Resolution.Hours]: 1,
   [Resolution.Days]: 24,
@@ -30,6 +34,7 @@ export async function getRenewables(
     );
   }
 
+  // Special handling for yearly aggregation using dedicated query
   if (resolution === Resolution.Years) {
     return genericApacheIPC<SupplyRow>("get_yearly_renewables", {
       dbPath,
@@ -55,6 +60,7 @@ export async function getNonRenewables(
     );
   }
 
+  // Special handling for yearly aggregation using dedicated query
   if (resolution === Resolution.Years) {
     return genericApacheIPC<SupplyRow>("get_yearly_nonrenewables", {
       dbPath,
@@ -69,6 +75,14 @@ export async function getNonRenewables(
   });
 }
 
+/**
+ * Retrieves available years with supply data for temporal analysis filtering.
+ *
+ * Data Coverage:
+ * - Returns years where both renewable and non-renewable generation data exist
+ * - Enables multi-year residual load trend analysis
+ * - Supports long-term energy transition scenario comparison
+ */
 export async function getSupplyYears(dbPath: string): Promise<YearJson[]> {
   return genericApacheIPC<YearJson>("get_supply_years", { dbPath });
 }

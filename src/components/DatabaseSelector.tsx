@@ -17,7 +17,7 @@ const DatabaseSelector: React.FC<DatabaseSelectorProps> = ({
   const { databases, setGraphDatabase, getGraphDatabase } =
     useVisualizationStore();
 
-  // Create select options
+  // Transform database paths into select options for UI rendering
   const selectData = [
     ...databases.map((db) => ({
       value: db,
@@ -45,6 +45,7 @@ const DatabaseSelector: React.FC<DatabaseSelectorProps> = ({
         comboboxProps={{ withinPortal: false }}
       />
 
+      {/* Active database indicator with shortened filename display */}
       {showBadge && getGraphDatabase(graphId) && (
         <Tooltip
           label={`Active: ${getGraphDatabase(graphId)}`}

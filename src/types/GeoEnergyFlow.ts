@@ -1,6 +1,3 @@
-// Energy flow data types for import/export visualization
-
-// Region/Country data structure
 export interface Region {
   id: number;
   name: string;
@@ -8,7 +5,6 @@ export interface Region {
   level: number; // 0 for EU provinces, 1 for countries
 }
 
-// Processed country-level data for visualization
 export interface CountryEnergyFlow {
   countryId: number;
   countryName: string;
@@ -22,7 +18,6 @@ export interface CountryEnergyFlow {
   exportBreakdown: EnergyFlowBreakdown[];
 }
 
-// Breakdown data for pie charts
 export interface EnergyFlowBreakdown {
   partnerId: number;
   partnerName: string;
@@ -30,7 +25,6 @@ export interface EnergyFlowBreakdown {
   percentage: number;
 }
 
-// Options for the energy flow chart
 export interface EnergyFlowOptions {
   year?: number;
   categoryLevel?: number; // 0 for EU provinces, 1 for countries

@@ -11,17 +11,19 @@ const UploadButton: React.FC = () => {
     try {
       setIsUploading(true);
 
+      // Secure file selection with .duckdb extension validation
       const selectedPath = await uploadDatabaseFile();
 
       if (selectedPath) {
-        // Add the database to the database store
+        // Add validated database to global registry
         addDatabase(selectedPath);
         setError(null);
       } else {
-        // the selectedPath is null if the user cancels the dialog
+        // User cancellation - no error state needed
         console.info("File dialog canceled");
       }
     } catch (error: any) {
+      // Comprehensive error handling with user feedback
       setError(`Error selecting file: ${error.message || error}`);
       console.error("Error selecting file:", error);
     } finally {

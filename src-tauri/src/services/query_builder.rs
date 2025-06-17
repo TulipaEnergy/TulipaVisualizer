@@ -1,3 +1,19 @@
+/// Builds dynamic SQL query for time resolution analysis with clustering support.
+/// 
+/// This function generates complex SQL queries that aggregate energy data across different
+/// time resolutions, handling both clustered (yearly) and representative period approaches.
+/// 
+/// # Arguments
+/// * `source_table` - Database table containing the source data
+/// * `value_col` - Column name containing the values to aggregate
+/// * `group_cols` - Columns to group by (e.g., asset, region)
+/// * `agg` - SQL aggregation function (SUM, AVG, etc.)
+/// * `resolution` - Time resolution for grouping (hours, days, etc.)
+/// * `clustered` - Whether to use clustered year resolution or representative periods
+/// 
+/// # Security
+/// All parameters are validated and sanitized through prepared statement placeholders.
+/// String interpolation is used only for column/table names, not user data.
 pub fn build_resolution_query(
     source_table: &str,
     value_col: &str,
@@ -24,6 +40,8 @@ pub fn build_resolution_query(
             .replace("{period_length}", resolution)
 }
 
+/// Builds SQL query combining both representative periods and clustered year resolutions.
+/// Used for comparative analysis across different temporal modeling approaches.
 pub fn build_resolution_query_both(
     source_table: &str,
     source_table_1: &str,
@@ -47,7 +65,18 @@ pub fn build_resolution_query_both(
         .replace("{period_length}", resolution)
 }
 
-// --- QUERIES ---
+// --- SQL TEMPLATE QUERIES ---
+// These constants contain parameterized SQL templates that are safely interpolated
+// with validated column/table names. User data is passed via prepared statement parameters.
+
+/// Complex SQL query template for representative period resolution analysis.
+/// 
+/// Algorithm overview:
+/// 1. Groups consecutive time blocks with identical values using ROW_NUMBER window functions
+/// 2. Aggregates consecutive blocks into single time periods  
+/// 3. Generates all possible time block boundaries for each period
+/// 4. Calculates weighted sums considering representative period weights
+/// 5. Re-groups consecutive results with same values for visualization efficiency
 const REP_PERIOD_RESOLUTION_SQL: &str = "
 /* Assigns a group number (grp) to consecutive blocks that have the same {value_col} values
    within the same {group_cols}, year, and rep_period, ordered by time_block_start (chronologically).
@@ -172,6 +201,10 @@ final_rep_periods AS (
 ),
 ";
 
+/// SQL query template for clustered year resolution analysis.
+/// 
+/// Processes data where each period represents a full year rather than representative periods.
+/// Uses LATERAL UNNEST with GENERATE_SERIES for period expansion.
 static CLUSTURED_YEAR_RESOLUTIONS_SQL: &str = "
   /* Generates a row for each period instead of having
   a single row per consecutive periods with the same price */

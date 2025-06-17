@@ -5,6 +5,16 @@ use tauri::ipc::Response;
 use crate::services::query_builder::build_resolution_query;
 use crate::duckdb_conn::{run_query_rb, serialize_recordbatch};
 
+/// Retrieves renewable energy supply data with time resolution aggregation.
+/// 
+/// Renewable Classification Logic:
+/// - Assets with 'availability' profiles are considered renewable
+/// - Includes wind, solar, hydro, and other variable renewable sources
+/// - Filters flows going to consumer assets (demand satisfaction)
+/// 
+/// # Parameters
+/// * `year` - Analysis year for data filtering
+/// * `resolution` - Time aggregation resolution in hours
 #[tauri::command]
 pub fn get_renewables(db_path: String, year: u32, resolution: u32) -> Result<Response, String> {
     let sql = build_resolution_query(
@@ -21,6 +31,12 @@ pub fn get_renewables(db_path: String, year: u32, resolution: u32) -> Result<Res
     serialize_recordbatch(res.0, res.1)
 }
 
+/// Retrieves non-renewable energy supply data with time resolution aggregation.
+/// 
+/// Non-Renewable Classification Logic:
+/// - Assets without 'availability' profiles (dispatchable sources)
+/// - Includes fossil fuel plants, nuclear, biomass, and other controllable sources
+/// - Excludes renewable assets with weather-dependent availability profiles
 #[tauri::command]
 pub fn get_nonrenewables(db_path: String, year: u32, resolution: u32) -> Result<Response, String> {
     let sql = build_resolution_query(
@@ -37,6 +53,12 @@ pub fn get_nonrenewables(db_path: String, year: u32, resolution: u32) -> Result<
     serialize_recordbatch(res.0, res.1)
 }
 
+/// Calculates annual renewable energy production totals.
+/// 
+/// Temporal Aggregation Strategy:
+/// - Sums all time blocks within representative periods
+/// - Applies representative period weights for annual scaling
+/// - Accounts for time block duration and resolution factors
 #[tauri::command]
 pub fn get_yearly_renewables(db_path: String, year: u32) -> Result<Response, String> {
     let res: (Vec<RecordBatch>, Schema) =
@@ -44,6 +66,8 @@ pub fn get_yearly_renewables(db_path: String, year: u32) -> Result<Response, Str
     serialize_recordbatch(res.0, res.1)
 }
 
+/// Calculates annual non-renewable energy production totals.
+/// Uses same temporal aggregation strategy as yearly renewables.
 #[tauri::command]
 pub fn get_yearly_nonrenewables(db_path: String, year: u32) -> Result<Response, String> {
     let res: (Vec<RecordBatch>, Schema) =
@@ -51,6 +75,7 @@ pub fn get_yearly_nonrenewables(db_path: String, year: u32) -> Result<Response, 
     serialize_recordbatch(res.0, res.1)
 }
 
+/// Retrieves all available years with supply data for UI population.
 #[tauri::command]
 pub fn get_supply_years(db_path: String) -> Result<Response, String> {
     let res: (Vec<RecordBatch>, Schema) =
@@ -63,6 +88,12 @@ pub fn get_supply_years(db_path: String) -> Result<Response, String> {
 
 // --- QUERIES ---
 
+/// SQL subquery for renewable energy flows identification.
+/// 
+/// Renewable Classification Criteria:
+/// - Flow destination must be consumer asset (demand satisfaction)
+/// - Source asset must have 'availability' profile (weather-dependent)
+/// - Availability profiles indicate variable renewable energy sources
 const RENEWABLES_SUPPLY_SQL: &str = "
   (
     SELECT
@@ -80,6 +111,12 @@ const RENEWABLES_SUPPLY_SQL: &str = "
       AND ap.profile_type = 'availability'
   ) AS renewables_flows";
 
+/// SQL subquery for non-renewable energy flows identification.
+/// 
+/// Non-Renewable Classification Criteria:
+/// - Flow destination must be consumer asset
+/// - Source asset must NOT have 'availability' profile (dispatchable)
+/// - Absence of availability profile indicates controllable generation
 const NONRENEWABLES_SUPPLY_SQL: &str = "
   (
     SELECT
@@ -101,7 +138,14 @@ const NONRENEWABLES_SUPPLY_SQL: &str = "
       )
   ) AS nonrenewables_flows";
 
-  const RENEWABLES_YEARLY_SQL: &str = "
+/// SQL query for annual renewable energy totals with representative period scaling.
+/// 
+/// Calculation Components:
+/// - solution: Optimization variable value (energy flow)
+/// - time_block_duration: (time_block_end - time_block_start + 1)
+/// - resolution: Time resolution factor (e.g., hours per time step)
+/// - weight: Representative period scaling factor for annual projection
+const RENEWABLES_YEARLY_SQL: &str = "
   SELECT
     bc.from_asset AS asset,
     0 AS global_start,
@@ -123,6 +167,8 @@ const NONRENEWABLES_SUPPLY_SQL: &str = "
   GROUP BY bc.from_asset
 ";
 
+/// SQL query for annual non-renewable energy totals.
+/// Uses identical calculation methodology as renewable totals.
 const NONRENEWABLES_YEARLY_SQL: &str = "
   SELECT
     bc.from_asset AS asset,
@@ -149,6 +195,7 @@ const NONRENEWABLES_YEARLY_SQL: &str = "
   GROUP BY bc.from_asset
 ";
 
+/// SQL query to find all years with supply flow data.
 const SUPPLY_YEARS_SQL: &str = "
     SELECT DISTINCT f.year
     FROM var_flow AS f

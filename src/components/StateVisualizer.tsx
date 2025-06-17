@@ -23,6 +23,7 @@ const StateVisualizer: React.FC = () => {
           <Text>Application State</Text>
         </Accordion.Control>
         <Accordion.Panel>
+          {/* Scrollable container for large state objects */}
           <Box style={{ maxHeight: "40vh", overflow: "auto" }}>
             <Code block color="var(--mantine-color-gray-0)">
               {JSON.stringify(visualizationState, null, 2)}

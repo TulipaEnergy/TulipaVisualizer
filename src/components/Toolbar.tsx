@@ -21,10 +21,12 @@ const Toolbar: React.FC = () => {
       }}
     >
       <Flex justify="space-between" align="center" style={{ width: "100%" }}>
+        {/* Application branding and identity */}
         <Group align="center" gap="md">
           <Image style={{ height: "30px", width: "30px" }} src={logo} />
           <Title order={2}>Tulipa Energy Visualizer</Title>
         </Group>
+        {/* External documentation link for user support */}
         <Anchor
           href="https://tulipaenergy.github.io/TulipaEnergyModel.jl/stable/"
           target="_blank"
@@ -33,6 +35,7 @@ const Toolbar: React.FC = () => {
         </Anchor>
       </Flex>
 
+      {/* Conditional loading indicator for active database operations */}
       {hasAnyDatabase() && isLoading && (
         <Text size="sm" style={{ textAlign: "center", marginTop: "10px" }}>
           Loading...

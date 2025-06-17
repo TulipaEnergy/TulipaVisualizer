@@ -4,10 +4,16 @@ use tauri::ipc::Response;
 use duckdb::{ arrow::{array::RecordBatch, datatypes::Schema}, types::Value, Arrow, Connection };
 use arrow_ipc::{ writer::StreamWriter, };
 
-// Connection pool for multi-database support
+/// Global connection pool using lazy initialization for thread-safe multi-database support.
+/// Each database file path maps to a persistent DuckDB connection to avoid reconnection overhead.
 static CONN_HANDLER: Lazy<Mutex<ConnectionHandler>> = Lazy::new(|| Mutex::new(ConnectionHandler::new()));
 
-// serializes result from apache arrow query
+/// Serializes DuckDB query results to Apache Arrow IPC format for efficient frontend transfer.
+/// 
+/// # Arguments
+/// * `rec_batch` - Vector of Arrow RecordBatch results from DuckDB query
+/// * `schema` - Arrow schema describing the data structure
+/// 
 pub fn serialize_recordbatch(rec_batch: Vec<RecordBatch>, schema: Schema) -> Result<Response, String> {
     let mut vec_writer = Cursor::new(Vec::new()); // creates a writer to save the result    
 
@@ -24,12 +30,14 @@ pub fn serialize_recordbatch(rec_batch: Vec<RecordBatch>, schema: Schema) -> Res
     Ok(response)
 }
 
-
-// public methods for querying, which use singleton underneath which does not need to be tested
+/// Executes a DuckDB query and returns results as Arrow RecordBatch.
+/// Thread-safe wrapper around the singleton connection handler.
 pub fn run_query_rb(db_path: String, q: String, args: Vec<Value>) -> Result<(Vec<RecordBatch>, Schema), String> {
     CONN_HANDLER.lock().unwrap().run_query_rb(db_path, q, args)
 }
 
+/// Executes a DuckDB query with custom row mapping function.
+/// Thread-safe wrapper around the singleton connection handler.
 pub fn run_query_row<F, T>(db_path: String, q: String, args: Vec<Value>, row_mapper: F) -> Result<Vec<T>, String> 
 where 
     F: FnMut(&duckdb::Row<'_>) -> Result<T, duckdb::Error>
@@ -37,9 +45,12 @@ where
     CONN_HANDLER.lock().unwrap().run_query_row(db_path, q, args, row_mapper)
 }
 
-
+/// Thread-safe connection pool manager for DuckDB databases.
+/// Maintains persistent connections to avoid reconnection overhead and ensure transaction consistency.
 #[derive(Default)]
 struct ConnectionHandler {
+    /// HashMap storing active DuckDB connections keyed by database file path.
+    /// Protected by Mutex for thread-safe concurrent access.
     db_pool: Mutex<HashMap<String, Connection>>,
 }
 
@@ -48,11 +59,17 @@ impl ConnectionHandler {
         ConnectionHandler::default()
     }
 
+    /// Retrieves or creates a database connection with security validation.
+    /// 
+    /// # Security Measures
+    /// - Validates .duckdb file extension to prevent arbitrary file access
+    /// - Checks file existence before connection attempt
+    /// - Uses connection pooling to prevent resource exhaustion
     fn fetch_connection<F, T>(&self, db_path: &String, with_conn: F) -> Result<T, String>
     where
         F: FnOnce(&Connection) -> Result<T, String> 
     {
-        // assert path is plausible
+        // Security validation: ensure only .duckdb files can be accessed
         if !db_path.ends_with(".duckdb") {
             return Err("Database path must end with .duckdb".to_string());
         }
@@ -60,6 +77,7 @@ impl ConnectionHandler {
         // Check if we need to create a new connection or use existing one
         let mut pool = self.db_pool.lock().unwrap();
         if !pool.contains_key(db_path) {
+            // Security check: verify file exists before attempting connection
             if !Path::new(db_path).exists() {
                 return Err(format!("Error<file not found>` connecting to: '{}'", db_path));
             }
@@ -76,11 +94,13 @@ impl ConnectionHandler {
         with_conn(conn)
     }
 
+    /// Executes parameterized query and returns Arrow RecordBatch results.
+    /// Uses prepared statements to prevent SQL injection attacks.
     fn run_query_rb(&self, db_path: String, q: String, args: Vec<Value>) -> Result<(Vec<RecordBatch>, Schema), String> {
         println!("\n<<QUERY>>\nfetching recorbatch on db [{}]:\n{}", db_path, q);
 
         self.fetch_connection(&db_path, |conn| {
-            // Execute query using the specific connection
+            // Use prepared statements for SQL injection prevention
             let mut prepared_statement = conn.prepare(&q).map_err(|e| format!("error parsing query: '{}'", e.to_string()))?;
             let arrow_res: Arrow<'_> = prepared_statement
                 .query_arrow(duckdb::params_from_iter(args.iter()))
@@ -93,6 +113,8 @@ impl ConnectionHandler {
         })
     }
 
+    /// Executes parameterized query with custom row processing.
+    /// Uses prepared statements to prevent SQL injection attacks.
     fn run_query_row<F, T>(&self, db_path: String, q: String, args: Vec<Value>, row_mapper: F) -> Result<Vec<T>, String> 
     where 
         F: FnMut(&duckdb::Row<'_>) -> Result<T, duckdb::Error>
@@ -100,7 +122,7 @@ impl ConnectionHandler {
         println!("\n<<QUERY>>\nfetching row on db [{}]:\n{}", db_path, q);
 
         self.fetch_connection(&db_path, |conn| {
-            // Execute query using the specific connection
+            // Use prepared statements for SQL injection prevention
             let mut prepared_statement = conn.prepare(&q).map_err(|e| format!("error parsing query: '{}'", e.to_string()))?;
             let res: Vec<T> = prepared_statement
                 .query_map(duckdb::params_from_iter(args.iter()), row_mapper)

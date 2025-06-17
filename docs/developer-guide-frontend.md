@@ -55,6 +55,7 @@ UI Update ← Component ← State Update ← Data Processing ← IPC Response �
 ### Environment Configuration
 
 1. **Clone and Install Dependencies**
+
    ```bash
    git clone <repository-url>
    cd energy-model-visualizer
@@ -62,6 +63,7 @@ UI Update ← Component ← State Update ← Data Processing ← IPC Response �
    ```
 
 2. **Development Server**
+
    ```bash
    npm run dev          # Frontend only (Vite dev server)
    npm run tauri dev    # Full app with Tauri backend
@@ -168,10 +170,10 @@ interface MyComponentProps {
   isLoading?: boolean;
 }
 
-const MyComponent: React.FC<MyComponentProps> = ({ 
-  graphId, 
+const MyComponent: React.FC<MyComponentProps> = ({
+  graphId,
   onDataChange,
-  isLoading = false 
+  isLoading = false
 }) => {
   const [data, setData] = useState<DataType | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -191,6 +193,7 @@ export default MyComponent;
 #### Container vs. Presentation Components
 
 **Container Components** (e.g., `GraphCard.tsx`):
+
 - Manage state and data fetching
 - Handle business logic
 - Connect to stores and services
@@ -199,7 +202,7 @@ export default MyComponent;
 const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
   const { updateGraph, mustGetGraph } = useVisualizationStore();
   const graph = mustGetGraph(graphId);
-  
+
   // Data fetching and state management
   useEffect(() => {
     // Fetch data logic
@@ -215,6 +218,7 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
 ```
 
 **Presentation Components** (e.g., visualization components):
+
 - Receive data via props
 - Focus on rendering and user interaction
 - Minimal or no state
@@ -228,10 +232,10 @@ interface ChartProps {
 
 const Chart: React.FC<ChartProps> = ({ data, isLoading, onFilterChange }) => {
   if (isLoading) return <Loader />;
-  
+
   return (
-    <ReactECharts 
-      option={createChartOption(data)} 
+    <ReactECharts
+      option={createChartOption(data)}
       onEvents={{ 'click': handleChartClick }}
     />
   );
@@ -248,7 +252,10 @@ interface ErrorBoundaryProps {
   fallback?: (error: Error) => ReactNode;
 }
 
-const ErrorBoundary: React.FC<ErrorBoundaryProps> = ({ children, fallback }) => {
+const ErrorBoundary: React.FC<ErrorBoundaryProps> = ({
+  children,
+  fallback,
+}) => {
   // Error boundary implementation
 };
 ```
@@ -258,14 +265,7 @@ const ErrorBoundary: React.FC<ErrorBoundaryProps> = ({ children, fallback }) => 
 The application uses Mantine for consistent UI components:
 
 ```typescript
-import { 
-  Stack, 
-  Paper, 
-  Group, 
-  Select, 
-  Button, 
-  Loader 
-} from "@mantine/core";
+import { Stack, Paper, Group, Select, Button, Loader } from "@mantine/core";
 
 // Theme configuration in main.tsx
 const theme = createTheme({
@@ -298,7 +298,7 @@ export interface VisualizationState {
   addGraph: (type: ChartType) => void;
   updateGraph: (id: string, updates: Partial<GraphConfig>) => void;
   removeGraph: (id: string) => void;
-  
+
   // Database management
   addDatabase: (filePath: string) => void;
   removeDatabase: (filePath: string) => void;
@@ -313,23 +313,26 @@ const useVisualizationStore = create<VisualizationState>((set, get) => ({
 
   // Action implementations
   setIsLoading: (isLoading) => set({ isLoading }),
-  
+
   addGraph: (type) => {
     set((state) => ({
-      graphs: [...state.graphs, {
-        id: `graph-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        type,
-        title: `New ${type} Chart`,
-        // ... other properties
-      }]
+      graphs: [
+        ...state.graphs,
+        {
+          id: `graph-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          type,
+          title: `New ${type} Chart`,
+          // ... other properties
+        },
+      ],
     }));
   },
 
   updateGraph: (id, updates) =>
     set((state) => ({
-      graphs: state.graphs.map(graph =>
-        graph.id === id ? { ...graph, ...updates } : graph
-      )
+      graphs: state.graphs.map((graph) =>
+        graph.id === id ? { ...graph, ...updates } : graph,
+      ),
     })),
 }));
 ```
@@ -342,7 +345,7 @@ const useVisualizationStore = create<VisualizationState>((set, get) => ({
 const MyComponent: React.FC = () => {
   // Select only needed state slices
   const { databases, addDatabase, isLoading } = useVisualizationStore();
-  
+
   // Use state in component logic
   const handleUpload = async (filePath: string) => {
     addDatabase(filePath);
@@ -364,9 +367,9 @@ const useVisualizationStore = create<VisualizationState>((set, get) => ({
 
   // Computed getters
   hasAnyDatabase: () => get().databases.length > 0,
-  
+
   mustGetGraph: (id: string) => {
-    const graph = get().graphs.find(g => g.id === id);
+    const graph = get().graphs.find((g) => g.id === id);
     if (!graph) {
       throw new Error(`Graph with id ${id} not found`);
     }
@@ -388,7 +391,7 @@ addItem: (item) => set((state) => ({
 // Updating nested objects
 updateGraphOptions: (graphId, options) => set((state) => ({
   graphs: state.graphs.map(graph =>
-    graph.id === graphId 
+    graph.id === graphId
       ? { ...graph, options: { ...graph.options, ...options } }
       : graph
   )
@@ -433,8 +436,8 @@ const ChartComponent: React.FC<ChartProps> = ({ data }) => {
   return (
     <Paper p="md" style={{ height: "400px" }}>
       {chartOptions && (
-        <ReactECharts 
-          option={chartOptions} 
+        <ReactECharts
+          option={chartOptions}
           style={{ height: "100%" }}
           opts={{ renderer: "canvas" }}
         />
@@ -447,24 +450,26 @@ const ChartComponent: React.FC<ChartProps> = ({ data }) => {
 #### Advanced Chart Features
 
 **Interactive Tooltips:**
+
 ```typescript
 const tooltipOption = {
   tooltip: {
     trigger: "axis",
     formatter: function (params: any[]) {
       let tooltipContent = `<strong>${params[0].name}</strong><br/>`;
-      params.forEach(item => {
-        tooltipContent += 
+      params.forEach((item) => {
+        tooltipContent +=
           `<span style="color:${item.color}">●</span> ` +
           `${item.seriesName}: ${item.value}<br/>`;
       });
       return tooltipContent;
-    }
-  }
+    },
+  },
 };
 ```
 
 **Zoom and Pan:**
+
 ```typescript
 const dataZoomOption = {
   dataZoom: [
@@ -472,19 +477,20 @@ const dataZoomOption = {
       type: "inside",
       xAxisIndex: [0],
       start: 0,
-      end: 100
+      end: 100,
     },
     {
       type: "slider",
       xAxisIndex: [0],
       start: 0,
-      end: 100
-    }
-  ]
+      end: 100,
+    },
+  ],
 };
 ```
 
 **Geographic Maps:**
+
 ```typescript
 // Register map data
 import * as echarts from "echarts";
@@ -505,14 +511,16 @@ const mapOption: EChartsOption = {
     roam: true,
     emphasis: {
       label: { show: true },
-      itemStyle: { areaColor: "#389e0d" }
-    }
+      itemStyle: { areaColor: "#389e0d" },
+    },
   },
-  series: [{
-    type: "map",
-    map: "eu-provinces",
-    data: mapData
-  }]
+  series: [
+    {
+      type: "map",
+      map: "eu-provinces",
+      data: mapData,
+    },
+  ],
 };
 ```
 
@@ -529,12 +537,12 @@ interface BaseChartProps {
   children: ReactNode;
 }
 
-const BaseChart: React.FC<BaseChartProps> = ({ 
-  title, 
-  height = 400, 
-  isLoading, 
-  error, 
-  children 
+const BaseChart: React.FC<BaseChartProps> = ({
+  title,
+  height = 400,
+  isLoading,
+  error,
+  children
 }) => {
   if (isLoading) {
     return (
@@ -568,22 +576,24 @@ const BaseChart: React.FC<BaseChartProps> = ({
 ```typescript
 const processChartData = (rawData: RawDataType[]): EChartsOption => {
   // Data transformation logic
-  const categories = rawData.map(d => d.category);
-  const values = rawData.map(d => d.value);
+  const categories = rawData.map((d) => d.category);
+  const values = rawData.map((d) => d.value);
 
   return {
     xAxis: { type: "category", data: categories },
     yAxis: { type: "value" },
-    series: [{
-      type: "bar",
-      data: values,
-      itemStyle: {
-        color: (params: any) => {
-          // Dynamic coloring based on data
-          return params.value > 100 ? "#ff4d4f" : "#52c41a";
-        }
-      }
-    }]
+    series: [
+      {
+        type: "bar",
+        data: values,
+        itemStyle: {
+          color: (params: any) => {
+            // Dynamic coloring based on data
+            return params.value > 100 ? "#ff4d4f" : "#52c41a";
+          },
+        },
+      },
+    ],
   };
 };
 ```
@@ -611,14 +621,14 @@ export async function getCapacity(
   dbPath: string,
   asset: string,
   startYear: number,
-  endYear: number
+  endYear: number,
 ): Promise<CapacityData[]> {
   try {
     const result = await genericApacheIPC<CapacityData>("get_capacity", {
       dbPath,
       asset,
       startYear,
-      endYear
+      endYear,
     });
     return result;
   } catch (error) {
@@ -639,7 +649,7 @@ import { Table } from "apache-arrow";
 
 export async function genericApacheIPC<T>(
   command: string,
-  args: Record<string, any>
+  args: Record<string, any>,
 ): Promise<T[]> {
   try {
     const table: Table = await invoke(command, args);
@@ -652,19 +662,19 @@ export async function genericApacheIPC<T>(
 
 function extractTableData<T>(table: Table): T[] {
   const data: T[] = [];
-  const columns = table.schema.fields.map(field => field.name);
-  
+  const columns = table.schema.fields.map((field) => field.name);
+
   for (let i = 0; i < table.numRows; i++) {
     const row = table.get(i);
     if (row) {
       const rowData: any = {};
-      columns.forEach(col => {
+      columns.forEach((col) => {
         rowData[col] = row[col];
       });
       data.push(rowData as T);
     }
   }
-  
+
   return data;
 }
 ```
@@ -674,9 +684,9 @@ function extractTableData<T>(table: Table): T[] {
 ```typescript
 export class ServiceError extends Error {
   constructor(
-    message: string, 
-    public service: string, 
-    public originalError?: Error
+    message: string,
+    public service: string,
+    public originalError?: Error,
   ) {
     super(message);
     this.name = "ServiceError";
@@ -688,7 +698,7 @@ const handleServiceError = (error: unknown, service: string): never => {
     throw new ServiceError(
       `${service} operation failed: ${error.message}`,
       service,
-      error
+      error,
     );
   }
   throw new ServiceError(`${service} operation failed`, service);
@@ -708,7 +718,7 @@ export const useCapacityData = (
   dbPath: string | null,
   asset: string | null,
   startYear: number,
-  endYear: number
+  endYear: number,
 ) => {
   const [data, setData] = useState<CapacityData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -720,7 +730,7 @@ export const useCapacityData = (
     const fetchData = async () => {
       setIsLoading(true);
       setError(null);
-      
+
       try {
         const result = await getCapacity(dbPath, asset, startYear, endYear);
         setData(result);
@@ -759,10 +769,10 @@ describe("MyComponent", () => {
   it("handles user interactions", async () => {
     const mockCallback = vi.fn();
     renderWithProviders(<MyComponent onAction={mockCallback} />);
-    
+
     const button = screen.getByRole("button");
     fireEvent.click(button);
-    
+
     expect(mockCallback).toHaveBeenCalledOnce();
   });
 });
@@ -793,8 +803,8 @@ it("displays data from store", () => {
 // Mock ECharts for testing
 vi.mock("echarts-for-react", () => ({
   default: ({ option }: { option: any }) => (
-    <div 
-      data-testid="chart-mock" 
+    <div
+      data-testid="chart-mock"
       data-option={JSON.stringify(option)}
     >
       Mocked Chart
@@ -804,9 +814,9 @@ vi.mock("echarts-for-react", () => ({
 
 it("renders chart with correct data", () => {
   const chartData = [{ name: "A", value: 100 }];
-  
+
   renderWithProviders(<Chart data={chartData} />);
-  
+
   const chart = screen.getByTestId("chart-mock");
   const option = JSON.parse(chart.getAttribute("data-option")!);
   expect(option.series[0].data).toEqual([100]);
@@ -821,7 +831,7 @@ import { getCapacity } from "../capacityQuery";
 
 // Mock IPC layer
 vi.mock("../gateway/db", () => ({
-  genericApacheIPC: vi.fn()
+  genericApacheIPC: vi.fn(),
 }));
 
 describe("capacityQuery", () => {
@@ -830,13 +840,13 @@ describe("capacityQuery", () => {
     vi.mocked(genericApacheIPC).mockResolvedValue(mockData);
 
     const result = await getCapacity("/db/path", "wind", 2020, 2025);
-    
+
     expect(result).toEqual(mockData);
     expect(genericApacheIPC).toHaveBeenCalledWith("get_capacity", {
       dbPath: "/db/path",
       asset: "wind",
       startYear: 2020,
-      endYear: 2025
+      endYear: 2025,
     });
   });
 });
@@ -930,7 +940,7 @@ const ChartComponent = ({ data }: { data: ChartData[] }) => {
   }, [data]);
 
   return (
-    <ReactECharts 
+    <ReactECharts
       ref={chartRef}
       option={baseChartOption}
       notMerge={false}
@@ -1017,22 +1027,24 @@ export default defineConfig({
         manualChunks: {
           vendor: ["react", "react-dom"],
           charts: ["echarts", "echarts-for-react"],
-          ui: ["@mantine/core", "@mantine/hooks"]
-        }
-      }
-    }
-  }
+          ui: ["@mantine/core", "@mantine/hooks"],
+        },
+      },
+    },
+  },
 });
 ```
 
 ### Asset Optimization
 
 #### Image Optimization
+
 - Use WebP format for images when possible
 - Implement lazy loading for large images
 - Optimize SVG icons and graphics
 
 #### Font Optimization
+
 - Use font-display: swap for custom fonts
 - Preload critical fonts
 - Subset fonts to reduce bundle size

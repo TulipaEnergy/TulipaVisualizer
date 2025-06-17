@@ -38,20 +38,26 @@ export interface GraphConfig {
   title: string;
   error: string | null;
   isLoading: boolean;
+  /** Hierarchical filtering system: category root ID -> array of selected filter IDs */
   filtersByCategory: { [key: number]: number[] };
+  /** Node IDs for breakdown/drill-down analysis */
   breakdownNodes: number[];
   options: ChartOptions | null;
-  graphDBFilePath: string | null; // For when each graph has its own DB file
+  /** Per-graph database file path for multi-database support */
+  graphDBFilePath: string | null;
+  /** Timestamp for tracking when filters were last applied */
   lastApplyTimestamp: number;
 }
 
 export interface VisualizationState {
   // Database registry
-  databases: string[]; // file paths
+  /** Array of database file paths currently loaded */
+  databases: string[];
   isLoading: boolean;
   error: string | null;
 
   // Visualization settings
+  /** Array of graph configurations for dynamic chart management */
   graphs: GraphConfig[];
 
   // Actions
@@ -129,6 +135,10 @@ const useVisualizationStore = create<VisualizationState>((set, get) => ({
       ),
     })),
 
+  /**
+   * Adds database to registry with duplicate prevention.
+   * Maintains referential integrity by checking existing paths.
+   */
   addDatabase: (filePath: string) => {
     set((state) => {
       if (!state.databases.includes(filePath)) {
@@ -141,6 +151,10 @@ const useVisualizationStore = create<VisualizationState>((set, get) => ({
     });
   },
 
+  /**
+   * Removes database and performs cascade cleanup of associated graphs.
+   * Prevents orphaned graph configurations when database is removed.
+   */
   removeDatabase: (filePath: string) => {
     set((state) => ({
       ...state,
@@ -176,6 +190,7 @@ const useVisualizationStore = create<VisualizationState>((set, get) => ({
     return get().databases.length > 0;
   },
 
+  /** Retrieves graph configuration with error handling for missing graphs */
   mustGetGraph(id: string): GraphConfig {
     const res = get().graphs.find((g) => g.id === id);
     if (!res) {

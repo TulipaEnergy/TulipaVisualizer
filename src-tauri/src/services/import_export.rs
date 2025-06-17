@@ -2,7 +2,24 @@ use crate::duckdb_conn::{ serialize_recordbatch, run_query_rb, run_query_row };
 use duckdb::{ arrow::{array::RecordBatch, datatypes::Schema}, types::Value };
 use tauri::ipc::Response;
 
-// gets the import/ export between categories which are not level-0
+/// Retrieves energy import flows for a specific geographic category.
+/// 
+/// Geographic Flow Data Processing:
+/// - Processes hierarchical category relationships (province → country)
+/// - Aggregates flows across time blocks and representative periods
+/// - Calculates annual flows using representative period weights
+/// - Handles bidirectional energy trade analysis
+/// 
+/// Spatial Data Handling:
+/// - Maps category names to database IDs for efficient querying
+/// - Processes flows between regions at same hierarchical level
+/// - Excludes intra-regional flows (same category imports/exports)
+/// 
+/// # Parameters
+/// * `cat_name` - Geographic category name (e.g., "Netherlands", "South-Holland")
+/// 
+/// # Returns
+/// Import flow data with partner breakdowns and temporal aggregation
 #[tauri::command]
 pub fn get_import(db_path: String, cat_name: String) -> Result<Response, String> {
     let cat_id: u32 = get_id_from_category(db_path.to_string(), cat_name)?;
@@ -13,6 +30,10 @@ pub fn get_import(db_path: String, cat_name: String) -> Result<Response, String>
     return serialize_recordbatch(res.0, res.1);
 }
 
+/// Retrieves energy export flows for a specific geographic category.
+/// 
+/// Uses identical processing logic as imports but focuses on outbound flows.
+/// Provides symmetric analysis for complete trade balance understanding.
 #[tauri::command]
 pub fn get_export(db_path: String, cat_name: String) -> Result<Response, String> {
     let cat_id: u32 = get_id_from_category(db_path.to_string(), cat_name)?;
@@ -31,7 +52,12 @@ pub fn get_export(db_path: String, cat_name: String) -> Result<Response, String>
 //     return Ok(cat.to_string());
 // }
 
-// given an id, gets the corresponding category
+/// Maps geographic category names to database identifiers.
+/// 
+/// Category Validation:
+/// - Ensures category exists in database before processing
+/// - Provides clear error messages for missing categories
+/// - Enables efficient ID-based database operations
 fn get_id_from_category(db_path: String, cat: String) -> Result<u32, String> {
     let row_mapper = |row: &duckdb::Row<'_>| {let res: u32 = row.get(0)?; return Ok(res)};
     let res: Vec<u32> = run_query_row(db_path, ID_FROM_CATEGORY_SQL.to_string(), vec![Value::from(cat)], row_mapper)?;
@@ -48,6 +74,23 @@ fn get_id_from_category(db_path: String, cat: String) -> Result<u32, String> {
 // const CATEGORY_FROM_ID_SQL: &str = "SELECT name FROM category WHERE id = ?";
 const ID_FROM_CATEGORY_SQL: &str = "SELECT id FROM category WHERE name = ?";
 
+/// Complex SQL template for geographic energy flow analysis.
+/// 
+/// Algorithm Overview:
+/// 1. Recursive CTE to find all descendant categories in hierarchy
+/// 2. Identifies sibling categories at same geographic level
+/// 3. Aggregates energy flows between assets in different categories
+/// 4. Applies representative period weights for annual scaling
+/// 5. Groups results by category pairs and years
+/// 
+/// Template Parameters:
+/// - {{1}}: Direction filter ("in" for imports, "out" for exports)
+/// 
+/// Spatial Data Processing:
+/// - Handles hierarchical geographic relationships
+/// - Processes flows only between different root categories
+/// - Aggregates time block durations for accurate energy totals
+/// - Applies resolution and weight factors for annual projections
 const IMPORT_EXPORT_SQL_TEMPLATE: &str = 
     "WITH cat_rp_flow AS (
     WITH RECURSIVE descendants AS (
