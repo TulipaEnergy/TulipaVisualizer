@@ -19,8 +19,6 @@ describe("Capacity Query Service", () => {
   describe("getCapacity", () => {
     const mockDbPath = "/path/to/test.duckdb";
     const mockAssetName = "wind_farm_1";
-    const mockStartYear = 2020;
-    const mockEndYear = 2025;
 
     it("should fetch capacity data successfully", async () => {
       const mockCapacityData = [
@@ -49,18 +47,11 @@ describe("Capacity Query Service", () => {
 
       vi.mocked(genericApacheIPC).mockResolvedValueOnce(mockCapacityData);
 
-      const result = await getCapacity(
-        mockDbPath,
-        mockAssetName,
-        mockStartYear,
-        mockEndYear,
-      );
+      const result = await getCapacity(mockDbPath, mockAssetName);
 
       expect(genericApacheIPC).toHaveBeenCalledWith("get_capacity", {
         dbPath: mockDbPath,
         assetName: mockAssetName,
-        startYear: mockStartYear,
-        endYear: mockEndYear,
       });
       expect(result).toEqual(mockCapacityData);
     });
@@ -70,18 +61,11 @@ describe("Capacity Query Service", () => {
 
       vi.mocked(genericApacheIPC).mockResolvedValueOnce(mockEmptyData);
 
-      const result = await getCapacity(
-        mockDbPath,
-        mockAssetName,
-        mockStartYear,
-        mockEndYear,
-      );
+      const result = await getCapacity(mockDbPath, mockAssetName);
 
       expect(genericApacheIPC).toHaveBeenCalledWith("get_capacity", {
         dbPath: mockDbPath,
         assetName: mockAssetName,
-        startYear: mockStartYear,
-        endYear: mockEndYear,
       });
       expect(result).toEqual([]);
     });
@@ -99,13 +83,11 @@ describe("Capacity Query Service", () => {
 
       vi.mocked(genericApacheIPC).mockResolvedValueOnce(mockSingleYearData);
 
-      const result = await getCapacity(mockDbPath, mockAssetName, 2020, 2020);
+      const result = await getCapacity(mockDbPath, mockAssetName);
 
       expect(genericApacheIPC).toHaveBeenCalledWith("get_capacity", {
         dbPath: mockDbPath,
         assetName: mockAssetName,
-        startYear: 2020,
-        endYear: 2020,
       });
       expect(result).toEqual(mockSingleYearData);
     });
@@ -124,18 +106,11 @@ describe("Capacity Query Service", () => {
 
       vi.mocked(genericApacheIPC).mockResolvedValueOnce(mockData);
 
-      const result = await getCapacity(
-        mockDbPath,
-        specialAssetName,
-        mockStartYear,
-        mockEndYear,
-      );
+      const result = await getCapacity(mockDbPath, specialAssetName);
 
       expect(genericApacheIPC).toHaveBeenCalledWith("get_capacity", {
         dbPath: mockDbPath,
         assetName: specialAssetName,
-        startYear: mockStartYear,
-        endYear: mockEndYear,
       });
       expect(result).toEqual(mockData);
     });
@@ -144,15 +119,13 @@ describe("Capacity Query Service", () => {
       const mockError = new Error("Database connection failed");
       vi.mocked(genericApacheIPC).mockRejectedValueOnce(mockError);
 
-      await expect(
-        getCapacity(mockDbPath, mockAssetName, mockStartYear, mockEndYear),
-      ).rejects.toThrow("Database connection failed");
+      await expect(getCapacity(mockDbPath, mockAssetName)).rejects.toThrow(
+        "Database connection failed",
+      );
 
       expect(genericApacheIPC).toHaveBeenCalledWith("get_capacity", {
         dbPath: mockDbPath,
         assetName: mockAssetName,
-        startYear: mockStartYear,
-        endYear: mockEndYear,
       });
     });
 
@@ -161,29 +134,8 @@ describe("Capacity Query Service", () => {
       vi.mocked(genericApacheIPC).mockRejectedValueOnce(mockError);
 
       await expect(
-        getCapacity(
-          mockDbPath,
-          "nonexistent_asset",
-          mockStartYear,
-          mockEndYear,
-        ),
+        getCapacity(mockDbPath, "nonexistent_asset"),
       ).rejects.toThrow("Asset not found");
-    });
-
-    it("should handle invalid year range gracefully", async () => {
-      // Test when start year is after end year
-      const mockData: any[] = [];
-      vi.mocked(genericApacheIPC).mockResolvedValueOnce(mockData);
-
-      const result = await getCapacity(mockDbPath, mockAssetName, 2025, 2020);
-
-      expect(genericApacheIPC).toHaveBeenCalledWith("get_capacity", {
-        dbPath: mockDbPath,
-        assetName: mockAssetName,
-        startYear: 2025,
-        endYear: 2020,
-      });
-      expect(result).toEqual([]);
     });
 
     it("should handle capacity data with zero and negative values", async () => {
@@ -206,12 +158,7 @@ describe("Capacity Query Service", () => {
 
       vi.mocked(genericApacheIPC).mockResolvedValueOnce(mockDataWithZeros);
 
-      const result = await getCapacity(
-        mockDbPath,
-        mockAssetName,
-        mockStartYear,
-        mockEndYear,
-      );
+      const result = await getCapacity(mockDbPath, mockAssetName);
 
       expect(result).toEqual(mockDataWithZeros);
     });
@@ -393,14 +340,7 @@ describe("Capacity Query Service", () => {
         mockDbPath,
         mockAssetName,
       );
-      const minYear = Math.min(...availableYears);
-      const maxYear = Math.max(...availableYears);
-      const capacityData = await getCapacity(
-        mockDbPath,
-        mockAssetName,
-        minYear,
-        maxYear,
-      );
+      const capacityData = await getCapacity(mockDbPath, mockAssetName);
 
       expect(availableYears).toEqual([2020, 2021]);
       expect(capacityData).toEqual(mockCapacityData);
@@ -425,12 +365,7 @@ describe("Capacity Query Service", () => {
         mockDbPath,
         mockAssetName,
       );
-      const capacityData = await getCapacity(
-        mockDbPath,
-        mockAssetName,
-        2020,
-        2025,
-      );
+      const capacityData = await getCapacity(mockDbPath, mockAssetName);
 
       expect(availableYears).toEqual([]);
       expect(capacityData).toEqual([]);

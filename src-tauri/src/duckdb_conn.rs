@@ -45,8 +45,11 @@ where
     CONN_HANDLER.lock().unwrap().run_query_row(db_path, q, args, row_mapper)
 }
 
-/// Thread-safe connection pool manager for DuckDB databases.
-/// Maintains persistent connections to avoid reconnection overhead and ensure transaction consistency.
+// executes multiple queries which take no arguments 
+pub fn execute_batch(db_path: String, q: String) -> Result<(), String> {
+    CONN_HANDLER.lock().unwrap().execute_batch(db_path, q)
+}
+
 #[derive(Default)]
 struct ConnectionHandler {
     /// HashMap storing active DuckDB connections keyed by database file path.
@@ -97,7 +100,7 @@ impl ConnectionHandler {
     /// Executes parameterized query and returns Arrow RecordBatch results.
     /// Uses prepared statements to prevent SQL injection attacks.
     fn run_query_rb(&self, db_path: String, q: String, args: Vec<Value>) -> Result<(Vec<RecordBatch>, Schema), String> {
-        println!("\n<<QUERY>>\nfetching recorbatch on db [{}]:\n{}", db_path, q);
+        println!("\n<<QUERY>>\nfetching recorbatch on db [{}]:\n{}\n", db_path, q);
 
         self.fetch_connection(&db_path, |conn| {
             // Use prepared statements for SQL injection prevention
@@ -119,7 +122,7 @@ impl ConnectionHandler {
     where 
         F: FnMut(&duckdb::Row<'_>) -> Result<T, duckdb::Error>
     {
-        println!("\n<<QUERY>>\nfetching row on db [{}]:\n{}", db_path, q);
+        println!("\n<<QUERY>>\nfetching row on db [{}]:\n{}\n", db_path, q);
 
         self.fetch_connection(&db_path, |conn| {
             // Use prepared statements for SQL injection prevention
@@ -132,6 +135,17 @@ impl ConnectionHandler {
 
             println!("fetched succesfully!");
             return Ok(res);
+        })
+    }
+
+    fn execute_batch(&self, db_path: String, q: String) -> Result<(), String> {
+        println!("\n<<QUERY>>\nbatch execution on [{}]:\n{}\n", db_path, q);
+
+        self.fetch_connection(&db_path, |conn| {
+            let res = conn.execute_batch(q.as_str())
+                .map_err(|e| format!("error executing query: '{}'", e.to_string()));
+            println!("executed succesfully!");
+            return res;
         })
     }
 }
