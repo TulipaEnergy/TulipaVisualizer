@@ -306,8 +306,6 @@ describe("Performance Testing", () => {
           options: {
             type: "capacity",
             asset: "TestAsset",
-            startYear: 2020,
-            endYear: 2025,
           } as CapacityOptions,
           graphDBFilePath: mockDatabasePath,
           filtersByCategory: {},
@@ -376,8 +374,6 @@ describe("Performance Testing", () => {
           options: {
             type: "capacity",
             asset: "TestAsset",
-            startYear: 2020,
-            endYear: 2022,
           } as CapacityOptions,
           graphDBFilePath: mockDatabasePath,
           filtersByCategory: {},
@@ -500,8 +496,6 @@ describe("Performance Testing", () => {
           options: {
             type: "capacity",
             asset: "TestAsset",
-            startYear: 2020,
-            endYear: 2022,
           } as CapacityOptions,
           graphDBFilePath: mockDatabasePath,
           filtersByCategory: {},
@@ -617,8 +611,6 @@ describe("Performance Testing", () => {
           options: {
             type: "capacity",
             asset: "TestAsset",
-            startYear: 2020,
-            endYear: 2022,
           } as CapacityOptions,
           graphDBFilePath: mockDatabasePath,
           filtersByCategory: {},
@@ -668,8 +660,6 @@ describe("Performance Testing", () => {
         options: {
           type: "capacity",
           asset: "TestAsset",
-          startYear: 2021,
-          endYear: 2023,
         } as CapacityOptions,
         graphDBFilePath: mockDatabasePath,
         filtersByCategory: {},

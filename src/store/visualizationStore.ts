@@ -14,20 +14,18 @@ export type ChartType =
   | "default";
 
 export interface CapacityOptions {
-  type: "capacity";
   asset?: string;
-  startYear?: number;
-  endYear?: number;
 }
 
 // Union type for all possible chart options
+// TODO add options for all graph-specific options?
 export type ChartOptions =
   | CapacityOptions
   | EnergyFlowOptions
   | ProductionPriceOptions;
 
+// TODO populate this?
 export interface ProductionPriceOptions {
-  type: "production-prices";
   resolution?: Resolution;
   year?: number;
 }

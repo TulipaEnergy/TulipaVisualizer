@@ -4,14 +4,10 @@ import { apacheIPC, genericApacheIPC } from "../gateway/db";
 export async function getCapacity(
   dbPath: string,
   assetName: string,
-  startYear: number,
-  endYear: number,
 ): Promise<CapacityJson[]> {
   return genericApacheIPC<CapacityJson>("get_capacity", {
     dbPath: dbPath,
     assetName: assetName,
-    startYear: startYear,
-    endYear: endYear,
   });
 }
 
