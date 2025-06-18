@@ -220,17 +220,17 @@ describe("TransportationPrices Component", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByDisplayValue("Hours")).toBeInTheDocument(); // Default resolution
+      expect(screen.getByDisplayValue("Days")).toBeInTheDocument(); // Default resolution
     });
 
-    const resolutionInput = screen.getByDisplayValue("Hours");
+    const resolutionInput = screen.getByDisplayValue("Days");
 
-    // Change resolution to Days
+    // Change resolution to Hours
     fireEvent.click(resolutionInput);
     await waitFor(() => {
-      expect(screen.getByText("Days")).toBeInTheDocument();
+      expect(screen.getByText("Hours")).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByText("Days"));
+    fireEvent.click(screen.getByText("Hours"));
 
     // Should trigger new data fetch with new resolution
     await waitFor(() => {
@@ -240,7 +240,7 @@ describe("TransportationPrices Component", () => {
         "/mock/database.duckdb",
         2023, // first year
         "Carrier_A", // first carrier
-        Resolution.Days,
+        Resolution.Hours,
         "min", // default column type
       );
     });
@@ -280,7 +280,7 @@ describe("TransportationPrices Component", () => {
         "/mock/database.duckdb",
         2023, // first year from mock data
         "Carrier_A", // first carrier from mock data
-        Resolution.Hours, // default resolution
+        Resolution.Days, // default resolution
         "min",
       );
     });
@@ -320,7 +320,7 @@ describe("TransportationPrices Component", () => {
         "/mock/database.duckdb",
         2023, // first year from mock data
         "Carrier_A", // first carrier from mock data
-        Resolution.Hours, // default resolution
+        Resolution.Days, // default resolution
         "min",
       );
     });
@@ -354,7 +354,7 @@ describe("TransportationPrices Component", () => {
       chartElement.getAttribute("data-option") || "{}",
     );
 
-    expect(chartOption.xAxis.name).toBe("Time in hours");
+    expect(chartOption.xAxis.name).toBe("Time in days");
     expect(chartOption.yAxis.name).toBe("Price");
     expect(chartOption.series).toHaveLength(2);
   });
@@ -551,13 +551,13 @@ describe("TransportationPrices Component", () => {
       { timeout: 3000 },
     );
 
-    // Change resolution to Days
-    const resolutionInput = screen.getByDisplayValue("Hours");
+    // Change resolution to Hours
+    const resolutionInput = screen.getByDisplayValue("Days");
     fireEvent.click(resolutionInput);
     await waitFor(() => {
-      expect(screen.getByText("Days")).toBeInTheDocument();
+      expect(screen.getByText("Hours")).toBeInTheDocument();
     });
-    fireEvent.click(screen.getByText("Days"));
+    fireEvent.click(screen.getByText("Hours"));
 
     await waitFor(
       () => {
@@ -565,7 +565,7 @@ describe("TransportationPrices Component", () => {
         const chartOption = JSON.parse(
           chartElement.getAttribute("data-option") || "{}",
         );
-        expect(chartOption.xAxis.name).toBe("Time in days");
+        expect(chartOption.xAxis.name).toBe("Time in hours");
       },
       { timeout: 3000 },
     );

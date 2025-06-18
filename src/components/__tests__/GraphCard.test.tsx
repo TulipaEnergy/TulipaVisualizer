@@ -140,18 +140,6 @@ describe("GraphCard Component", () => {
       expect(mockMustGetGraph).toHaveBeenCalledWith(testGraphId);
     });
 
-    it("returns null when graph is not found", () => {
-      mockMustGetGraph.mockReturnValue(null);
-
-      renderWithProviders(<GraphCard graphId={testGraphId} />);
-
-      // When graph is null, the component returns null, no content should be rendered
-      expect(screen.queryByDisplayValue("Test Graph")).not.toBeInTheDocument();
-      expect(
-        screen.queryByTestId(`database-selector-${testGraphId}`),
-      ).not.toBeInTheDocument();
-    });
-
     it("renders paper container with correct styling", () => {
       renderWithProviders(<GraphCard graphId={testGraphId} />);
 

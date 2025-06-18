@@ -58,7 +58,14 @@ export async function getAllMetadata(): Promise<MetaTreeRootsByCategoryName> {
           label: "renewables",
           children: [
             { key: 10, label: "solar", children: [] },
-            { key: 11, label: "wind", children: [] },
+            {
+              key: 11,
+              label: "wind",
+              children: [
+                { key: 14, label: "off-shore", children: [] },
+                { key: 15, label: "on-shore", children: [] },
+              ],
+            },
           ],
         },
         {
@@ -68,15 +75,9 @@ export async function getAllMetadata(): Promise<MetaTreeRootsByCategoryName> {
             {
               key: 12,
               label: "ccgt",
-              children: [
-                { key: 17, label: "ccgt-a", children: [] },
-                { key: 18, label: "ccgt-b", children: [] },
-              ],
+              children: [],
             },
-            { key: 13, label: "coal", children: [] },
-            { key: 14, label: "gas", children: [] },
-            { key: 15, label: "oil", children: [] },
-            { key: 16, label: "nuclear", children: [] },
+            { key: 13, label: "nuclear", children: [] },
           ],
         },
       ],
@@ -87,6 +88,15 @@ export async function getAllMetadata(): Promise<MetaTreeRootsByCategoryName> {
 
 export function mustGetKey(n: TreeNode): number {
   return n.key! as number;
+}
+
+export async function hasMetadata(dbPath: string): Promise<boolean> {
+  console.log(dbPath);
+  let res: boolean = false;
+  if (dbPath.endsWith("Enhanced.duckdb")) {
+    res = true;
+  }
+  return Promise.resolve(res);
 }
 
 export async function getAssetsCarriers(
