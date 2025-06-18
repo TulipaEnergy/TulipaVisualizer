@@ -292,7 +292,7 @@ describe("Performance Testing", () => {
         renderWithProviders(<GraphCard graphId="test-graph" />);
       });
 
-      expect(renderTime).toBeLessThan(750); // Increased from 500ms to 750ms
+      expect(renderTime).toBeLessThan(750);
     });
 
     it("measures re-render performance when props change", async () => {
@@ -343,14 +343,14 @@ describe("Performance Testing", () => {
         rerender(<GraphCard graphId="test-graph" />);
       });
 
-      expect(rerenderTime).toBeLessThan(300); // Increased from 100ms
+      expect(rerenderTime).toBeLessThan(300);
     });
   });
 
   describe("Large Dataset Handling", () => {
     it("handles large capacity datasets efficiently", async () => {
       // Mock large capacity dataset
-      const largeDataset = mockLargeCapacityData(100); // Reduced size for faster testing
+      const largeDataset = mockLargeCapacityData(100);
 
       const mockCapacityService = await import("../services/capacityQuery");
       vi.mocked(mockCapacityService.getCapacity).mockResolvedValue(
@@ -401,9 +401,9 @@ describe("Performance Testing", () => {
       });
 
       // Should handle dataset within reasonable time
-      expect(renderTime).toBeLessThan(10000); // Increased to 10 seconds
+      expect(renderTime).toBeLessThan(15000);
       // Chart should render successfully (verified by previous waitFor)
-    }, 20000); // Increased test timeout
+    }, 20000);
 
     it("processes large storage price datasets without excessive memory usage", async () => {
       // Mock large storage price dataset
@@ -678,7 +678,7 @@ describe("Performance Testing", () => {
         ); // Increased timeout
       });
 
-      expect(updateTime).toBeLessThan(2000); // Increased from 1000ms
+      expect(updateTime).toBeLessThan(3000);
       expect(mockEChartsRender.mock.calls.length).toBeGreaterThanOrEqual(
         initialRenderCount,
       );

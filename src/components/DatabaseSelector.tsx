@@ -1,18 +1,16 @@
 import React from "react";
-import { Select, Group, Badge, Tooltip } from "@mantine/core";
+import { Select, Group } from "@mantine/core";
 import { IconDatabase } from "@tabler/icons-react";
 import useVisualizationStore from "../store/visualizationStore";
 
 interface DatabaseSelectorProps {
   graphId: string;
   size: "xs" | "sm" | "md" | "lg" | "xl";
-  showBadge: boolean;
 }
 
 const DatabaseSelector: React.FC<DatabaseSelectorProps> = ({
   graphId,
   size,
-  showBadge,
 }) => {
   const { databases, setGraphDatabase, getGraphDatabase } =
     useVisualizationStore();
@@ -21,7 +19,11 @@ const DatabaseSelector: React.FC<DatabaseSelectorProps> = ({
   const selectData = [
     ...databases.map((db) => ({
       value: db,
-      label: db,
+      label:
+        db
+          .split(/[\\/]/)
+          .pop()
+          ?.replace(/\.duckdb$/, "") ?? "PLACEHOLDER",
     })),
   ];
 
@@ -41,28 +43,9 @@ const DatabaseSelector: React.FC<DatabaseSelectorProps> = ({
         value={getGraphDatabase(graphId)}
         onChange={handleSelectionChange}
         placeholder="Select database"
-        style={{ minWidth: "150px" }}
+        style={{ width: "250px" }}
         comboboxProps={{ withinPortal: false }}
       />
-
-      {showBadge && getGraphDatabase(graphId) && (
-        <Tooltip
-          label={`Active: ${getGraphDatabase(graphId)}`}
-          withinPortal={false}
-        >
-          <Badge
-            size="xs"
-            color="blue"
-            variant="filled"
-            style={{ cursor: "help" }}
-          >
-            {getGraphDatabase(graphId)!
-              .split(/[\\/]/)
-              .pop()
-              ?.replace(/\.duckdb$/, "") ?? "PLACEHOLDER"}
-          </Badge>
-        </Tooltip>
-      )}
     </Group>
   );
 };

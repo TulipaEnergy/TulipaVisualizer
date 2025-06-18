@@ -276,8 +276,8 @@ describe("App Integration Tests", () => {
       renderWithProviders(<App />);
 
       expect(screen.getByText("Loaded Databases (2)")).toBeInTheDocument();
-      expect(screen.getByText(mockDatabasePath)).toBeInTheDocument();
-      expect(screen.getByText(mockDatabasePath2)).toBeInTheDocument();
+      expect(screen.getByText("test")).toBeInTheDocument();
+      expect(screen.getByText("test2")).toBeInTheDocument();
     });
 
     it("handles database removal", async () => {
