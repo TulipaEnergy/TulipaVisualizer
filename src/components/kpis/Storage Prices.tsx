@@ -14,9 +14,8 @@ import ReactECharts from "echarts-for-react";
 import {
   getStoragePriceDurationSeries,
   StoragePriceDurationSeriesRow,
-  getStorageYears,
 } from "../../services/storagePriceQuery";
-import { getAssetsCarriers } from "../../services/metadata";
+import { getAssetsCarriers, getYears } from "../../services/metadata";
 import useVisualizationStore from "../../store/visualizationStore";
 import { Resolution } from "../../types/resolution";
 
@@ -46,7 +45,7 @@ const StoragePrices: React.FC<StoragePricesProps> = ({ graphId }) => {
   useEffect(() => {
     const fetchYears = async () => {
       try {
-        const years = await getStorageYears(dbPath!);
+        const years = await getYears(dbPath!);
         setAvailableYears(years.map((y) => y.year));
         if (!year && years.length > 0) {
           setYear(years[0].year);
@@ -56,9 +55,6 @@ const StoragePrices: React.FC<StoragePricesProps> = ({ graphId }) => {
       }
     };
     fetchYears();
-  }, [dbPath]);
-
-  useEffect(() => {
     const fetchCarriers = async () => {
       try {
         const carriers = await getAssetsCarriers(dbPath!);
@@ -76,33 +72,20 @@ const StoragePrices: React.FC<StoragePricesProps> = ({ graphId }) => {
   useEffect(() => {
     const fetchDataAndConfigureChart = async () => {
       setErrorData(null);
+      setLoadingData(true);
+
       if (!dbPath) {
         setErrorData("No database selected");
         setLoadingData(false);
         return;
       }
 
-      if (year === null) {
-        setChartOptions(null);
-        setLoadingData(false);
-        return;
-      }
-
       try {
-        setLoadingData(true);
-
-        if (year === null) return;
-        console.log({
-          dbPath,
-          year,
-          resolution,
-          storageType,
-        });
         var data: StoragePriceDurationSeriesRow[] =
           await getStoragePriceDurationSeries(
             dbPath,
             resolution,
-            year,
+            year!,
             storageType,
             carrier,
           );

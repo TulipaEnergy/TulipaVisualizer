@@ -26,16 +26,6 @@ export async function getStoragePriceDurationSeries(
   );
 }
 
-export async function getStorageYears(dbPath: string): Promise<YearJson[]> {
-  return genericApacheIPC<YearJson>("get_storage_years", {
-    dbPath: dbPath,
-  });
-}
-
-export type YearJson = {
-  year: number;
-};
-
 export type StoragePriceDurationSeriesRow = {
   carrier: string;
   milestone_year: number;

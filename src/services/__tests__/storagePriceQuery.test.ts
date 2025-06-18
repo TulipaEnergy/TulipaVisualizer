@@ -1,9 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import {
   getStoragePriceDurationSeries,
-  getStorageYears,
   type StoragePriceDurationSeriesRow,
-  type YearJson,
 } from "../storagePriceQuery";
 import { Resolution } from "../../types/resolution";
 
@@ -414,113 +412,11 @@ describe("Storage Price Query Service", () => {
     });
   });
 
-  describe("getStorageYears", () => {
-    const mockDbPath = "/path/to/test.duckdb";
-
-    it("should fetch available storage years successfully", async () => {
-      const mockYearData: YearJson[] = [
-        { year: 2020 },
-        { year: 2021 },
-        { year: 2022 },
-        { year: 2023 },
-      ];
-
-      vi.mocked(genericApacheIPC).mockResolvedValueOnce(mockYearData);
-
-      const result = await getStorageYears(mockDbPath);
-
-      expect(genericApacheIPC).toHaveBeenCalledWith("get_storage_years", {
-        dbPath: mockDbPath,
-      });
-      expect(result).toEqual(mockYearData);
-    });
-
-    it("should handle empty years list", async () => {
-      const mockEmptyYearData: YearJson[] = [];
-
-      vi.mocked(genericApacheIPC).mockResolvedValueOnce(mockEmptyYearData);
-
-      const result = await getStorageYears(mockDbPath);
-
-      expect(genericApacheIPC).toHaveBeenCalledWith("get_storage_years", {
-        dbPath: mockDbPath,
-      });
-      expect(result).toEqual([]);
-    });
-
-    it("should handle single year", async () => {
-      const mockSingleYearData: YearJson[] = [{ year: 2023 }];
-
-      vi.mocked(genericApacheIPC).mockResolvedValueOnce(mockSingleYearData);
-
-      const result = await getStorageYears(mockDbPath);
-
-      expect(result).toEqual(mockSingleYearData);
-    });
-
-    it("should handle unsorted years", async () => {
-      const mockUnsortedYearData: YearJson[] = [
-        { year: 2022 },
-        { year: 2020 },
-        { year: 2023 },
-        { year: 2021 },
-      ];
-
-      vi.mocked(genericApacheIPC).mockResolvedValueOnce(mockUnsortedYearData);
-
-      const result = await getStorageYears(mockDbPath);
-
-      // Function returns data as received from database
-      expect(result).toEqual(mockUnsortedYearData);
-    });
-
-    it("should handle IPC errors gracefully", async () => {
-      const mockError = new Error("Database query failed");
-      vi.mocked(genericApacheIPC).mockRejectedValueOnce(mockError);
-
-      await expect(getStorageYears(mockDbPath)).rejects.toThrow(
-        "Database query failed",
-      );
-
-      expect(genericApacheIPC).toHaveBeenCalledWith("get_storage_years", {
-        dbPath: mockDbPath,
-      });
-    });
-
-    it("should handle database not found errors", async () => {
-      const mockError = new Error("Database file not found");
-      vi.mocked(genericApacheIPC).mockRejectedValueOnce(mockError);
-
-      await expect(getStorageYears("/nonexistent/path.duckdb")).rejects.toThrow(
-        "Database file not found",
-      );
-    });
-
-    it("should handle malformed year data", async () => {
-      // Test with unexpected data structure
-      const mockMalformedData = [
-        { year: 2020 },
-        { invalid_field: "not_a_year" },
-        { year: null },
-      ] as any as YearJson[];
-
-      vi.mocked(genericApacheIPC).mockResolvedValueOnce(mockMalformedData);
-
-      const result = await getStorageYears(mockDbPath);
-
-      // Function returns data as received, type safety is handled by TypeScript
-      expect(result).toEqual(mockMalformedData);
-    });
-  });
-
   describe("Integration scenarios", () => {
     it("should handle complete workflow with years and storage price data", async () => {
       const mockDbPath = "/path/to/test.duckdb";
       const mockStorageType = "battery";
       const mockCarrier = "electricity";
-
-      // Mock available years
-      const mockYearData: YearJson[] = [{ year: 2022 }, { year: 2023 }];
 
       // Mock storage price data
       const mockPriceData: StoragePriceDurationSeriesRow[] = [
@@ -533,13 +429,10 @@ describe("Storage Price Query Service", () => {
         },
       ];
 
-      vi.mocked(genericApacheIPC)
-        .mockResolvedValueOnce(mockYearData)
-        .mockResolvedValueOnce(mockPriceData);
+      vi.mocked(genericApacheIPC).mockResolvedValueOnce(mockPriceData);
 
       // Execute workflow
-      const availableYears = await getStorageYears(mockDbPath);
-      const latestYear = Math.max(...availableYears.map((y) => y.year));
+      const latestYear = 2023;
       const priceData = await getStoragePriceDurationSeries(
         mockDbPath,
         Resolution.Years,
@@ -548,7 +441,6 @@ describe("Storage Price Query Service", () => {
         mockCarrier,
       );
 
-      expect(availableYears).toEqual(mockYearData);
       expect(latestYear).toBe(2023);
       expect(priceData).toEqual(mockPriceData);
     });
@@ -558,15 +450,11 @@ describe("Storage Price Query Service", () => {
       const mockStorageType = "battery";
       const mockCarrier = "gas";
 
-      // Mock empty years and price data
-      const mockEmptyYears: YearJson[] = [];
+      // Mock empty price data
       const mockEmptyPriceData: StoragePriceDurationSeriesRow[] = [];
 
-      vi.mocked(genericApacheIPC)
-        .mockResolvedValueOnce(mockEmptyYears)
-        .mockResolvedValueOnce(mockEmptyPriceData);
+      vi.mocked(genericApacheIPC).mockResolvedValueOnce(mockEmptyPriceData);
 
-      const availableYears = await getStorageYears(mockDbPath);
       const priceData = await getStoragePriceDurationSeries(
         mockDbPath,
         Resolution.Hours,
@@ -575,7 +463,6 @@ describe("Storage Price Query Service", () => {
         mockCarrier,
       );
 
-      expect(availableYears).toEqual([]);
       expect(priceData).toEqual([]);
     });
 

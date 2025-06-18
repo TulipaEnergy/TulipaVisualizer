@@ -10,7 +10,8 @@ import {
 import { useState, useEffect } from "react";
 import ReactECharts from "echarts-for-react";
 
-import { getSupply, getSupplyYears } from "../../services/residualLoadQuery";
+import { getSupply } from "../../services/residualLoadQuery";
+import { getYears } from "../../services/metadata";
 import useVisualizationStore from "../../store/visualizationStore";
 import { Resolution } from "../../types/resolution";
 
@@ -45,7 +46,7 @@ const SupplyStackedBarSeries: React.FC<SupplyStackedBarSeriesProps> = ({
   // Load available years
   useEffect(() => {
     if (!dbPath) return;
-    getSupplyYears(dbPath)
+    getYears(dbPath)
       .then((ys) => {
         const yrs = ys.map((y) => y.year).sort();
         setAvailableYears(yrs);

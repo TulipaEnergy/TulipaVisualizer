@@ -4,11 +4,8 @@ import { describe, it, expect, beforeEach } from "vitest";
 import ProductionPrices from "../ProductionPrices";
 import useVisualizationStore from "../../../store/visualizationStore";
 import { renderWithProviders, createMockStoreState } from "../../../test/utils";
-import {
-  getProductionPriceDurationSeries,
-  getProductionYears,
-} from "../../../services/productionPriceQuery";
-
+import { getProductionPriceDurationSeries } from "../../../services/productionPriceQuery";
+import { getYears } from "../../../services/metadata";
 // Mock the store
 vi.mock("../../../store/visualizationStore");
 
@@ -16,6 +13,11 @@ vi.mock("../../../store/visualizationStore");
 vi.mock("../../../services/productionPriceQuery", () => ({
   getProductionPriceDurationSeries: vi.fn(),
   getProductionYears: vi.fn(),
+}));
+
+// Mock the metadata service
+vi.mock("../../../services/metadata", () => ({
+  getYears: vi.fn(),
 }));
 
 // Mock ReactECharts
@@ -29,7 +31,7 @@ vi.mock("echarts-for-react", () => ({
 
 const mockGetProductionPriceDurationSeries =
   getProductionPriceDurationSeries as ReturnType<typeof vi.fn>;
-const mockGetProductionYears = getProductionYears as ReturnType<typeof vi.fn>;
+const mockGetProductionYears = getYears as ReturnType<typeof vi.fn>;
 
 describe("ProductionPrices Component", () => {
   const mockGetGraphDatabase = vi.fn();

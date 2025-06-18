@@ -78,21 +78,9 @@ pub fn get_production_price_resolution(db_path: String, year: u32, resolution: u
 
 }
 
-#[tauri::command]
-pub fn get_production_years(db_path: String) -> Result<Response, String> {
-    let res: (Vec<RecordBatch>, Schema) = run_query_rb(db_path, PRODUCTION_YEARS_SQL.to_string(), vec![])?;
-
-    return serialize_recordbatch(res.0, res.1);
-}
 // --- TESTING ---
 
 // --- QUERIES ---
-
-const PRODUCTION_YEARS_SQL: &str = "
-    SELECT DISTINCT year
-    FROM cons_balance_consumer
-    ORDER BY year;
-";
     const PRODUCTION_DATA_SIMPLE_SQL: &str = "
         SELECT
             simple.asset,

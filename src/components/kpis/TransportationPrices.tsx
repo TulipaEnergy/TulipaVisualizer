@@ -14,9 +14,9 @@ import ReactECharts from "echarts-for-react";
 import {
   getTransportationPriceDurationSeries,
   TransportationPriceDurationSeriesRow,
-  getTransportationYears,
   getTransportationCarriers,
 } from "../../services/transportPriceQuery";
+import { getYears } from "../../services/metadata";
 import useVisualizationStore from "../../store/visualizationStore";
 import { Resolution } from "../../types/resolution";
 
@@ -50,7 +50,7 @@ const TransportationPricesDurationSeries: React.FC<
   useEffect(() => {
     const fetchYears = async () => {
       try {
-        const years = await getTransportationYears(dbPath!);
+        const years = await getYears(dbPath!);
         setAvailableYears(years.map((y) => y.year));
         if (!year && years.length > 0) {
           setYear(years[0].year);
@@ -60,9 +60,7 @@ const TransportationPricesDurationSeries: React.FC<
       }
     };
     fetchYears();
-  }, [dbPath]);
 
-  useEffect(() => {
     const fetchCarriers = async () => {
       try {
         const carriers = await getTransportationCarriers(dbPath!);

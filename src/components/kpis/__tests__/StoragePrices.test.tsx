@@ -8,6 +8,7 @@ import {
   createMockStoreState,
   createMockGraphConfig,
 } from "../../../test/utils";
+import * as metadataService from "../../../services/metadata";
 import * as storagePriceService from "../../../services/storagePriceQuery";
 
 // Mock the store
@@ -17,6 +18,11 @@ vi.mock("../../../store/visualizationStore");
 vi.mock("../../../services/storagePriceQuery", () => ({
   getStoragePriceDurationSeries: vi.fn(),
   getStorageYears: vi.fn(),
+}));
+
+// Mock the metadata service
+vi.mock("../../../services/metadata", () => ({
+  getYears: vi.fn(),
 }));
 
 // Mock ReactECharts
@@ -55,7 +61,7 @@ describe("StoragePrices Component", () => {
     mockGetGraphDatabase.mockReturnValue(testDbPath);
 
     // Mock successful service calls by default
-    (storagePriceService.getStorageYears as any).mockResolvedValue([
+    (metadataService.getYears as any).mockResolvedValue([
       { year: 2020 },
       { year: 2021 },
     ]);
@@ -73,6 +79,13 @@ describe("StoragePrices Component", () => {
       {
         milestone_year: 2020,
         carrier: "Battery2",
+        global_start: 5,
+        global_end: 15,
+        y_axis: 200.75,
+      },
+      {
+        milestone_year: 2020,
+        carrier: "Battery3",
         global_start: 5,
         global_end: 15,
         y_axis: 200.75,
@@ -169,9 +182,7 @@ describe("StoragePrices Component", () => {
       renderWithProviders(<StoragePrices graphId={testGraphId} />);
 
       await waitFor(() => {
-        expect(storagePriceService.getStorageYears).toHaveBeenCalledWith(
-          testDbPath,
-        );
+        expect(metadataService.getYears).toHaveBeenCalledWith(testDbPath);
       });
     });
   });
@@ -214,6 +225,7 @@ describe("StoragePrices Component", () => {
         <StoragePrices graphId={testGraphId} />,
       );
 
+      rerender(<StoragePrices graphId={testGraphId} />);
       rerender(<StoragePrices graphId={testGraphId} />);
 
       // Should be called multiple times due to useEffect dependencies
@@ -298,7 +310,7 @@ describe("StoragePrices Component", () => {
       rerender(<StoragePrices graphId={testGraphId} />);
 
       // Should account for initial render and rerender
-      expect(mockGetGraphDatabase).toHaveBeenCalledTimes(3);
+      expect(mockGetGraphDatabase).toHaveBeenCalledTimes(2);
     });
   });
 

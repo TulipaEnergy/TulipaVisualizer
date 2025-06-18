@@ -2,8 +2,6 @@ import { genericApacheIPC } from "../gateway/db";
 import { Resolution, resolutionToTable } from "../types/resolution";
 import { hasMetadata } from "./metadata";
 
-export type YearJson = { year: number };
-
 export type SupplyRow = {
   asset: string;
   milestone_year: number;
@@ -35,8 +33,4 @@ export async function getSupply(
     grouper,
     enableMetadata,
   });
-}
-
-export async function getSupplyYears(dbPath: string): Promise<YearJson[]> {
-  return genericApacheIPC<YearJson>("get_supply_years", { dbPath });
 }

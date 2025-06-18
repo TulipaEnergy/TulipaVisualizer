@@ -24,16 +24,6 @@ export async function getProductionPriceDurationSeries(
   );
 }
 
-export async function getProductionYears(dbPath: string): Promise<YearJson[]> {
-  return genericApacheIPC<YearJson>("get_production_years", {
-    dbPath: dbPath,
-  });
-}
-
-export type YearJson = {
-  year: number;
-};
-
 export type ProductionPriceDurationSeriesRow = {
   carrier: string;
   milestone_year: number;
