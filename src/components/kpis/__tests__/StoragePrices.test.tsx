@@ -1,7 +1,7 @@
 import { screen, waitFor } from "@testing-library/react";
 import { vi } from "vitest";
 import { describe, it, expect, beforeEach } from "vitest";
-import StoragePrices from "../Storage Prices";
+import StoragePrices from "../StoragePrices";
 import useVisualizationStore from "../../../store/visualizationStore";
 import {
   renderWithProviders,

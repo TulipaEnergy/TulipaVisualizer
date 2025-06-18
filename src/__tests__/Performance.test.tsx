@@ -14,7 +14,7 @@ import App from "../App";
 import GraphCard from "../components/GraphCard";
 import Capacity from "../components/kpis/Capacity";
 import SystemCosts from "../components/kpis/SystemCosts";
-import StoragePrices from "../components/kpis/Storage Prices";
+import StoragePrices from "../components/kpis/StoragePrices";
 
 // Mock all services with performance-focused data
 vi.mock("../services/databaseOperations");

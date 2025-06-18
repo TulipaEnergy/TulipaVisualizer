@@ -24,7 +24,7 @@ import DatabaseSelector from "./DatabaseSelector";
 import Capacity from "./kpis/Capacity";
 import SystemCosts from "./kpis/SystemCosts";
 import ProductionPricesDurationSeries from "./kpis/ProductionPrices";
-import StoragePrices from "./kpis/Storage Prices";
+import StoragePrices from "./kpis/StoragePrices";
 import GeoImportsExports from "./kpis/GeoImportsExports";
 import TransportationPricesDurationSeries from "./kpis/TransportationPrices";
 import FilteringScrollMenu from "./metadata/FilteringScrollMenu";

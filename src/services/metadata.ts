@@ -5,7 +5,7 @@ import { TreeNode } from "primereact/treenode";
 
 export async function getAssets(dbPath: string): Promise<string[]> {
   try {
-    let res: Table<any> = await apacheIPC("get_assets", { dbPath: dbPath });
+    const res: Table<any> = await apacheIPC("get_assets", { dbPath: dbPath });
     return (res.toArray() as Array<AssetJson>).map((item) => item.asset); // Convert Apache Arrow Table into JS array
   } catch (err) {
     console.error("Error querying assets:", err);
@@ -17,9 +17,9 @@ type AssetJson = {
   asset: string;
 };
 
-export async function getTables(dbPath: String): Promise<string[]> {
+export async function getTables(dbPath: string): Promise<string[]> {
   try {
-    let res: Table<any> = await apacheIPC("get_tables", { dbPath: dbPath });
+    const res: Table<any> = await apacheIPC("get_tables", { dbPath: dbPath });
     return (res.toArray() as Array<{ name: string }>).map((item) => item.name); // Convert Apache Arrow Table into JS array
   } catch (err) {
     console.error("Error querying tables:", err);

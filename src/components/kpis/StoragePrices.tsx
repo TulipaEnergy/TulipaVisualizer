@@ -81,7 +81,7 @@ const StoragePrices: React.FC<StoragePricesProps> = ({ graphId }) => {
       }
 
       try {
-        var data: StoragePriceDurationSeriesRow[] =
+        let data: StoragePriceDurationSeriesRow[] =
           await getStoragePriceDurationSeries(
             dbPath,
             resolution,
