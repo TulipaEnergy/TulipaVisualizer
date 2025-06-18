@@ -45,7 +45,7 @@ vi.mock("../kpis/ProductionPrices", () => ({
   ),
 }));
 
-vi.mock("../kpis/Storage Prices", () => ({
+vi.mock("../kpis/StoragePrices", () => ({
   default: ({ graphId }: { graphId: string }) => (
     <div data-testid={`storage-prices-${graphId}`}>Storage Prices Chart</div>
   ),

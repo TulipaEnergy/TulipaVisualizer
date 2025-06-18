@@ -207,7 +207,7 @@ describe("App Integration Tests", () => {
   describe("Database Loading Flow", () => {
     it("completes end-to-end database upload flow", async () => {
       // Start with empty state, then simulate database being added
-      let storeState = createMockStoreState({
+      const storeState = createMockStoreState({
         databases: [],
         graphs: [],
         hasAnyDatabase: () => false,

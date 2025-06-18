@@ -1,0 +1,63 @@
+{
+  "project": {
+    "name": "GUI for Visualizing and Comparing Energy Scenarios",
+    "version": "0.1.0",
+    "description": "Cross-platform desktop application for visualizing Tulipa Energy Model output data"
+  },
+  "analysis": {
+    "eslint": {
+      "enabled": true,
+      "reportPath": "analysis-reports/eslint",
+      "formats": ["html", "json"]
+    },
+    "rust": {
+      "enabled": true,
+      "tools": ["clippy", "tokei", "cargo-geiger"],
+      "reportPath": "analysis-reports/rust"
+    },
+    "advancedMetrics": {
+      "enabled": true,
+      "reportPath": "analysis-reports/metrics",
+      "tools": ["escomplex", "dependency-analysis"],
+      "formats": ["html", "json"]
+    },
+    "coverage": {
+      "typescript": {
+        "enabled": true,
+        "tool": "vitest",
+        "reportPath": "coverage"
+      },
+      "rust": {
+        "enabled": true,
+        "tool": "cargo-llvm-cov",
+        "reportPath": "src-tauri/target/llvm-cov"
+      }
+    }
+  },
+  "thresholds": {
+    "complexity": {
+      "cyclomatic": 15,
+      "cognitive": 20
+    },
+    "coverage": {
+      "line": 70,
+      "branch": 60,
+      "function": 80
+    },
+    "maintainability": {
+      "index": 60
+    },
+    "lcom": {
+      "threshold": 0.7
+    },
+    "coupling": {
+      "efferent": 10,
+      "afferent": 15
+    }
+  },
+  "output": {
+    "directory": "analysis-reports",
+    "formats": ["html", "json"],
+    "combinedReport": "index.html"
+  }
+}

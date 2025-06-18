@@ -98,7 +98,7 @@ const TransportationPricesDurationSeries: React.FC<
       try {
         setLoadingData(true);
         if (year === null || carrier === null) return;
-        var data: TransportationPriceDurationSeriesRow[] =
+        let data: TransportationPriceDurationSeriesRow[] =
           await getTransportationPriceDurationSeries(
             dbPath,
             year,
