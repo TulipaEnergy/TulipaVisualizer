@@ -38,6 +38,7 @@ vi.mock("../services/energyFlowQuery");
 vi.mock("../services/metadata", () => ({
   getAssets: vi.fn(),
   getAllMetadata: vi.fn(),
+  hasMetadata: vi.fn(),
 }));
 
 // Mock the visualization store
@@ -361,6 +362,7 @@ describe("Performance Testing", () => {
 
       const mockMetadataService = await import("../services/metadata");
       vi.mocked(mockMetadataService.getAssets).mockResolvedValue(["TestAsset"]);
+      vi.mocked(mockMetadataService.hasMetadata).mockResolvedValue(true);
 
       const mockStore = createMockStoreState({
         getGraphDatabase: vi.fn(() => mockDatabasePath),

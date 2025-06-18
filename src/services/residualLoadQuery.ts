@@ -1,13 +1,6 @@
 import { genericApacheIPC } from "../gateway/db";
-import { Resolution } from "../types/resolution";
-
-const resolutionToTable: Record<Resolution, number> = {
-  [Resolution.Hours]: 1,
-  [Resolution.Days]: 24,
-  [Resolution.Weeks]: 168,
-  [Resolution.Months]: 720,
-  [Resolution.Years]: 8760,
-};
+import { Resolution, resolutionToTable } from "../types/resolution";
+import { hasMetadata } from "./metadata";
 
 export type YearJson = { year: number };
 
@@ -19,10 +12,12 @@ export type SupplyRow = {
   y_axis: number;
 };
 
-export async function getRenewables(
+export async function getSupply(
   dbPath: string,
   resolution: Resolution,
   year: number,
+  filters: Record<number, number[]>,
+  grouper: number[],
 ): Promise<SupplyRow[]> {
   if (!(resolution in resolutionToTable)) {
     throw new Error(
@@ -30,42 +25,15 @@ export async function getRenewables(
     );
   }
 
-  if (resolution === Resolution.Years) {
-    return genericApacheIPC<SupplyRow>("get_yearly_renewables", {
-      dbPath,
-      year,
-    });
-  }
+  const enableMetadata: boolean = await hasMetadata(dbPath);
 
-  return genericApacheIPC<SupplyRow>("get_renewables", {
+  return genericApacheIPC<SupplyRow>("get_supply", {
     dbPath,
     year,
     resolution: resolutionToTable[resolution],
-  });
-}
-
-export async function getNonRenewables(
-  dbPath: string,
-  resolution: Resolution,
-  year: number,
-): Promise<SupplyRow[]> {
-  if (!(resolution in resolutionToTable)) {
-    throw new Error(
-      "Invalid resolution specified. Use 'hours', 'days', 'weeks', 'months' or 'years'.",
-    );
-  }
-
-  if (resolution === Resolution.Years) {
-    return genericApacheIPC<SupplyRow>("get_yearly_nonrenewables", {
-      dbPath,
-      year,
-    });
-  }
-
-  return genericApacheIPC<SupplyRow>("get_nonrenewables", {
-    dbPath,
-    year,
-    resolution: resolutionToTable[resolution],
+    filters,
+    grouper,
+    enableMetadata,
   });
 }
 

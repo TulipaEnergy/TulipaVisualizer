@@ -29,11 +29,8 @@ pub fn run() {
             production_price::get_production_years,
             storage_price::get_storage_price_resolution,
             storage_price::get_storage_years,
-            residual_load::get_renewables,
-            residual_load::get_nonrenewables,
-            residual_load::get_yearly_renewables,
-            residual_load::get_yearly_nonrenewables,
-            residual_load::get_supply_years])
+            residual_load::get_supply_years,
+            residual_load::get_supply])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

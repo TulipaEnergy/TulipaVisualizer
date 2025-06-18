@@ -31,7 +31,7 @@ const TransportationPricesDurationSeries: React.FC<
   const [loadingData, setLoadingData] = useState(true);
   const [errorData, setErrorData] = useState<string | null>(null);
   const [chartOptions, setChartOptions] = useState<any>(null);
-  const [resolution, setResolution] = useState<Resolution>(Resolution.Hours);
+  const [resolution, setResolution] = useState<Resolution>(Resolution.Days);
   const [year, setYear] = useState<number | null>(null);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
   const [carrier, setCarrier] = useState<string | null>(null);

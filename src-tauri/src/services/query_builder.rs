@@ -1,3 +1,20 @@
+use std::collections::HashMap;
+
+/// Builds a SQL query to calculate resolution-based values for a given source table.
+/// This version supports two resolution methods: representative periods and clustered periods.
+///
+/// # Arguments
+///
+/// * `source_table` - The name of the source SQL table.
+/// * `value_col` - The name of the column containing values to aggregate.
+/// * `group_cols` - A list of column names to group by.
+/// * `agg` - Aggregation method (e.g., "avg", "sum").
+/// * `resolution` - Resolution period length (e.g., 24 for daily).
+/// * `clustered` - Whether to use the clustered resolution strategy.
+///
+/// # Returns
+///
+/// A `String` containing the generated SQL query.
 pub fn build_resolution_query(
     source_table: &str,
     value_col: &str,
@@ -24,6 +41,20 @@ pub fn build_resolution_query(
             .replace("{period_length}", resolution)
 }
 
+/// Builds a SQL query that combines both clustered and representative period resolutions.
+///
+/// # Arguments
+///
+/// * `source_table` - The name of the source SQL table.
+/// * `source_table_1` - Table for clustered data.
+/// * `value_col` - The name of the column containing values to aggregate.
+/// * `group_cols` - A list of column names to group by.
+/// * `agg` - Aggregation method (e.g., "avg", "sum").
+/// * `resolution` - Resolution period length (e.g., 24 for daily).
+/// 
+/// # Returns
+///
+/// A `String` containing the generated SQL query.
 pub fn build_resolution_query_both(
     source_table: &str,
     source_table_1: &str,
@@ -31,7 +62,7 @@ pub fn build_resolution_query_both(
     group_cols: &[&str],
     agg: &str,
     resolution: &str,
-) -> String {
+    ) -> String {
 
   let combine_sql = REP_PERIOD_RESOLUTION_SQL.to_string()
       + &CLUSTURED_YEAR_RESOLUTIONS_SQL.replace("{source_table}", "{source_table_1}")
@@ -47,7 +78,102 @@ pub fn build_resolution_query_both(
         .replace("{period_length}", resolution)
 }
 
+/// Builds a SQL query for resolution-based aggregation with category-based filters.
+///
+/// # Arguments
+///
+/// * `source_table` - The name of the source SQL table.
+/// * `value_col` - The name of the column containing values to aggregate.
+/// * `group_cols` - A list of column names to group by.
+/// * `agg` - Aggregation method (e.g., "avg", "sum").
+/// * `resolution` - Resolution period length (e.g., 24 for daily).
+/// * `filters_by_category` - Map where each key is a root category ID and the value is a list of leaf or internal node category IDs.
+///
+/// # Returns
+///
+/// A `String` representing the SQL query with category-based filters.
+pub fn build_resolution_query_with_filters(
+    source_table: &str,
+    value_col: &str,
+    group_cols: &[&str],
+    agg: &str,
+    resolution: &str,
+    filters_by_category: &HashMap<i32, Vec<i32>>,
+) -> String {
+    let group_cols_sql = group_cols.join(", ");
+    let filter_conditions = build_filter_conditions(filters_by_category);
+    
+    let combine_sql = REP_PERIOD_RESOLUTION_SQL.to_string()
+            + &LAST_PART_SQL.replace("{final}", "final_rep_periods");
+
+    combine_sql
+        .replace("{group_cols}", &group_cols_sql)
+        .replace("{value_col}", value_col)
+        .replace("{source_table}", source_table)
+        .replace("{agg}", agg)
+        .replace("{period_length}", resolution)
+        .replace("{filter_conditions}", &filter_conditions)
+}
+
+/// Builds SQL filter conditions for a map of category filters.
+/// 
+/// # Arguments
+///
+/// * `filters_by_category` - Map where each key is a root category ID and the value is a list of leaf or internal node category IDs.
+///
+/// # Returns
+///
+/// A string of SQL `AND` filter conditions.
+fn build_filter_conditions(filters_by_category: &HashMap<i32, Vec<i32>>) -> String {
+    if filters_by_category.is_empty() {
+        return String::new();
+    }
+
+    let mut conditions = Vec::new();
+
+    for (root_id, leaf_ids) in filters_by_category {
+        if leaf_ids.is_empty() {
+            continue;
+        }
+        let ids_list: Vec<String> = leaf_ids.iter().map(ToString::to_string).collect();
+        let ids_csv = ids_list.join(", ");
+
+        // Build a recursive CTE to find all descendants of the filtered nodes, including the filtered nodes themselves.
+        let desc_cte = format!(
+            "WITH RECURSIVE sub{0} AS (  
+                SELECT id FROM category WHERE id IN ({1})  
+              UNION ALL  
+                SELECT c.id FROM category c JOIN sub{0} s ON c.parent_id = s.id
+            )",
+            root_id, ids_csv
+        );
+
+        // Simply check if the asset's category (ac.leaf_id) is a included in the filtered nodes (sub{0}).
+        let condition = format!(
+            "EXISTS (
+                {desc_cte}
+                SELECT 1
+                FROM asset_category ac{0}
+                WHERE ac{0}.asset = f.from_asset
+                  AND ac{0}.root_id = {0}
+                  AND ac{0}.leaf_id IN (SELECT id FROM sub{0})
+            )",
+            root_id,
+            desc_cte = desc_cte.replace("\n", " ")
+        );
+
+        conditions.push(condition);
+    }
+
+    if conditions.is_empty() {
+        String::new()
+    } else {
+        format!("AND {}", conditions.join(" AND "))
+    }
+}
+
 // --- QUERIES ---
+
 const REP_PERIOD_RESOLUTION_SQL: &str = "
 /* Assigns a group number (grp) to consecutive blocks that have the same {value_col} values
    within the same {group_cols}, year, and rep_period, ordered by time_block_start (chronologically).
