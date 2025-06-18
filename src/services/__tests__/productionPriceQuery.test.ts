@@ -41,18 +41,19 @@ describe("Production Price Query Service", () => {
   describe("getProductionPriceDurationSeries", () => {
     const mockDbPath = "/path/to/test.duckdb";
     const mockYear = 2023;
+    const mockCarrier = "electricity";
 
     it("should fetch production price data for yearly resolution", async () => {
       const mockData: ProductionPriceDurationSeriesRow[] = [
         {
-          asset: "wind_farm_1",
+          carrier: "electricity",
           milestone_year: 2023,
           global_start: 0,
           global_end: 8760,
           y_axis: 50.5,
         },
         {
-          asset: "solar_plant_1",
+          carrier: "gas",
           milestone_year: 2023,
           global_start: 0,
           global_end: 8760,
@@ -66,6 +67,7 @@ describe("Production Price Query Service", () => {
         mockDbPath,
         Resolution.Years,
         mockYear,
+        mockCarrier,
       );
 
       expect(genericApacheIPC).toHaveBeenCalledWith(
@@ -74,6 +76,7 @@ describe("Production Price Query Service", () => {
           dbPath: mockDbPath,
           resolution: "years_table",
           year: mockYear,
+          carrier: mockCarrier,
         },
       );
       expect(result).toEqual(mockData);
@@ -82,14 +85,14 @@ describe("Production Price Query Service", () => {
     it("should fetch production price data for hourly resolution", async () => {
       const mockData: ProductionPriceDurationSeriesRow[] = [
         {
-          asset: "wind_farm_1",
+          carrier: "gas",
           milestone_year: 2023,
           global_start: 0,
           global_end: 1,
           y_axis: 52.1,
         },
         {
-          asset: "wind_farm_1",
+          carrier: "gas",
           milestone_year: 2023,
           global_start: 1,
           global_end: 2,
@@ -103,6 +106,7 @@ describe("Production Price Query Service", () => {
         mockDbPath,
         Resolution.Hours,
         mockYear,
+        mockCarrier,
       );
 
       expect(genericApacheIPC).toHaveBeenCalledWith(
@@ -111,6 +115,7 @@ describe("Production Price Query Service", () => {
           dbPath: mockDbPath,
           year: mockYear,
           resolution: "hours_table",
+          carrier: mockCarrier,
         },
       );
       expect(result).toEqual(mockData);
@@ -119,7 +124,7 @@ describe("Production Price Query Service", () => {
     it("should fetch production price data for daily resolution", async () => {
       const mockData: ProductionPriceDurationSeriesRow[] = [
         {
-          asset: "solar_plant_1",
+          carrier: "electricity",
           milestone_year: 2023,
           global_start: 0,
           global_end: 24,
@@ -133,6 +138,7 @@ describe("Production Price Query Service", () => {
         mockDbPath,
         Resolution.Days,
         mockYear,
+        mockCarrier,
       );
 
       expect(genericApacheIPC).toHaveBeenCalledWith(
@@ -141,6 +147,7 @@ describe("Production Price Query Service", () => {
           dbPath: mockDbPath,
           year: mockYear,
           resolution: "days_table",
+          carrier: mockCarrier,
         },
       );
       expect(result).toEqual(mockData);
@@ -149,7 +156,7 @@ describe("Production Price Query Service", () => {
     it("should fetch production price data for weekly resolution", async () => {
       const mockData: ProductionPriceDurationSeriesRow[] = [
         {
-          asset: "wind_farm_1",
+          carrier: "hydrogen",
           milestone_year: 2023,
           global_start: 0,
           global_end: 168,
@@ -163,6 +170,7 @@ describe("Production Price Query Service", () => {
         mockDbPath,
         Resolution.Weeks,
         mockYear,
+        mockCarrier,
       );
 
       expect(genericApacheIPC).toHaveBeenCalledWith(
@@ -171,6 +179,7 @@ describe("Production Price Query Service", () => {
           dbPath: mockDbPath,
           year: mockYear,
           resolution: "weeks_table",
+          carrier: mockCarrier,
         },
       );
       expect(result).toEqual(mockData);
@@ -179,7 +188,7 @@ describe("Production Price Query Service", () => {
     it("should fetch production price data for monthly resolution", async () => {
       const mockData: ProductionPriceDurationSeriesRow[] = [
         {
-          asset: "wind_farm_1",
+          carrier: "hydrogen",
           milestone_year: 2023,
           global_start: 0,
           global_end: 744,
@@ -193,6 +202,7 @@ describe("Production Price Query Service", () => {
         mockDbPath,
         Resolution.Months,
         mockYear,
+        "all",
       );
 
       expect(genericApacheIPC).toHaveBeenCalledWith(
@@ -201,6 +211,7 @@ describe("Production Price Query Service", () => {
           dbPath: mockDbPath,
           year: mockYear,
           resolution: "months_table",
+          carrier: "all",
         },
       );
       expect(result).toEqual(mockData);
@@ -214,6 +225,7 @@ describe("Production Price Query Service", () => {
           mockDbPath,
           invalidResolution,
           mockYear,
+          mockCarrier,
         ),
       ).rejects.toThrow(
         "Invalid resolution specified. Use 'hours', 'days', 'weeks', 'months' or 'years'.",
@@ -231,6 +243,7 @@ describe("Production Price Query Service", () => {
         mockDbPath,
         Resolution.Hours,
         mockYear,
+        mockCarrier,
       );
 
       expect(result).toEqual([]);
@@ -239,14 +252,14 @@ describe("Production Price Query Service", () => {
     it("should handle production price data with zero values", async () => {
       const mockDataWithZeros: ProductionPriceDurationSeriesRow[] = [
         {
-          asset: "wind_farm_1",
+          carrier: "wind",
           milestone_year: 2023,
           global_start: 0,
           global_end: 1,
           y_axis: 0,
         },
         {
-          asset: "solar_plant_1",
+          carrier: "gas",
           milestone_year: 2023,
           global_start: 1,
           global_end: 2,
@@ -260,6 +273,7 @@ describe("Production Price Query Service", () => {
         mockDbPath,
         Resolution.Hours,
         mockYear,
+        mockCarrier,
       );
 
       expect(result).toEqual(mockDataWithZeros);
@@ -268,7 +282,7 @@ describe("Production Price Query Service", () => {
     it("should handle production price data with negative values", async () => {
       const mockDataWithNegatives: ProductionPriceDurationSeriesRow[] = [
         {
-          asset: "wind_farm_1",
+          carrier: "wind",
           milestone_year: 2023,
           global_start: 0,
           global_end: 1,
@@ -282,6 +296,7 @@ describe("Production Price Query Service", () => {
         mockDbPath,
         Resolution.Hours,
         mockYear,
+        mockCarrier,
       );
 
       expect(result).toEqual(mockDataWithNegatives);
@@ -296,6 +311,7 @@ describe("Production Price Query Service", () => {
           mockDbPath,
           Resolution.Hours,
           mockYear,
+          mockCarrier,
         ),
       ).rejects.toThrow("Database connection failed");
 
@@ -305,6 +321,7 @@ describe("Production Price Query Service", () => {
           dbPath: mockDbPath,
           year: mockYear,
           resolution: "hours_table",
+          carrier: mockCarrier,
         },
       );
     });
@@ -314,14 +331,19 @@ describe("Production Price Query Service", () => {
       vi.mocked(genericApacheIPC).mockRejectedValueOnce(mockError);
 
       await expect(
-        getProductionPriceDurationSeries(mockDbPath, Resolution.Years, 1999),
+        getProductionPriceDurationSeries(
+          mockDbPath,
+          Resolution.Years,
+          1999,
+          mockCarrier,
+        ),
       ).rejects.toThrow("Year not found in database");
     });
 
-    it("should handle assets with special characters", async () => {
+    it("should handle carriers with special characters", async () => {
       const mockData: ProductionPriceDurationSeriesRow[] = [
         {
-          asset: "wind_farm-1@location_2",
+          carrier: "wind@2",
           milestone_year: 2023,
           global_start: 0,
           global_end: 1,
@@ -335,6 +357,7 @@ describe("Production Price Query Service", () => {
         mockDbPath,
         Resolution.Hours,
         mockYear,
+        "wind@2",
       );
 
       expect(result).toEqual(mockData);
@@ -450,7 +473,7 @@ describe("Production Price Query Service", () => {
       // Mock production price data
       const mockPriceData: ProductionPriceDurationSeriesRow[] = [
         {
-          asset: "wind_farm_1",
+          carrier: "wind",
           milestone_year: 2023,
           global_start: 0,
           global_end: 8760,
@@ -469,6 +492,7 @@ describe("Production Price Query Service", () => {
         mockDbPath,
         Resolution.Years,
         latestYear,
+        "wind",
       );
 
       expect(availableYears).toEqual(mockYearData);
@@ -492,6 +516,7 @@ describe("Production Price Query Service", () => {
         mockDbPath,
         Resolution.Hours,
         2023,
+        "wind",
       );
 
       expect(availableYears).toEqual([]);
@@ -501,10 +526,11 @@ describe("Production Price Query Service", () => {
     it("should handle different resolutions for same year", async () => {
       const mockDbPath = "/path/to/test.duckdb";
       const testYear = 2023;
+      const mockCarrier = "wind";
 
       const mockHourlyData: ProductionPriceDurationSeriesRow[] = [
         {
-          asset: "wind_farm_1",
+          carrier: "wind",
           milestone_year: 2023,
           global_start: 0,
           global_end: 1,
@@ -514,7 +540,7 @@ describe("Production Price Query Service", () => {
 
       const mockYearlyData: ProductionPriceDurationSeriesRow[] = [
         {
-          asset: "wind_farm_1",
+          carrier: "wind",
           milestone_year: 2023,
           global_start: 0,
           global_end: 8760,
@@ -531,11 +557,13 @@ describe("Production Price Query Service", () => {
         mockDbPath,
         Resolution.Hours,
         testYear,
+        mockCarrier,
       );
       const yearlyData = await getProductionPriceDurationSeries(
         mockDbPath,
         Resolution.Years,
         testYear,
+        mockCarrier,
       );
 
       expect(hourlyData).toEqual(mockHourlyData);
@@ -549,6 +577,7 @@ describe("Production Price Query Service", () => {
           dbPath: mockDbPath,
           year: testYear,
           resolution: "hours_table",
+          carrier: mockCarrier,
         },
       );
       expect(genericApacheIPC).toHaveBeenNthCalledWith(
@@ -558,6 +587,7 @@ describe("Production Price Query Service", () => {
           dbPath: mockDbPath,
           resolution: "years_table",
           year: testYear,
+          carrier: mockCarrier,
         },
       );
     });

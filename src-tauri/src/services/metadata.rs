@@ -23,6 +23,58 @@ pub fn check_column_in_table(db_path: String, table_name: &str, column_name: &st
     Ok(check.iter().any(|name: &String| name == column_name))
 }
 
+#[tauri::command]
+pub fn get_assets_carriers(db_path: String) -> Result<Response, String> {
+    let res: (Vec<RecordBatch>, Schema) = run_query_rb(db_path, CARRIER_SQL.to_string(), [].to_vec())?;
+
+    return serialize_recordbatch(res.0, res.1); 
+}
+
+pub fn apply_carrier_filter(base_sql: &str, carrier: &str) -> String {
+    if carrier == "all" {
+        // No filtering, no carrier column added
+        format!(
+            "
+            SELECT
+                s.*,
+                '{}' AS carrier
+            FROM (
+                {}
+            ) AS s
+            ",
+            carrier,
+            base_sql,
+        )
+    } else {
+        format!(
+            "
+            SELECT
+                s.*,
+                '{}' AS carrier
+            FROM (
+                {}
+            ) AS s
+            WHERE s.asset IN (
+                SELECT asset FROM ({}) WHERE carrier = '{}'
+            )
+            ",
+            carrier,
+            base_sql,
+            INFER_CARRIER_SQL_FROM_OUTGOING_FLOWS,
+            carrier
+        )
+    }
+} 
+
 const ASSET_SQL: &str = "SELECT asset FROM asset;";
 const TABLES_SQL: &str = "SHOW TABLES";
 const TABLE_INFO_SQL: &str = "PRAGMA table_info({{1}});";
+const CARRIER_SQL: &str = "SELECT DISTINCT carrier FROM flow;";
+const INFER_CARRIER_SQL_FROM_OUTGOING_FLOWS: &str = "
+SELECT DISTINCT
+a.asset,
+f.carrier
+FROM asset AS a
+JOIN flow AS f
+ON f.from_asset = a.asset
+";

@@ -3,14 +3,14 @@ use duckdb::{ types::Value};
 use tauri::ipc::Response;
 use crate::services::query_builder::build_resolution_query;
 use crate::duckdb_conn::{run_query_rb, serialize_recordbatch};
-use crate::services::metadata::check_column_in_table;
+use crate::services::metadata::{check_column_in_table, apply_carrier_filter};
 
 #[tauri::command]
-pub fn get_production_price_resolution(db_path: String, year: u32, resolution: u32) -> Result<Response, String> {
+pub fn get_production_price_resolution(db_path: String, year: u32, resolution: u32, carrier: String) -> Result<Response, String> {
     let sql = build_resolution_query(
         "production_table",
         "dual_value",
-        &["asset"],
+        &["carrier"],
         "avg",
         &resolution.to_string(),
         false,
@@ -29,8 +29,8 @@ pub fn get_production_price_resolution(db_path: String, year: u32, resolution: u
                     {}
                 ) AS subquery
                 ",
-                PRODUCTION_DATA_SIMPLE_SQL,
-                PRODUCTION_DATA_COMPACT_SQL,
+                apply_carrier_filter(PRODUCTION_DATA_SIMPLE_SQL, &carrier),
+                apply_carrier_filter(PRODUCTION_DATA_COMPACT_SQL, &carrier),
                 sql
             );
         } else {
@@ -43,7 +43,7 @@ pub fn get_production_price_resolution(db_path: String, year: u32, resolution: u
                     {}
                 ) AS subquery
                 ",
-                PRODUCTION_DATA_COMPACT_SQL,
+                apply_carrier_filter(PRODUCTION_DATA_COMPACT_SQL, &carrier),
                 sql
             );
         }
@@ -60,11 +60,16 @@ pub fn get_production_price_resolution(db_path: String, year: u32, resolution: u
                     {}
                 ) AS subquery
                 ",
-                PRODUCTION_DATA_SIMPLE_SQL,
+                apply_carrier_filter(PRODUCTION_DATA_SIMPLE_SQL, &carrier),
                 sql
             );
         } else {
-            return Err("No valid production data found in the database.".to_string());
+            query = format!(
+                "
+                {}
+                ",
+                EMPTY_SQL
+            );
         }
     }
     let res: (Vec<RecordBatch>, Schema) = run_query_rb(db_path, query, vec![Value::from(year)])?;
@@ -113,3 +118,14 @@ const PRODUCTION_YEARS_SQL: &str = "
         JOIN asset AS a ON a.asset = compact.asset
         WHERE a.type = 'producer' OR a.type = 'storage' OR a.type = 'conversion'
     ";
+
+    const EMPTY_SQL: &str = "
+                SELECT 
+                    '' AS carrier,
+                    0 AS year,
+                    0 AS rep_period,
+                    0 AS time_block_start,
+                    0 AS time_block_end,
+                    0 AS dual_value
+                FROM cons_capacity_outgoing_simple_method
+                ";

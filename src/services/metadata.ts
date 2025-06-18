@@ -1,5 +1,5 @@
 import { Table } from "apache-arrow";
-import { apacheIPC } from "../gateway/db";
+import { apacheIPC, genericApacheIPC } from "../gateway/db";
 import { MetaTreeRootsByCategoryName } from "../types/metadata";
 import { TreeNode } from "primereact/treenode";
 
@@ -88,6 +88,18 @@ export async function getAllMetadata(): Promise<MetaTreeRootsByCategoryName> {
 export function mustGetKey(n: TreeNode): number {
   return n.key! as number;
 }
+
+export async function getAssetsCarriers(
+  dbPath: string,
+): Promise<CarrierJson[]> {
+  return genericApacheIPC<CarrierJson>("get_assets_carriers", {
+    dbPath: dbPath,
+  });
+}
+
+export type CarrierJson = {
+  carrier: string;
+};
 
 type TableJson = {
   name: string;
