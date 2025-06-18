@@ -44,13 +44,6 @@ pub fn get_supply(
     serialize_recordbatch(res.0, res.1)
 }
 
-#[tauri::command]
-pub fn get_supply_years(db_path: String) -> Result<Response, String> {
-    let res: (Vec<RecordBatch>, Schema) =
-        run_query_rb(db_path, SUPPLY_YEARS_SQL.to_string(), vec![])?;
-    serialize_recordbatch(res.0, res.1)
-}
-
 // --- TESTING ---
 
 // --- QUERIES ---
@@ -86,11 +79,3 @@ const SUPPLY_SQL_WITH_FILTERS: &str = "
     WHERE a.type = 'consumer'
       {filter_conditions} 
   ) AS supply_flows";
-
-const SUPPLY_YEARS_SQL: &str = "
-    SELECT DISTINCT f.year
-    FROM var_flow AS f
-    JOIN asset AS a ON f.to_asset = a.asset
-    WHERE a.type = 'consumer'
-    ORDER BY f.year
-";

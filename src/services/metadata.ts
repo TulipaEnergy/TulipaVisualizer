@@ -20,7 +20,7 @@ type AssetJson = {
 export async function getTables(dbPath: String): Promise<string[]> {
   try {
     let res: Table<any> = await apacheIPC("get_tables", { dbPath: dbPath });
-    return (res.toArray() as Array<TableJson>).map((item) => item.name); // Convert Apache Arrow Table into JS array
+    return (res.toArray() as Array<{ name: string }>).map((item) => item.name); // Convert Apache Arrow Table into JS array
   } catch (err) {
     console.error("Error querying tables:", err);
     throw err;
@@ -101,16 +101,14 @@ export async function hasMetadata(dbPath: string): Promise<boolean> {
 
 export async function getAssetsCarriers(
   dbPath: string,
-): Promise<CarrierJson[]> {
-  return genericApacheIPC<CarrierJson>("get_assets_carriers", {
+): Promise<{ carrier: string }[]> {
+  return genericApacheIPC<{ carrier: string }>("get_assets_carriers", {
     dbPath: dbPath,
   });
 }
 
-export type CarrierJson = {
-  carrier: string;
-};
-
-type TableJson = {
-  name: string;
-};
+export async function getYears(dbPath: string): Promise<{ year: number }[]> {
+  return genericApacheIPC<{ year: number }>("get_years", {
+    dbPath: dbPath,
+  });
+}

@@ -26,14 +26,6 @@ export async function getTransportationPriceDurationSeries(
   );
 }
 
-export async function getTransportationYears(
-  dbPath: string,
-): Promise<YearJson[]> {
-  return genericApacheIPC<YearJson>("get_transportation_years", {
-    dbPath: dbPath,
-  });
-}
-
 export async function getTransportationCarriers(
   dbPath: string,
 ): Promise<CarrierJson[]> {
@@ -44,10 +36,6 @@ export async function getTransportationCarriers(
 
 export type CarrierJson = {
   carrier: string;
-};
-
-export type YearJson = {
-  year: number;
 };
 
 export type TransportationPriceDurationSeriesRow = {

@@ -3,6 +3,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import TransportationPrices from "../TransportationPrices";
 import { renderWithProviders, createMockStoreState } from "../../../test/utils";
 import * as transportPriceQuery from "../../../services/transportPriceQuery";
+import * as metadataQuery from "../../../services/metadata";
 import { Resolution } from "../../../types/resolution";
 
 // Mock ECharts to avoid canvas issues in tests
@@ -21,8 +22,11 @@ vi.mock("echarts-for-react", () => ({
 // Mock the transport price query service
 vi.mock("../../../services/transportPriceQuery", () => ({
   getTransportationPriceDurationSeries: vi.fn(),
-  getTransportationYears: vi.fn(),
   getTransportationCarriers: vi.fn(),
+}));
+
+vi.mock("../../../services/metadata", () => ({
+  getYears: vi.fn(),
 }));
 
 describe("TransportationPrices Component", () => {
@@ -64,9 +68,7 @@ describe("TransportationPrices Component", () => {
   ];
 
   it("renders correctly with default state", async () => {
-    vi.mocked(transportPriceQuery.getTransportationYears).mockResolvedValue(
-      mockYearsData,
-    );
+    vi.mocked(metadataQuery.getYears).mockResolvedValue(mockYearsData);
     vi.mocked(transportPriceQuery.getTransportationCarriers).mockResolvedValue(
       mockCarriersData,
     );
@@ -86,9 +88,7 @@ describe("TransportationPrices Component", () => {
   });
 
   it("shows loading state initially when data is being fetched", async () => {
-    vi.mocked(transportPriceQuery.getTransportationYears).mockResolvedValue(
-      mockYearsData,
-    );
+    vi.mocked(metadataQuery.getYears).mockResolvedValue(mockYearsData);
     vi.mocked(transportPriceQuery.getTransportationCarriers).mockResolvedValue(
       mockCarriersData,
     );
@@ -123,9 +123,7 @@ describe("TransportationPrices Component", () => {
   });
 
   it("handles service errors gracefully", async () => {
-    vi.mocked(transportPriceQuery.getTransportationYears).mockResolvedValue(
-      mockYearsData,
-    );
+    vi.mocked(metadataQuery.getYears).mockResolvedValue(mockYearsData);
     vi.mocked(transportPriceQuery.getTransportationCarriers).mockResolvedValue(
       mockCarriersData,
     );
@@ -149,9 +147,7 @@ describe("TransportationPrices Component", () => {
   });
 
   it("fetches and displays available years", async () => {
-    vi.mocked(transportPriceQuery.getTransportationYears).mockResolvedValue(
-      mockYearsData,
-    );
+    vi.mocked(metadataQuery.getYears).mockResolvedValue(mockYearsData);
     vi.mocked(transportPriceQuery.getTransportationCarriers).mockResolvedValue(
       mockCarriersData,
     );
@@ -164,7 +160,7 @@ describe("TransportationPrices Component", () => {
     });
 
     await waitFor(() => {
-      expect(transportPriceQuery.getTransportationYears).toHaveBeenCalledWith(
+      expect(metadataQuery.getYears).toHaveBeenCalledWith(
         "/mock/database.duckdb",
       );
     });
@@ -177,9 +173,7 @@ describe("TransportationPrices Component", () => {
   });
 
   it("fetches and displays available carriers", async () => {
-    vi.mocked(transportPriceQuery.getTransportationYears).mockResolvedValue(
-      mockYearsData,
-    );
+    vi.mocked(metadataQuery.getYears).mockResolvedValue(mockYearsData);
     vi.mocked(transportPriceQuery.getTransportationCarriers).mockResolvedValue(
       mockCarriersData,
     );
@@ -205,9 +199,7 @@ describe("TransportationPrices Component", () => {
   });
 
   it("changes resolution when user selects different option", async () => {
-    vi.mocked(transportPriceQuery.getTransportationYears).mockResolvedValue(
-      mockYearsData,
-    );
+    vi.mocked(metadataQuery.getYears).mockResolvedValue(mockYearsData);
     vi.mocked(transportPriceQuery.getTransportationCarriers).mockResolvedValue(
       mockCarriersData,
     );
@@ -247,9 +239,7 @@ describe("TransportationPrices Component", () => {
   });
 
   it("changes year when user selects different option", async () => {
-    vi.mocked(transportPriceQuery.getTransportationYears).mockResolvedValue(
-      mockYearsData,
-    );
+    vi.mocked(metadataQuery.getYears).mockResolvedValue(mockYearsData);
     vi.mocked(transportPriceQuery.getTransportationCarriers).mockResolvedValue(
       mockCarriersData,
     );
@@ -263,7 +253,7 @@ describe("TransportationPrices Component", () => {
 
     // Wait for component to load and data to be fetched
     await waitFor(() => {
-      expect(transportPriceQuery.getTransportationYears).toHaveBeenCalledWith(
+      expect(metadataQuery.getYears).toHaveBeenCalledWith(
         "/mock/database.duckdb",
       );
       expect(
@@ -287,9 +277,7 @@ describe("TransportationPrices Component", () => {
   });
 
   it("changes carrier when user selects different option", async () => {
-    vi.mocked(transportPriceQuery.getTransportationYears).mockResolvedValue(
-      mockYearsData,
-    );
+    vi.mocked(metadataQuery.getYears).mockResolvedValue(mockYearsData);
     vi.mocked(transportPriceQuery.getTransportationCarriers).mockResolvedValue(
       mockCarriersData,
     );
@@ -303,7 +291,7 @@ describe("TransportationPrices Component", () => {
 
     // Wait for component to load and data to be fetched
     await waitFor(() => {
-      expect(transportPriceQuery.getTransportationYears).toHaveBeenCalledWith(
+      expect(metadataQuery.getYears).toHaveBeenCalledWith(
         "/mock/database.duckdb",
       );
       expect(
@@ -327,9 +315,7 @@ describe("TransportationPrices Component", () => {
   });
 
   it("renders chart when data is available", async () => {
-    vi.mocked(transportPriceQuery.getTransportationYears).mockResolvedValue(
-      mockYearsData,
-    );
+    vi.mocked(metadataQuery.getYears).mockResolvedValue(mockYearsData);
     vi.mocked(transportPriceQuery.getTransportationCarriers).mockResolvedValue(
       mockCarriersData,
     );
@@ -360,9 +346,7 @@ describe("TransportationPrices Component", () => {
   });
 
   it("shows no data message when no chart data is available", async () => {
-    vi.mocked(transportPriceQuery.getTransportationYears).mockResolvedValue(
-      mockYearsData,
-    );
+    vi.mocked(metadataQuery.getYears).mockResolvedValue(mockYearsData);
     vi.mocked(transportPriceQuery.getTransportationCarriers).mockResolvedValue(
       mockCarriersData,
     );
@@ -380,7 +364,7 @@ describe("TransportationPrices Component", () => {
   });
 
   it("handles empty years data", async () => {
-    vi.mocked(transportPriceQuery.getTransportationYears).mockResolvedValue([]);
+    vi.mocked(metadataQuery.getYears).mockResolvedValue([]);
     vi.mocked(transportPriceQuery.getTransportationCarriers).mockResolvedValue(
       mockCarriersData,
     );
@@ -399,9 +383,7 @@ describe("TransportationPrices Component", () => {
   });
 
   it("handles empty carriers data", async () => {
-    vi.mocked(transportPriceQuery.getTransportationYears).mockResolvedValue(
-      mockYearsData,
-    );
+    vi.mocked(metadataQuery.getYears).mockResolvedValue(mockYearsData);
     vi.mocked(transportPriceQuery.getTransportationCarriers).mockResolvedValue(
       [],
     );
@@ -421,7 +403,7 @@ describe("TransportationPrices Component", () => {
 
   it("handles years fetch error gracefully", async () => {
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-    vi.mocked(transportPriceQuery.getTransportationYears).mockRejectedValue(
+    vi.mocked(metadataQuery.getYears).mockRejectedValue(
       new Error("Years fetch failed"),
     );
     vi.mocked(transportPriceQuery.getTransportationCarriers).mockResolvedValue(
@@ -447,9 +429,7 @@ describe("TransportationPrices Component", () => {
 
   it("handles carriers fetch error gracefully", async () => {
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-    vi.mocked(transportPriceQuery.getTransportationYears).mockResolvedValue(
-      mockYearsData,
-    );
+    vi.mocked(metadataQuery.getYears).mockResolvedValue(mockYearsData);
     vi.mocked(transportPriceQuery.getTransportationCarriers).mockRejectedValue(
       new Error("Carriers fetch failed"),
     );
@@ -496,9 +476,7 @@ describe("TransportationPrices Component", () => {
       },
     ];
 
-    vi.mocked(transportPriceQuery.getTransportationYears).mockResolvedValue(
-      mockYearsData,
-    );
+    vi.mocked(metadataQuery.getYears).mockResolvedValue(mockYearsData);
     vi.mocked(transportPriceQuery.getTransportationCarriers).mockResolvedValue(
       mockCarriersData,
     );
@@ -530,9 +508,7 @@ describe("TransportationPrices Component", () => {
   });
 
   it("updates chart title with resolution information", async () => {
-    vi.mocked(transportPriceQuery.getTransportationYears).mockResolvedValue(
-      mockYearsData,
-    );
+    vi.mocked(metadataQuery.getYears).mockResolvedValue(mockYearsData);
     vi.mocked(transportPriceQuery.getTransportationCarriers).mockResolvedValue(
       mockCarriersData,
     );
@@ -579,9 +555,7 @@ describe("TransportationPrices Component", () => {
         .mockReturnValueOnce("/second/database.duckdb"),
     });
 
-    vi.mocked(transportPriceQuery.getTransportationYears).mockResolvedValue(
-      mockYearsData,
-    );
+    vi.mocked(metadataQuery.getYears).mockResolvedValue(mockYearsData);
     vi.mocked(transportPriceQuery.getTransportationCarriers).mockResolvedValue(
       mockCarriersData,
     );
@@ -598,7 +572,7 @@ describe("TransportationPrices Component", () => {
 
     // Wait for initial data fetch
     await waitFor(() => {
-      expect(transportPriceQuery.getTransportationYears).toHaveBeenCalledWith(
+      expect(metadataQuery.getYears).toHaveBeenCalledWith(
         "/first/database.duckdb",
       );
     });
@@ -608,14 +582,14 @@ describe("TransportationPrices Component", () => {
 
     // Should fetch data from new database
     await waitFor(() => {
-      expect(transportPriceQuery.getTransportationYears).toHaveBeenCalledWith(
+      expect(metadataQuery.getYears).toHaveBeenCalledWith(
         "/second/database.duckdb",
       );
     });
   });
 
   it("does not fetch data when year is null", async () => {
-    vi.mocked(transportPriceQuery.getTransportationYears).mockResolvedValue([]);
+    vi.mocked(metadataQuery.getYears).mockResolvedValue([]);
     vi.mocked(transportPriceQuery.getTransportationCarriers).mockResolvedValue(
       mockCarriersData,
     );
@@ -638,9 +612,7 @@ describe("TransportationPrices Component", () => {
   });
 
   it("does not fetch data when carrier is null", async () => {
-    vi.mocked(transportPriceQuery.getTransportationYears).mockResolvedValue(
-      mockYearsData,
-    );
+    vi.mocked(metadataQuery.getYears).mockResolvedValue(mockYearsData);
     vi.mocked(transportPriceQuery.getTransportationCarriers).mockResolvedValue(
       [],
     );

@@ -39,6 +39,7 @@ vi.mock("../services/metadata", () => ({
   getAssets: vi.fn(),
   getAllMetadata: vi.fn(),
   hasMetadata: vi.fn(),
+  getYears: vi.fn(),
 }));
 
 // Mock the visualization store
@@ -176,7 +177,7 @@ describe("Performance Testing", () => {
         y_axis: 140,
       },
     ]);
-    vi.mocked(mockStoragePriceService.getStorageYears).mockResolvedValue([
+    vi.mocked(mockMetadataService.getYears).mockResolvedValue([
       { year: 2020 },
       { year: 2021 },
       { year: 2022 },
@@ -353,6 +354,7 @@ describe("Performance Testing", () => {
       const largeDataset = mockLargeCapacityData(100);
 
       const mockCapacityService = await import("../services/capacityQuery");
+      const mockMetadataService = await import("../services/metadata");
       vi.mocked(mockCapacityService.getCapacity).mockResolvedValue(
         largeDataset,
       );
@@ -360,7 +362,6 @@ describe("Performance Testing", () => {
         2020, 2021, 2022,
       ]);
 
-      const mockMetadataService = await import("../services/metadata");
       vi.mocked(mockMetadataService.getAssets).mockResolvedValue(["TestAsset"]);
       vi.mocked(mockMetadataService.hasMetadata).mockResolvedValue(true);
 
@@ -419,10 +420,11 @@ describe("Performance Testing", () => {
       const mockStoragePriceService = await import(
         "../services/storagePriceQuery"
       );
+      const mockMetadataService = await import("../services/metadata");
       vi.mocked(
         mockStoragePriceService.getStoragePriceDurationSeries,
       ).mockResolvedValue(largeStorageData);
-      vi.mocked(mockStoragePriceService.getStorageYears).mockResolvedValue([
+      vi.mocked(mockMetadataService.getYears).mockResolvedValue([
         { year: 2020 },
         { year: 2021 },
         { year: 2022 },

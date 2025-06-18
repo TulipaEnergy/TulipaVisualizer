@@ -24,6 +24,13 @@ pub fn check_column_in_table(db_path: String, table_name: &str, column_name: &st
 }
 
 #[tauri::command]
+pub fn get_years(db_path: String) -> Result<Response, String> {
+    let res: (Vec<RecordBatch>, Schema) = run_query_rb(db_path, YEARS_SQL.to_string(), [].to_vec())?;
+
+    return serialize_recordbatch(res.0, res.1); 
+}
+
+#[tauri::command]
 pub fn get_assets_carriers(db_path: String) -> Result<Response, String> {
     let res: (Vec<RecordBatch>, Schema) = run_query_rb(db_path, CARRIER_SQL.to_string(), [].to_vec())?;
 
@@ -77,4 +84,10 @@ f.carrier
 FROM asset AS a
 JOIN flow AS f
 ON f.from_asset = a.asset
+";
+const YEARS_SQL: &str = "
+    SELECT DISTINCT year
+    FROM year_data AS y
+    WHERE y.is_milestone = true
+    ORDER BY year;
 ";

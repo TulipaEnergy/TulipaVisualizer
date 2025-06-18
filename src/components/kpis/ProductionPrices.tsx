@@ -13,9 +13,8 @@ import ReactECharts from "echarts-for-react";
 import {
   getProductionPriceDurationSeries,
   ProductionPriceDurationSeriesRow,
-  getProductionYears,
 } from "../../services/productionPriceQuery";
-import { getAssetsCarriers } from "../../services/metadata";
+import { getAssetsCarriers, getYears } from "../../services/metadata";
 import useVisualizationStore from "../../store/visualizationStore";
 import { Resolution } from "../../types/resolution";
 
@@ -46,7 +45,7 @@ const ProductionPricesDurationSeries: React.FC<
   useEffect(() => {
     const fetchYears = async () => {
       try {
-        const years = await getProductionYears(dbPath!);
+        const years = await getYears(dbPath!);
         setAvailableYears(years.map((y) => y.year));
         if (!year && years.length > 0) {
           setYear(years[0].year);
@@ -56,9 +55,7 @@ const ProductionPricesDurationSeries: React.FC<
       }
     };
     fetchYears();
-  }, [dbPath]);
 
-  useEffect(() => {
     const fetchCarriers = async () => {
       try {
         const carriers = await getAssetsCarriers(dbPath!);

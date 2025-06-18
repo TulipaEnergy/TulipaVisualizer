@@ -81,22 +81,9 @@ pub fn get_storage_price_resolution(db_path: String, year: u32, resolution: u32,
 
 }
 
-#[tauri::command]
-pub fn get_storage_years(db_path: String) -> Result<Response, String> {
-    let res: (Vec<RecordBatch>, Schema) = run_query_rb(db_path, STORAGE_YEARS_SQL.to_string(), vec![])?;
-
-    return serialize_recordbatch(res.0, res.1);
-}
-
 // --- TESTING ---
 
 // --- QUERIES ---
-
-const STORAGE_YEARS_SQL: &str = "
-    SELECT DISTINCT year
-    FROM cons_balance_storage_rep_period
-    ORDER BY year;
-";
 
 const SHORT_TERM_SQL: &str = "
                 SELECT
