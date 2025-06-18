@@ -127,7 +127,7 @@ describe("DatabaseSelector Component", () => {
       );
 
       const { container } = renderWithProviders(
-        <DatabaseSelector {...defaultProps} showBadge={false} />,
+        <DatabaseSelector {...defaultProps} />,
       );
 
       expect(container).toBeInTheDocument();
@@ -147,9 +147,7 @@ describe("DatabaseSelector Component", () => {
         }),
       );
 
-      renderWithProviders(
-        <DatabaseSelector {...defaultProps} showBadge={true} />,
-      );
+      renderWithProviders(<DatabaseSelector {...defaultProps} />);
 
       // Badge should be present with shortened name
       expect(screen.getByText("test-database")).toBeInTheDocument();
@@ -159,7 +157,7 @@ describe("DatabaseSelector Component", () => {
       mockGetGraphDatabase.mockReturnValue(null);
 
       const { container } = renderWithProviders(
-        <DatabaseSelector {...defaultProps} showBadge={true} />,
+        <DatabaseSelector {...defaultProps} />,
       );
 
       expect(container).toBeInTheDocument();

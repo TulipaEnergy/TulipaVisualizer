@@ -92,7 +92,8 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
 
   useEffect(() => {
     if (graph?.type == "database") {
-      setHeight(1200);
+      setHeight(1150);
+      setIsFullWidth(true);
     } else {
       setHeight(400);
     }
@@ -237,7 +238,7 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
           </Group>
         </Group>
 
-        <DatabaseSelector graphId={graphId} size="xs" showBadge={true} />
+        <DatabaseSelector graphId={graphId} size="xs" />
 
         {getMetadataComponent(graph, enableMetadata, setEnableMetadata)}
 
@@ -312,6 +313,7 @@ function getMetadataComponent(
           <BreakdownMenu graphId={graph.id} />
 
           <Button
+            disabled={hasEmptyTreeSelection(graph)}
             size="xs"
             variant="outline"
             style={{ maxWidth: "200px" }}
@@ -349,4 +351,10 @@ function getMetadataComponent(
       return <></>;
     }
   }
+}
+
+function hasEmptyTreeSelection(graph: GraphConfig): boolean {
+  return Object.values(graph.filtersByCategory).some(
+    (selectedNodesInTree) => selectedNodesInTree.length === 0,
+  );
 }

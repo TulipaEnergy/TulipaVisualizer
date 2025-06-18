@@ -83,9 +83,7 @@ describe("DatabaseList Component", () => {
       renderWithProviders(<DatabaseList />);
 
       // Should show the database path
-      expect(
-        screen.getByText(TEST_CONSTANTS.MOCK_DATABASE_PATH),
-      ).toBeInTheDocument();
+      expect(screen.getByText("test")).toBeInTheDocument();
 
       // Should show count
       expect(screen.getByText("Loaded Databases (1)")).toBeInTheDocument();
@@ -97,9 +95,11 @@ describe("DatabaseList Component", () => {
     it("displays multiple databases", () => {
       const mockDatabases = [
         "/path/to/db1.duckdb",
-        "/path/to/db2.duckdb",
-        "/path/to/db3.duckdb",
+        "   /path/to/db2.duckdb",
+        "////path/to/db3.duckdb",
       ];
+
+      const mockDatabaseNames = ["db1", "db2", "db3"];
 
       (
         useVisualizationStore as unknown as ReturnType<typeof vi.fn>
@@ -113,34 +113,12 @@ describe("DatabaseList Component", () => {
       renderWithProviders(<DatabaseList />);
 
       // Should show all database paths
-      mockDatabases.forEach((db) => {
+      mockDatabaseNames.forEach((db) => {
         expect(screen.getByText(db)).toBeInTheDocument();
       });
 
       // Should show correct count
       expect(screen.getByText("Loaded Databases (3)")).toBeInTheDocument();
-    });
-
-    it("shows database icons for each database", () => {
-      const mockDatabases = ["/path/to/db1.duckdb", "/path/to/db2.duckdb"];
-
-      (
-        useVisualizationStore as unknown as ReturnType<typeof vi.fn>
-      ).mockReturnValue(
-        createMockStoreState({
-          databases: mockDatabases,
-          removeDatabase: mockRemoveDatabase,
-        }),
-      );
-
-      const { container } = renderWithProviders(<DatabaseList />);
-
-      // Each database should have an icon (checking for presence of database entries)
-      mockDatabases.forEach((db) => {
-        expect(screen.getByText(db)).toBeInTheDocument();
-      });
-
-      expect(container).toBeInTheDocument();
     });
   });
 
@@ -265,7 +243,7 @@ describe("DatabaseList Component", () => {
 
       // Should now show the database
       expect(screen.getByText("Loaded Databases (1)")).toBeInTheDocument();
-      expect(screen.getByText("/path/to/new-db.duckdb")).toBeInTheDocument();
+      expect(screen.getByText("new-db")).toBeInTheDocument();
     });
 
     it("handles store errors gracefully", () => {
@@ -310,9 +288,7 @@ describe("DatabaseList Component", () => {
 
       // Should have upload button and database list
       expect(screen.getByTestId("upload-button")).toBeInTheDocument();
-      expect(
-        screen.getByText(TEST_CONSTANTS.MOCK_DATABASE_PATH),
-      ).toBeInTheDocument();
+      expect(screen.getByText("test")).toBeInTheDocument();
       expect(container).toBeInTheDocument();
     });
   });
@@ -333,7 +309,7 @@ describe("DatabaseList Component", () => {
 
       renderWithProviders(<DatabaseList />);
 
-      expect(screen.getByText(longPath)).toBeInTheDocument();
+      expect(screen.getByText("test-database")).toBeInTheDocument();
     });
 
     it("handles special characters in database paths", () => {
@@ -350,7 +326,7 @@ describe("DatabaseList Component", () => {
 
       renderWithProviders(<DatabaseList />);
 
-      expect(screen.getByText(specialPath)).toBeInTheDocument();
+      expect(screen.getByText("test-db@2024")).toBeInTheDocument();
     });
 
     it("handles empty string database paths", () => {
@@ -369,7 +345,7 @@ describe("DatabaseList Component", () => {
 
       // Should show count including empty string
       expect(screen.getByText("Loaded Databases (2)")).toBeInTheDocument();
-      expect(screen.getByText("/path/to/valid.duckdb")).toBeInTheDocument();
+      expect(screen.getByText("valid")).toBeInTheDocument();
     });
   });
 });

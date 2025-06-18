@@ -31,7 +31,7 @@ export default function App() {
             position: "fixed",
             left: 0,
             top: "80px",
-            width: "25%",
+            width: "300px",
             height: "calc(100vh - 80px)",
             zIndex: 100,
           }}
@@ -49,8 +49,8 @@ export default function App() {
         {/* Main Content Area */}
         <Box
           style={{
-            marginLeft: "25%",
-            width: "75%",
+            marginLeft: "300px",
+            width: "calc(100% - 300px)",
             height: "100%",
             overflow: "auto",
           }}
