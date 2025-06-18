@@ -5,6 +5,7 @@ export async function getProductionPriceDurationSeries(
   dbPath: string,
   resolution: Resolution,
   year: number,
+  carrier: string,
 ): Promise<ProductionPriceDurationSeriesRow[]> {
   if (!(resolution in resolutionToTable)) {
     throw new Error(
@@ -18,6 +19,7 @@ export async function getProductionPriceDurationSeries(
       dbPath: dbPath,
       year: year,
       resolution: resolutionToTable[resolution],
+      carrier: carrier,
     },
   );
 }
@@ -33,7 +35,7 @@ export type YearJson = {
 };
 
 export type ProductionPriceDurationSeriesRow = {
-  asset: string;
+  carrier: string;
   milestone_year: number;
   global_start: number;
   global_end: number;

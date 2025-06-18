@@ -17,6 +17,7 @@ pub fn run() {
             capacity::get_available_years,
             metadata::get_assets,
             metadata::get_tables,
+            metadata::get_assets_carriers,
             system_cost::get_fixed_asset_cost,
             system_cost::get_fixed_flow_cost,
             system_cost::get_variable_flow_cost,

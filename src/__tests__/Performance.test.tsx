@@ -162,14 +162,14 @@ describe("Performance Testing", () => {
     ).mockResolvedValue([
       {
         milestone_year: 2020,
-        asset: "Battery1",
+        carrier: "Battery1",
         global_start: 0,
         global_end: 10,
         y_axis: 150,
       },
       {
         milestone_year: 2021,
-        asset: "Battery1",
+        carrier: "Battery1",
         global_start: 5,
         global_end: 15,
         y_axis: 140,
@@ -408,7 +408,7 @@ describe("Performance Testing", () => {
       const largeStorageData = Array.from({ length: 200 }, (_, i) => ({
         // Reduced size
         milestone_year: 2020 + (i % 5),
-        asset: `Asset${i % 10}`,
+        carrier: `Carrier${i % 10}`,
         global_start: i,
         global_end: i + 10,
         y_axis: Math.random() * 100,

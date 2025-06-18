@@ -6,6 +6,7 @@ export async function getStoragePriceDurationSeries(
   resolution: Resolution,
   year: number,
   storageType: string,
+  carrier: string,
 ): Promise<StoragePriceDurationSeriesRow[]> {
   if (!(resolution in resolutionToTable)) {
     throw new Error(
@@ -20,6 +21,7 @@ export async function getStoragePriceDurationSeries(
       year: year,
       resolution: resolutionToTable[resolution],
       storageType: storageType,
+      carrier: carrier,
     },
   );
 }
@@ -35,7 +37,7 @@ export type YearJson = {
 };
 
 export type StoragePriceDurationSeriesRow = {
-  asset: string;
+  carrier: string;
   milestone_year: number;
   global_start: number;
   global_end: number;

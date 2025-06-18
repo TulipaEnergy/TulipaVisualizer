@@ -42,18 +42,19 @@ describe("Storage Price Query Service", () => {
     const mockDbPath = "/path/to/test.duckdb";
     const mockYear = 2023;
     const mockStorageType = "battery";
+    const mockCarrier = "gas";
 
     it("should fetch storage price data for yearly resolution", async () => {
       const mockData: StoragePriceDurationSeriesRow[] = [
         {
-          asset: "battery_1",
+          carrier: "gas",
           milestone_year: 2023,
           global_start: 0,
           global_end: 8760,
           y_axis: 120.5,
         },
         {
-          asset: "pumped_hydro_1",
+          carrier: "gas",
           milestone_year: 2023,
           global_start: 0,
           global_end: 8760,
@@ -68,6 +69,7 @@ describe("Storage Price Query Service", () => {
         Resolution.Years,
         mockYear,
         mockStorageType,
+        mockCarrier,
       );
 
       expect(genericApacheIPC).toHaveBeenCalledWith(
@@ -77,6 +79,7 @@ describe("Storage Price Query Service", () => {
           year: mockYear,
           resolution: "years_table",
           storageType: mockStorageType,
+          carrier: mockCarrier,
         },
       );
       expect(result).toEqual(mockData);
@@ -85,14 +88,14 @@ describe("Storage Price Query Service", () => {
     it("should fetch storage price data for hourly resolution", async () => {
       const mockData: StoragePriceDurationSeriesRow[] = [
         {
-          asset: "battery_1",
+          carrier: "gas",
           milestone_year: 2023,
           global_start: 0,
           global_end: 1,
           y_axis: 125.1,
         },
         {
-          asset: "battery_1",
+          carrier: "gas",
           milestone_year: 2023,
           global_start: 1,
           global_end: 2,
@@ -107,6 +110,7 @@ describe("Storage Price Query Service", () => {
         Resolution.Hours,
         mockYear,
         mockStorageType,
+        mockCarrier,
       );
 
       expect(genericApacheIPC).toHaveBeenCalledWith(
@@ -116,6 +120,7 @@ describe("Storage Price Query Service", () => {
           year: mockYear,
           resolution: "hours_table",
           storageType: mockStorageType,
+          carrier: mockCarrier,
         },
       );
       expect(result).toEqual(mockData);
@@ -124,7 +129,7 @@ describe("Storage Price Query Service", () => {
     it("should fetch storage price data for daily resolution", async () => {
       const mockData: StoragePriceDurationSeriesRow[] = [
         {
-          asset: "pumped_hydro_1",
+          carrier: "hydro",
           milestone_year: 2023,
           global_start: 0,
           global_end: 24,
@@ -139,6 +144,7 @@ describe("Storage Price Query Service", () => {
         Resolution.Days,
         mockYear,
         mockStorageType,
+        "all",
       );
 
       expect(genericApacheIPC).toHaveBeenCalledWith(
@@ -148,6 +154,7 @@ describe("Storage Price Query Service", () => {
           year: mockYear,
           resolution: "days_table",
           storageType: mockStorageType,
+          carrier: "all",
         },
       );
       expect(result).toEqual(mockData);
@@ -156,7 +163,7 @@ describe("Storage Price Query Service", () => {
     it("should fetch storage price data for weekly resolution", async () => {
       const mockData: StoragePriceDurationSeriesRow[] = [
         {
-          asset: "battery_1",
+          carrier: "gas",
           milestone_year: 2023,
           global_start: 0,
           global_end: 168,
@@ -171,6 +178,7 @@ describe("Storage Price Query Service", () => {
         Resolution.Weeks,
         mockYear,
         mockStorageType,
+        "all",
       );
 
       expect(genericApacheIPC).toHaveBeenCalledWith(
@@ -180,6 +188,7 @@ describe("Storage Price Query Service", () => {
           year: mockYear,
           resolution: "weeks_table",
           storageType: mockStorageType,
+          carrier: "all",
         },
       );
       expect(result).toEqual(mockData);
@@ -188,7 +197,7 @@ describe("Storage Price Query Service", () => {
     it("should fetch storage price data for monthly resolution", async () => {
       const mockData: StoragePriceDurationSeriesRow[] = [
         {
-          asset: "compressed_air_storage_1",
+          carrier: "electricity",
           milestone_year: 2023,
           global_start: 0,
           global_end: 744,
@@ -203,6 +212,7 @@ describe("Storage Price Query Service", () => {
         Resolution.Months,
         mockYear,
         mockStorageType,
+        mockCarrier,
       );
 
       expect(genericApacheIPC).toHaveBeenCalledWith(
@@ -212,6 +222,7 @@ describe("Storage Price Query Service", () => {
           year: mockYear,
           resolution: "months_table",
           storageType: mockStorageType,
+          carrier: mockCarrier,
         },
       );
       expect(result).toEqual(mockData);
@@ -226,6 +237,7 @@ describe("Storage Price Query Service", () => {
           invalidResolution,
           mockYear,
           mockStorageType,
+          mockCarrier,
         ),
       ).rejects.toThrow(
         "Invalid resolution specified. Use 'hours', 'days', 'weeks', 'months' or 'years'.",
@@ -244,6 +256,7 @@ describe("Storage Price Query Service", () => {
         Resolution.Hours,
         mockYear,
         mockStorageType,
+        mockCarrier,
       );
 
       expect(result).toEqual([]);
@@ -252,7 +265,7 @@ describe("Storage Price Query Service", () => {
     it("should handle storage price data with zero values", async () => {
       const mockDataWithZeros: StoragePriceDurationSeriesRow[] = [
         {
-          asset: "battery_1",
+          carrier: "gas",
           milestone_year: 2023,
           global_start: 0,
           global_end: 1,
@@ -267,6 +280,7 @@ describe("Storage Price Query Service", () => {
         Resolution.Hours,
         mockYear,
         mockStorageType,
+        mockCarrier,
       );
 
       expect(result).toEqual(mockDataWithZeros);
@@ -275,7 +289,7 @@ describe("Storage Price Query Service", () => {
     it("should handle storage price data with negative values", async () => {
       const mockDataWithNegatives: StoragePriceDurationSeriesRow[] = [
         {
-          asset: "battery_1",
+          carrier: "gas",
           milestone_year: 2023,
           global_start: 0,
           global_end: 1,
@@ -290,6 +304,7 @@ describe("Storage Price Query Service", () => {
         Resolution.Hours,
         mockYear,
         mockStorageType,
+        mockCarrier,
       );
 
       expect(result).toEqual(mockDataWithNegatives);
@@ -305,6 +320,7 @@ describe("Storage Price Query Service", () => {
           Resolution.Hours,
           mockYear,
           mockStorageType,
+          mockCarrier,
         ),
       ).rejects.toThrow("Database connection failed");
 
@@ -315,6 +331,7 @@ describe("Storage Price Query Service", () => {
           year: mockYear,
           resolution: "hours_table",
           storageType: mockStorageType,
+          carrier: mockCarrier,
         },
       );
     });
@@ -329,14 +346,15 @@ describe("Storage Price Query Service", () => {
           Resolution.Years,
           1999,
           mockStorageType,
+          mockCarrier,
         ),
       ).rejects.toThrow("Year not found in database");
     });
 
-    it("should handle assets with special characters", async () => {
+    it("should handle carriers with special characters", async () => {
       const mockData: StoragePriceDurationSeriesRow[] = [
         {
-          asset: "battery-1@location_2",
+          carrier: "wind",
           milestone_year: 2023,
           global_start: 0,
           global_end: 1,
@@ -351,29 +369,30 @@ describe("Storage Price Query Service", () => {
         Resolution.Hours,
         mockYear,
         mockStorageType,
+        "wind",
       );
 
       expect(result).toEqual(mockData);
     });
 
-    it("should handle multiple storage assets", async () => {
+    it("should handle multiple storage carriers", async () => {
       const mockData: StoragePriceDurationSeriesRow[] = [
         {
-          asset: "battery_1",
+          carrier: "wind",
           milestone_year: 2023,
           global_start: 0,
           global_end: 1,
           y_axis: 120.5,
         },
         {
-          asset: "pumped_hydro_1",
+          carrier: "hydrogen",
           milestone_year: 2023,
           global_start: 0,
           global_end: 1,
           y_axis: 85.2,
         },
         {
-          asset: "compressed_air_storage_1",
+          carrier: "hydrogen",
           milestone_year: 2023,
           global_start: 0,
           global_end: 1,
@@ -388,6 +407,7 @@ describe("Storage Price Query Service", () => {
         Resolution.Hours,
         mockYear,
         mockStorageType,
+        "all",
       );
 
       expect(result).toEqual(mockData);
@@ -497,6 +517,7 @@ describe("Storage Price Query Service", () => {
     it("should handle complete workflow with years and storage price data", async () => {
       const mockDbPath = "/path/to/test.duckdb";
       const mockStorageType = "battery";
+      const mockCarrier = "electricity";
 
       // Mock available years
       const mockYearData: YearJson[] = [{ year: 2022 }, { year: 2023 }];
@@ -504,7 +525,7 @@ describe("Storage Price Query Service", () => {
       // Mock storage price data
       const mockPriceData: StoragePriceDurationSeriesRow[] = [
         {
-          asset: "battery_1",
+          carrier: mockCarrier,
           milestone_year: 2023,
           global_start: 0,
           global_end: 8760,
@@ -524,6 +545,7 @@ describe("Storage Price Query Service", () => {
         Resolution.Years,
         latestYear,
         mockStorageType,
+        mockCarrier,
       );
 
       expect(availableYears).toEqual(mockYearData);
@@ -534,6 +556,7 @@ describe("Storage Price Query Service", () => {
     it("should handle workflow when no data is available", async () => {
       const mockDbPath = "/path/to/empty.duckdb";
       const mockStorageType = "battery";
+      const mockCarrier = "gas";
 
       // Mock empty years and price data
       const mockEmptyYears: YearJson[] = [];
@@ -549,6 +572,7 @@ describe("Storage Price Query Service", () => {
         Resolution.Hours,
         2023,
         mockStorageType,
+        mockCarrier,
       );
 
       expect(availableYears).toEqual([]);
@@ -559,10 +583,11 @@ describe("Storage Price Query Service", () => {
       const mockDbPath = "/path/to/test.duckdb";
       const testYear = 2023;
       const testStorageType = "battery";
+      const testCarrier = "gas";
 
       const mockHourlyData: StoragePriceDurationSeriesRow[] = [
         {
-          asset: "battery_1",
+          carrier: "gas",
           milestone_year: 2023,
           global_start: 0,
           global_end: 1,
@@ -572,7 +597,7 @@ describe("Storage Price Query Service", () => {
 
       const mockYearlyData: StoragePriceDurationSeriesRow[] = [
         {
-          asset: "battery_1",
+          carrier: "gas",
           milestone_year: 2023,
           global_start: 0,
           global_end: 8760,
@@ -590,12 +615,14 @@ describe("Storage Price Query Service", () => {
         Resolution.Hours,
         testYear,
         testStorageType,
+        testCarrier,
       );
       const yearlyData = await getStoragePriceDurationSeries(
         mockDbPath,
         Resolution.Years,
         testYear,
         testStorageType,
+        testCarrier,
       );
 
       expect(hourlyData).toEqual(mockHourlyData);
@@ -610,6 +637,7 @@ describe("Storage Price Query Service", () => {
           year: testYear,
           resolution: "hours_table",
           storageType: testStorageType,
+          carrier: testCarrier,
         },
       );
       expect(genericApacheIPC).toHaveBeenNthCalledWith(
@@ -620,6 +648,7 @@ describe("Storage Price Query Service", () => {
           year: testYear,
           resolution: "years_table",
           storageType: testStorageType,
+          carrier: testCarrier,
         },
       );
     });
@@ -628,24 +657,25 @@ describe("Storage Price Query Service", () => {
       const mockDbPath = "/path/to/test.duckdb";
       const testYear = 2023;
       const testStorageType = "battery";
+      const testCarrier = "all";
 
       const mockData: StoragePriceDurationSeriesRow[] = [
         {
-          asset: "lithium_battery",
+          carrier: "electricity",
           milestone_year: 2023,
           global_start: 0,
           global_end: 8760,
           y_axis: 150.0,
         },
         {
-          asset: "pumped_hydro",
+          carrier: "hydro",
           milestone_year: 2023,
           global_start: 0,
           global_end: 8760,
           y_axis: 80.0,
         },
         {
-          asset: "compressed_air",
+          carrier: "wind",
           milestone_year: 2023,
           global_start: 0,
           global_end: 8760,
@@ -660,15 +690,16 @@ describe("Storage Price Query Service", () => {
         Resolution.Years,
         testYear,
         testStorageType,
+        testCarrier,
       );
 
       expect(priceData).toEqual(mockData);
 
       // Verify we get data for multiple storage technologies
-      const technologies = priceData.map((item) => item.asset);
-      expect(technologies).toContain("lithium_battery");
-      expect(technologies).toContain("pumped_hydro");
-      expect(technologies).toContain("compressed_air");
+      const technologies = priceData.map((item) => item.carrier);
+      expect(technologies).toContain("electricity");
+      expect(technologies).toContain("hydro");
+      expect(technologies).toContain("wind");
     });
   });
 });

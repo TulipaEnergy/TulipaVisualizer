@@ -39,7 +39,7 @@ describe("ProductionPrices Component", () => {
   // Mock data that matches ProductionPriceDurationSeriesRow structure
   const mockProductionPriceData = [
     {
-      asset: "Asset1",
+      carrier: "carrier1",
       milestone_year: 2020,
       period: 1,
       start: 0,
@@ -47,7 +47,7 @@ describe("ProductionPrices Component", () => {
       y_axis: 100.5,
     },
     {
-      asset: "Asset2",
+      carrier: "carrier2",
       milestone_year: 2021,
       period: 2,
       start: 10,
