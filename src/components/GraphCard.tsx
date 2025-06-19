@@ -1,5 +1,4 @@
 import { Dispatch, SetStateAction } from "react";
-import ReactECharts from "echarts-for-react";
 import {
   Stack,
   TextInput,
@@ -52,7 +51,6 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
   const {
     height,
     isFullWidth,
-    chartRef,
     handleResizeStart,
     handleWidthToggle,
   } = useResizeHandle(graphId, graph.type);
