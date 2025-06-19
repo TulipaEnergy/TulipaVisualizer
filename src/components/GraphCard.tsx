@@ -48,12 +48,8 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
     graph.type,
   );
 
-  const {
-    height,
-    isFullWidth,
-    handleResizeStart,
-    handleWidthToggle,
-  } = useResizeHandle(graphId, graph.type);
+  const { height, isFullWidth, handleResizeStart, handleWidthToggle } =
+    useResizeHandle(graphId, graph.type);
 
   const handleTypeChange = (value: string | null) => {
     if (graph && value) {
