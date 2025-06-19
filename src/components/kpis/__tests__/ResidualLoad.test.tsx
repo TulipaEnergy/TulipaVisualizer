@@ -3,7 +3,11 @@ import { vi } from "vitest";
 import { describe, it, expect, beforeEach } from "vitest";
 import SupplyStackedBarSeries from "../ResidualLoad";
 import useVisualizationStore from "../../../store/visualizationStore";
-import { renderWithProviders, createMockStoreState, createMockGraphConfig } from "../../../test/utils";
+import {
+  renderWithProviders,
+  createMockStoreState,
+  createMockGraphConfig,
+} from "../../../test/utils";
 import * as residualLoadService from "../../../services/residualLoadQuery";
 import * as metadataService from "../../../services/metadata";
 import { Resolution } from "../../../types/resolution";
@@ -193,27 +197,35 @@ describe("SupplyStackedBarSeries (ResidualLoad) Component", () => {
 
     it("handles service errors gracefully for getYears", async () => {
       const errorMessage = "Failed to fetch years";
-      (metadataService.getYears as any).mockRejectedValue(new Error(errorMessage));
+      (metadataService.getYears as any).mockRejectedValue(
+        new Error(errorMessage),
+      );
 
       await act(async () => {
         renderWithProviders(<SupplyStackedBarSeries graphId={testGraphId} />);
       });
 
       await waitFor(() => {
-        expect(screen.getByText("Failed to fetch available years.")).toBeInTheDocument();
+        expect(
+          screen.getByText("Failed to fetch available years."),
+        ).toBeInTheDocument();
       });
     });
 
     it("handles service errors gracefully for getSupply", async () => {
       const errorMessage = "Database connection failed";
-      (residualLoadService.getSupply as any).mockRejectedValue(new Error(errorMessage));
+      (residualLoadService.getSupply as any).mockRejectedValue(
+        new Error(errorMessage),
+      );
 
       await act(async () => {
         renderWithProviders(<SupplyStackedBarSeries graphId={testGraphId} />);
       });
 
       await waitFor(() => {
-        expect(screen.getByText("Failed to load supply data.")).toBeInTheDocument();
+        expect(
+          screen.getByText("Failed to load supply data."),
+        ).toBeInTheDocument();
       });
     });
   });
@@ -261,7 +273,7 @@ describe("SupplyStackedBarSeries (ResidualLoad) Component", () => {
         // Should have stacked bar series for each asset
         expect(chartOption.series).toBeDefined();
         expect(chartOption.series.length).toBeGreaterThan(0);
-        
+
         // All series should be stacked bar type
         chartOption.series.forEach((series: any) => {
           expect(series.type).toBe("bar");
@@ -327,8 +339,12 @@ describe("SupplyStackedBarSeries (ResidualLoad) Component", () => {
       await waitFor(() => {
         expect(screen.getByText("Resolution")).toBeInTheDocument();
         // The Select component should be present even if options aren't visible
-        const resolutionSelect = document.querySelector('[data-testid*="resolution"], input[value="days"]');
-        expect(resolutionSelect || screen.getByDisplayValue("Days")).toBeTruthy();
+        const resolutionSelect = document.querySelector(
+          '[data-testid*="resolution"], input[value="days"]',
+        );
+        expect(
+          resolutionSelect || screen.getByDisplayValue("Days"),
+        ).toBeTruthy();
       });
     });
 
@@ -449,8 +465,8 @@ describe("SupplyStackedBarSeries (ResidualLoad) Component", () => {
       });
 
       await waitFor(() => {
-        const paper = document.querySelector('.mantine-Paper-root');
-        expect(paper).toHaveStyle({ height: '500px' });
+        const paper = document.querySelector(".mantine-Paper-root");
+        expect(paper).toHaveStyle({ height: "500px" });
       });
     });
 
@@ -459,13 +475,16 @@ describe("SupplyStackedBarSeries (ResidualLoad) Component", () => {
 
       await act(async () => {
         renderWithProviders(
-          <SupplyStackedBarSeries graphId={testGraphId} height={customHeight} />
+          <SupplyStackedBarSeries
+            graphId={testGraphId}
+            height={customHeight}
+          />,
         );
       });
 
       await waitFor(() => {
-        const paper = document.querySelector('.mantine-Paper-root');
-        expect(paper).toHaveStyle({ height: '300px' });
+        const paper = document.querySelector(".mantine-Paper-root");
+        expect(paper).toHaveStyle({ height: "300px" });
       });
     });
   });
@@ -507,4 +526,4 @@ describe("SupplyStackedBarSeries (ResidualLoad) Component", () => {
       });
     });
   });
-}); 
+});

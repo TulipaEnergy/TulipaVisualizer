@@ -10,7 +10,7 @@ describe("IO Gateway Service", () => {
     it("should return a Promise", () => {
       const result = triggerDuckDBFileDialog();
       expect(result).toBeInstanceOf(Promise);
-      
+
       // Clean up the promise to avoid unhandled rejection
       result.catch(() => {});
     });
@@ -19,7 +19,7 @@ describe("IO Gateway Service", () => {
       // This is an integration test that verifies the function works with the mocked Tauri API
       // The global mock in setup.ts should handle the Tauri calls
       const result = await triggerDuckDBFileDialog();
-      
+
       // Based on the global mock, it should return the mock path
       expect(typeof result).toBe("string");
       expect(result).toBe("/mock/path/to/database.duckdb");
@@ -34,7 +34,7 @@ describe("IO Gateway Service", () => {
     it("should return a Promise", () => {
       const result = readJSON("test.json");
       expect(result).toBeInstanceOf(Promise);
-      
+
       // Clean up the promise to avoid unhandled rejection
       result.catch(() => {});
     });
@@ -43,7 +43,7 @@ describe("IO Gateway Service", () => {
       // This is an integration test that verifies the function works with the mocked Tauri API
       // The global mock in setup.ts should handle the Tauri calls
       const result = await readJSON("test.json");
-      
+
       // Based on the global mock, it should return an empty object
       expect(typeof result).toBe("object");
       expect(result).toEqual({});
@@ -52,8 +52,8 @@ describe("IO Gateway Service", () => {
     it("should handle different file paths", async () => {
       const testPaths = [
         "config.json",
-        "assets/data.json", 
-        "deep/nested/file.json"
+        "assets/data.json",
+        "deep/nested/file.json",
       ];
 
       for (const path of testPaths) {
@@ -81,4 +81,4 @@ describe("IO Gateway Service", () => {
       expect(readJSON).toBeDefined();
     });
   });
-}); 
+});

@@ -111,7 +111,13 @@ describe("Residual Load Query Service", () => {
       vi.mocked(genericApacheIPC).mockResolvedValue(mockSupplyData);
 
       // Test Hours resolution
-      await getSupply(mockDbPath, Resolution.Hours, mockYear, mockFilters, mockGrouper);
+      await getSupply(
+        mockDbPath,
+        Resolution.Hours,
+        mockYear,
+        mockFilters,
+        mockGrouper,
+      );
       expect(genericApacheIPC).toHaveBeenLastCalledWith("get_supply", {
         dbPath: mockDbPath,
         year: mockYear,
@@ -122,7 +128,13 @@ describe("Residual Load Query Service", () => {
       });
 
       // Test Weeks resolution
-      await getSupply(mockDbPath, Resolution.Weeks, mockYear, mockFilters, mockGrouper);
+      await getSupply(
+        mockDbPath,
+        Resolution.Weeks,
+        mockYear,
+        mockFilters,
+        mockGrouper,
+      );
       expect(genericApacheIPC).toHaveBeenLastCalledWith("get_supply", {
         dbPath: mockDbPath,
         year: mockYear,
@@ -133,7 +145,13 @@ describe("Residual Load Query Service", () => {
       });
 
       // Test Months resolution
-      await getSupply(mockDbPath, Resolution.Months, mockYear, mockFilters, mockGrouper);
+      await getSupply(
+        mockDbPath,
+        Resolution.Months,
+        mockYear,
+        mockFilters,
+        mockGrouper,
+      );
       expect(genericApacheIPC).toHaveBeenLastCalledWith("get_supply", {
         dbPath: mockDbPath,
         year: mockYear,
@@ -144,7 +162,13 @@ describe("Residual Load Query Service", () => {
       });
 
       // Test Years resolution
-      await getSupply(mockDbPath, Resolution.Years, mockYear, mockFilters, mockGrouper);
+      await getSupply(
+        mockDbPath,
+        Resolution.Years,
+        mockYear,
+        mockFilters,
+        mockGrouper,
+      );
       expect(genericApacheIPC).toHaveBeenLastCalledWith("get_supply", {
         dbPath: mockDbPath,
         year: mockYear,
@@ -159,7 +183,13 @@ describe("Residual Load Query Service", () => {
       const invalidResolution = "invalid" as Resolution;
 
       await expect(
-        getSupply(mockDbPath, invalidResolution, mockYear, mockFilters, mockGrouper),
+        getSupply(
+          mockDbPath,
+          invalidResolution,
+          mockYear,
+          mockFilters,
+          mockGrouper,
+        ),
       ).rejects.toThrow(
         "Invalid resolution specified. Use 'hours', 'days', 'weeks', 'months' or 'years'.",
       );
@@ -249,7 +279,13 @@ describe("Residual Load Query Service", () => {
       vi.mocked(genericApacheIPC).mockRejectedValueOnce(mockError);
 
       await expect(
-        getSupply(mockDbPath, Resolution.Days, mockYear, mockFilters, mockGrouper),
+        getSupply(
+          mockDbPath,
+          Resolution.Days,
+          mockYear,
+          mockFilters,
+          mockGrouper,
+        ),
       ).rejects.toThrow("Database connection failed");
 
       expect(hasMetadata).toHaveBeenCalledWith(mockDbPath);
@@ -268,7 +304,13 @@ describe("Residual Load Query Service", () => {
       vi.mocked(hasMetadata).mockRejectedValueOnce(mockError);
 
       await expect(
-        getSupply(mockDbPath, Resolution.Days, mockYear, mockFilters, mockGrouper),
+        getSupply(
+          mockDbPath,
+          Resolution.Days,
+          mockYear,
+          mockFilters,
+          mockGrouper,
+        ),
       ).rejects.toThrow("Failed to check metadata");
 
       expect(hasMetadata).toHaveBeenCalledWith(mockDbPath);
@@ -280,7 +322,13 @@ describe("Residual Load Query Service", () => {
       vi.mocked(genericApacheIPC).mockResolvedValue(mockSupplyData);
 
       // Test very early year
-      await getSupply(mockDbPath, Resolution.Days, 1900, mockFilters, mockGrouper);
+      await getSupply(
+        mockDbPath,
+        Resolution.Days,
+        1900,
+        mockFilters,
+        mockGrouper,
+      );
       expect(genericApacheIPC).toHaveBeenLastCalledWith("get_supply", {
         dbPath: mockDbPath,
         year: 1900,
@@ -291,7 +339,13 @@ describe("Residual Load Query Service", () => {
       });
 
       // Test future year
-      await getSupply(mockDbPath, Resolution.Days, 2050, mockFilters, mockGrouper);
+      await getSupply(
+        mockDbPath,
+        Resolution.Days,
+        2050,
+        mockFilters,
+        mockGrouper,
+      );
       expect(genericApacheIPC).toHaveBeenLastCalledWith("get_supply", {
         dbPath: mockDbPath,
         year: 2050,
@@ -382,7 +436,7 @@ describe("Residual Load Query Service", () => {
 
     it("should handle special characters in database path", async () => {
       const specialDbPath = "/path/to/test-database_v2.1@location.duckdb";
-      
+
       vi.mocked(hasMetadata).mockResolvedValueOnce(true);
       vi.mocked(genericApacheIPC).mockResolvedValueOnce(mockSupplyData);
 
@@ -468,4 +522,4 @@ describe("Residual Load Query Service", () => {
       expect(typeof result[0].asset).toBe("string");
     });
   });
-}); 
+});
