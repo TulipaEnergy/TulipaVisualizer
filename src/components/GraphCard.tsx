@@ -46,7 +46,7 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
 
   const { enableMetadata, setEnableMetadata } = useMetadata(
     graph.graphDBFilePath,
-    graph.type
+    graph.type,
   );
 
   const {
@@ -96,10 +96,7 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
           />
 
           <Group wrap="nowrap" gap="xs">
-            <ChartTypeSelector
-              value={graph.type}
-              onChange={handleTypeChange}
-            />
+            <ChartTypeSelector value={graph.type} onChange={handleTypeChange} />
 
             <ActionIcon
               variant="subtle"

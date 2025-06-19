@@ -22,13 +22,17 @@ describe("useChartTypes Hook", () => {
 
     expect(result.current.supportsMetadata("residual-load")).toBe(true);
     expect(result.current.supportsMetadata("system-costs")).toBe(true);
-    expect(result.current.supportsMetadata("production-prices-duration-series")).toBe(true);
+    expect(
+      result.current.supportsMetadata("production-prices-duration-series"),
+    ).toBe(true);
     expect(result.current.supportsMetadata("storage-prices")).toBe(true);
-    
+
     expect(result.current.supportsMetadata("capacity")).toBe(false);
     expect(result.current.supportsMetadata("database")).toBe(false);
     expect(result.current.supportsMetadata("geo-imports-exports")).toBe(false);
-    expect(result.current.supportsMetadata("transportation-prices")).toBe(false);
+    expect(result.current.supportsMetadata("transportation-prices")).toBe(
+      false,
+    );
   });
 
   it("correctly identifies full width charts", () => {
@@ -54,8 +58,8 @@ describe("useChartTypes Hook", () => {
     expect(metaCharts).toEqual([
       "residual-load",
       "system-costs",
-      "production-prices-duration-series", 
+      "production-prices-duration-series",
       "storage-prices",
     ]);
   });
-}); 
+});

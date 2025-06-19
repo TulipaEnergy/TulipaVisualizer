@@ -9,8 +9,12 @@ export type MetadataShowStatus = "Hide" | "Disable" | "Enable";
  * Custom hook that manages metadata show status based on database path and chart type
  * Extracted from GraphCard for better separation of concerns
  */
-export const useMetadata = (dbFilePath: string | null, chartType: ChartType) => {
-  const [enableMetadata, setEnableMetadata] = useState<MetadataShowStatus>("Hide");
+export const useMetadata = (
+  dbFilePath: string | null,
+  chartType: ChartType,
+) => {
+  const [enableMetadata, setEnableMetadata] =
+    useState<MetadataShowStatus>("Hide");
   const { supportsMetadata } = useChartTypes();
 
   useEffect(() => {
@@ -38,4 +42,4 @@ export const useMetadata = (dbFilePath: string | null, chartType: ChartType) => 
     enableMetadata,
     setEnableMetadata,
   };
-}; 
+};

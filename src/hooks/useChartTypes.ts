@@ -26,7 +26,7 @@ export const useChartTypes = () => {
    */
   const getChartsWithMetaFeatures = (): ChartType[] => [
     "residual-load",
-    "system-costs", 
+    "system-costs",
     "production-prices-duration-series",
     "storage-prices",
   ];
@@ -59,4 +59,4 @@ export const useChartTypes = () => {
     getDefaultHeight,
     getChartsWithMetaFeatures,
   };
-}; 
+};

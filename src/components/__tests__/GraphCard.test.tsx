@@ -243,9 +243,12 @@ describe("GraphCard Component", () => {
       fireEvent.click(widthToggleButton);
 
       // After clicking, the title should change (wait for state update)
-      await waitFor(() => {
-        expect(screen.getByTitle("Shrink to Half Width")).toBeInTheDocument();
-      }, { timeout: 1000 });
+      await waitFor(
+        () => {
+          expect(screen.getByTitle("Shrink to Half Width")).toBeInTheDocument();
+        },
+        { timeout: 1000 },
+      );
     });
   });
 

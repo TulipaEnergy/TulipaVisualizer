@@ -15,7 +15,7 @@ interface ChartTypeSelectorProps {
 const ChartTypeSelector: React.FC<ChartTypeSelectorProps> = ({
   value,
   onChange,
-  size = "sm"
+  size = "sm",
 }) => {
   const { chartTypes } = useChartTypes();
 
@@ -40,4 +40,4 @@ const ChartTypeSelector: React.FC<ChartTypeSelectorProps> = ({
   );
 };
 
-export default ChartTypeSelector; 
+export default ChartTypeSelector;

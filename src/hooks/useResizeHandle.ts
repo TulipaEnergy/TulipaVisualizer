@@ -9,10 +9,12 @@ import { useChartTypes } from "./useChartTypes";
  */
 export const useResizeHandle = (graphId: string, chartType: ChartType) => {
   const { isFullWidthChart, getDefaultHeight } = useChartTypes();
-  
+
   const [height, setHeight] = useState(() => getDefaultHeight(chartType));
   const [isResizing, setIsResizing] = useState(false);
-  const [isFullWidth, setIsFullWidth] = useState(() => isFullWidthChart(chartType));
+  const [isFullWidth, setIsFullWidth] = useState(() =>
+    isFullWidthChart(chartType),
+  );
   const chartRef = useRef<ReactECharts>(null);
 
   // Update height when chart type changes
@@ -38,7 +40,8 @@ export const useResizeHandle = (graphId: string, chartType: ChartType) => {
         const newHeight = Math.max(
           minHeight,
           e.clientY -
-            (document.getElementById(graphId)?.getBoundingClientRect().top || 0),
+            (document.getElementById(graphId)?.getBoundingClientRect().top ||
+              0),
         );
         setHeight(newHeight);
       }
@@ -97,4 +100,4 @@ export const useResizeHandle = (graphId: string, chartType: ChartType) => {
     handleResizeStart,
     handleWidthToggle,
   };
-}; 
+};
