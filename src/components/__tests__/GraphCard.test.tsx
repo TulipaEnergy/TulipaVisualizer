@@ -1,4 +1,4 @@
-import { screen, fireEvent } from "@testing-library/react";
+import { screen, fireEvent, waitFor } from "@testing-library/react";
 import { vi } from "vitest";
 import { describe, it, expect, beforeEach } from "vitest";
 import GraphCard from "../GraphCard";
@@ -236,14 +236,16 @@ describe("GraphCard Component", () => {
       expect(mockRemoveGraph).toHaveBeenCalledWith(testGraphId);
     });
 
-    it("toggles width button text when clicked", () => {
+    it("toggles width button text when clicked", async () => {
       renderWithProviders(<GraphCard graphId={testGraphId} />);
 
       const widthToggleButton = screen.getByTitle("Expand to Full Width");
       fireEvent.click(widthToggleButton);
 
-      // After clicking, the title should change
-      expect(screen.getByTitle("Shrink to Half Width")).toBeInTheDocument();
+      // After clicking, the title should change (wait for state update)
+      await waitFor(() => {
+        expect(screen.getByTitle("Shrink to Half Width")).toBeInTheDocument();
+      }, { timeout: 1000 });
     });
   });
 

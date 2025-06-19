@@ -1,9 +1,8 @@
-import { useEffect, useState, useRef, Dispatch, SetStateAction } from "react";
+import { Dispatch, SetStateAction } from "react";
 import ReactECharts from "echarts-for-react";
 import {
   Stack,
   TextInput,
-  Select,
   Group,
   Text,
   Flex,
@@ -30,126 +29,33 @@ import TransportationPricesDurationSeries from "./kpis/TransportationPrices";
 import FilteringScrollMenu from "./metadata/FilteringScrollMenu";
 import SupplyStackedBarSeries from "./kpis/ResidualLoad";
 import BreakdownMenu from "./metadata/BreakdownMenu";
+import ChartTypeSelector from "./ChartTypeSelector";
+import { useMetadata, MetadataShowStatus } from "../hooks/useMetadata";
+import { useResizeHandle } from "../hooks/useResizeHandle";
 import "../styles/components/metadata/treeSelect.css";
-import { hasMetadata } from "../services/metadata";
 import { IconInfoCircle } from "@tabler/icons-react";
 
 interface GraphCardProps {
   graphId: string;
 }
 
-type MetadataShowStatus = "Hide" | "Disable" | "Enable";
-
 const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
   const { updateGraph, removeGraph, mustGetGraph } = useVisualizationStore();
 
   const graph = mustGetGraph(graphId);
 
-  const [height, setHeight] = useState(400);
-  const [isResizing, setIsResizing] = useState(false);
-  const [isFullWidth, setIsFullWidth] = useState(false);
-  const [enableMetadata, setEnableMetadata] =
-    useState<MetadataShowStatus>("Hide");
-  const chartRef = useRef<ReactECharts>(null);
+  const { enableMetadata, setEnableMetadata } = useMetadata(
+    graph.graphDBFilePath,
+    graph.type
+  );
 
-  const chartTypes: { value: ChartType; label: string }[] = [
-    { value: "capacity", label: "Asset capacity" },
-    { value: "system-costs", label: "System Costs" },
-    { value: "production-prices-duration-series", label: "Production Prices" },
-    { value: "storage-prices", label: "Storage Prices" },
-    { value: "transportation-prices", label: "Transportation Prices" },
-    { value: "geo-imports-exports", label: "Geographical Imports/Exports" },
-    { value: "residual-load", label: "Residual Load" },
-    { value: "database", label: "SQL explorer" },
-  ];
-
-  useEffect(() => {
-    (async () => {
-      if (!graph.graphDBFilePath) {
-        setEnableMetadata("Hide");
-        return;
-      }
-
-      const chartsWithMetaFeatures = [
-        "residual-load",
-        "system-costs",
-        "production-prices-duration-series",
-        "storage-prices",
-      ];
-      if (!chartsWithMetaFeatures.includes(graph.type as string)) {
-        setEnableMetadata("Hide");
-        return;
-      }
-
-      if (!(await hasMetadata(graph.graphDBFilePath))) {
-        setEnableMetadata("Disable");
-        return;
-      }
-
-      setEnableMetadata("Enable");
-    })();
-  }, [graph.graphDBFilePath, graph.type]);
-
-  useEffect(() => {
-    if (graph?.type == "database") {
-      setHeight(1150);
-      setIsFullWidth(true);
-    } else {
-      setHeight(400);
-    }
-  }, [graph.type]);
-
-  // Handle resize functionality
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (isResizing) {
-        // Limit minimum size
-        const minHeight = 200;
-        const newHeight = Math.max(
-          minHeight,
-          e.clientY -
-            (document.getElementById(graphId)?.getBoundingClientRect().top ||
-              0),
-        );
-        setHeight(newHeight);
-      }
-    };
-
-    const handleMouseUp = () => {
-      setIsResizing(false);
-    };
-
-    if (isResizing) {
-      document.addEventListener("mousemove", handleMouseMove);
-      document.addEventListener("mouseup", handleMouseUp);
-    }
-
-    return () => {
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
-    };
-  }, [isResizing, graphId]);
-
-  // Handle ECharts resize when dimensions change
-  useEffect(() => {
-    if (chartRef.current) {
-      const resizeObserver = new ResizeObserver(() => {
-        chartRef.current?.getEchartsInstance().resize();
-      });
-
-      const chartElement = document.getElementById(graphId);
-      if (chartElement) {
-        resizeObserver.observe(chartElement);
-      }
-
-      return () => {
-        if (chartElement) {
-          resizeObserver.unobserve(chartElement);
-        }
-        resizeObserver.disconnect();
-      };
-    }
-  }, [graphId, isFullWidth]);
+  const {
+    height,
+    isFullWidth,
+    chartRef,
+    handleResizeStart,
+    handleWidthToggle,
+  } = useResizeHandle(graphId, graph.type);
 
   const handleTypeChange = (value: string | null) => {
     if (graph && value) {
@@ -160,15 +66,6 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
 
   const handleRemove = () => {
     removeGraph(graphId);
-  };
-
-  const handleWidthToggle = () => {
-    setIsFullWidth(!isFullWidth);
-  };
-
-  const handleResizeStart = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsResizing(true);
   };
 
   if (!graph) return null;
@@ -199,22 +96,9 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
           />
 
           <Group wrap="nowrap" gap="xs">
-            <Select
+            <ChartTypeSelector
               value={graph.type}
               onChange={handleTypeChange}
-              data={chartTypes}
-              placeholder="Choose a type"
-              size="sm"
-              style={{
-                width: "fit-content",
-              }}
-              styles={{
-                input: {
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                },
-              }}
             />
 
             <ActionIcon
