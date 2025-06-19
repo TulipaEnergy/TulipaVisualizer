@@ -12,7 +12,7 @@ export default defineConfig({
     css: false,
     coverage: {
       provider: "v8",
-      reporter: ["text", "json", "html", "cobertura", "text-summary"],
+      reporter: ["text", "json-summary", "html", "cobertura", "text-summary"],
       exclude: [
         "node_modules/**",
         "dist/**",
@@ -50,5 +50,6 @@ export default defineConfig({
     deps: {
       inline: ["zustand"],
     },
+    silent: "passed-only",
   },
 });
