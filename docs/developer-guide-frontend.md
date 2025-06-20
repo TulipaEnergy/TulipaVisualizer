@@ -1,6 +1,7 @@
 # Frontend Developer Guide
 
 ## Table of Contents
+
 1. [Architecture Overview](#architecture-overview)
 2. [Development Setup](#development-setup)
 3. [Project Structure](#project-structure)
@@ -13,6 +14,7 @@
 ## Architecture Overview
 
 ### Technology Stack
+
 - **React 18**: Functional components with hooks pattern
 - **TypeScript**: Strict typing with comprehensive coverage
 - **Vite**: Build tool and development server
@@ -22,6 +24,7 @@
 - **Tauri**: Desktop app framework with IPC
 
 ### Design Principles
+
 - **Type Safety**: Comprehensive TypeScript usage
 - **Component Composition**: Reusable, single-purpose components
 - **Performance First**: Optimized rendering with proper memoization
@@ -29,6 +32,7 @@
 - **Separation of Concerns**: Clear UI/state/service boundaries
 
 ### Data Flow Architecture
+
 ```
 User Input → Component → Store Action → Service → IPC Gateway → Rust Backend
      ↑                                                                ↓
@@ -38,12 +42,14 @@ UI Update ← Component Update ← Store Update ← Service Response ← Databas
 ## Development Setup
 
 ### Prerequisites
+
 - **Node.js**: 18+ LTS
 - **npm**: 9+
 - **Rust**: 1.70+ (for full-stack development)
 - **VS Code**: Recommended IDE
 
 ### Quick Start
+
 ```bash
 # Clone and install
 git clone <repository-url>
@@ -58,6 +64,7 @@ npm run test         # Run test suite
 ```
 
 ### Recommended VS Code Extensions
+
 ```json
 {
   "recommendations": [
@@ -93,6 +100,7 @@ src/
 ```
 
 ### File Naming Conventions
+
 - **Components**: PascalCase (`GraphCard.tsx`)
 - **Hooks**: camelCase with "use" prefix (`useResizeHandle.ts`)
 - **Services**: camelCase (`capacityQuery.ts`)
@@ -101,6 +109,7 @@ src/
 ## Component Patterns
 
 ### Component Interface Pattern
+
 ```typescript
 interface ComponentProps {
   /** Required prop with clear documentation */
@@ -114,7 +123,7 @@ interface ComponentProps {
 const Component: React.FC<ComponentProps> = ({
   graphId,
   isLoading = false,
-  onDataChange
+  onDataChange,
 }) => {
   // Component implementation
 };
@@ -123,16 +132,19 @@ const Component: React.FC<ComponentProps> = ({
 ### Container vs Presentation Components
 
 **Container Components** (e.g., `GraphCard.tsx`):
+
 - Manage state and data fetching
 - Handle business logic
 - Connect to stores and services
 
 **Presentation Components** (e.g., chart components):
+
 - Pure UI rendering
 - Minimal internal state
 - Receive data via props
 
 ### Error Handling Pattern
+
 ```typescript
 const Component: React.FC<Props> = ({ graphId }) => {
   const [error, setError] = useState<string | null>(null);
@@ -164,6 +176,7 @@ const Component: React.FC<Props> = ({ graphId }) => {
 ## State Management
 
 ### Zustand Store Pattern
+
 The application uses a single Zustand store (`visualizationStore.ts`) with typed interfaces:
 
 ```typescript
@@ -172,10 +185,10 @@ export interface VisualizationState {
   databases: string[];
   isLoading: boolean;
   error: string | null;
-  
+
   // Graph management
   graphs: GraphConfig[];
-  
+
   // Actions
   addDatabase: (filePath: string) => void;
   removeDatabase: (dbId: string) => void;
@@ -185,10 +198,11 @@ export interface VisualizationState {
 ```
 
 ### Store Usage in Components
+
 ```typescript
 const Component: React.FC = () => {
   const { databases, addDatabase, isLoading } = useVisualizationStore();
-  
+
   const handleUpload = async () => {
     try {
       const path = await uploadDatabaseFile();
@@ -207,6 +221,7 @@ const Component: React.FC = () => {
 ```
 
 ### State Updates
+
 - **Immutable Updates**: Zustand handles immutability internally
 - **Batch Updates**: Related state changes in single action
 - **Error States**: Centralized error handling through store
@@ -214,27 +229,29 @@ const Component: React.FC = () => {
 ## Service Layer
 
 ### Service Organization
+
 Services are organized by domain and handle business logic:
 
 ```typescript
 // services/capacityQuery.ts
 export async function getCapacity(
   dbPath: string,
-  assetName: string
+  assetName: string,
 ): Promise<CapacityData[]> {
-  return genericApacheIPC<CapacityData>('get_capacity', {
+  return genericApacheIPC<CapacityData>("get_capacity", {
     dbPath,
-    assetName
+    assetName,
   });
 }
 ```
 
 ### IPC Communication Pattern
+
 ```typescript
 // gateway/db.ts
 export async function genericApacheIPC<T>(
   cmd: string,
-  args?: InvokeArgs
+  args?: InvokeArgs,
 ): Promise<T[]> {
   try {
     const table = await apacheIPC(cmd, args);
@@ -247,6 +264,7 @@ export async function genericApacheIPC<T>(
 ```
 
 ### Service Integration in Components
+
 ```typescript
 const ChartComponent: React.FC<{ graphId: string }> = ({ graphId }) => {
   const [data, setData] = useState<ChartData[]>([]);
@@ -274,6 +292,7 @@ const ChartComponent: React.FC<{ graphId: string }> = ({ graphId }) => {
 ## Testing Strategy
 
 ### Test Structure
+
 ```typescript
 describe('ComponentName', () => {
   beforeEach(() => {
@@ -288,7 +307,7 @@ describe('ComponentName', () => {
   it('handles user interactions correctly', async () => {
     const user = userEvent.setup();
     renderWithProviders(<ComponentName graphId="test" />);
-    
+
     await user.click(screen.getByRole('button'));
     expect(screen.getByText('Expected Result')).toBeInTheDocument();
   });
@@ -296,19 +315,21 @@ describe('ComponentName', () => {
 ```
 
 ### Mock Patterns
+
 ```typescript
 // Mock Tauri IPC
-vi.mock('@tauri-apps/api/core', () => ({
-  invoke: vi.fn(() => Promise.resolve(mockData))
+vi.mock("@tauri-apps/api/core", () => ({
+  invoke: vi.fn(() => Promise.resolve(mockData)),
 }));
 
 // Mock service functions
-vi.mock('../services/capacityQuery', () => ({
-  getCapacity: vi.fn(() => Promise.resolve(mockCapacityData))
+vi.mock("../services/capacityQuery", () => ({
+  getCapacity: vi.fn(() => Promise.resolve(mockCapacityData)),
 }));
 ```
 
 ### Component Testing Utilities
+
 ```typescript
 // test/utils.tsx
 export function renderWithProviders(
@@ -330,13 +351,14 @@ export function renderWithProviders(
 ## Performance Guidelines
 
 ### Component Optimization
+
 ```typescript
 // Use React.memo for expensive pure components
 const ExpensiveChart = React.memo<ChartProps>(({ data, options }) => {
-  const chartOptions = useMemo(() => 
+  const chartOptions = useMemo(() =>
     createChartOptions(data, options), [data, options]
   );
-  
+
   return <EChartsReact option={chartOptions} />;
 });
 
@@ -351,17 +373,18 @@ const Component: React.FC = () => {
 ```
 
 ### Data Fetching Optimization
+
 ```typescript
 // Prevent unnecessary re-fetches
 useEffect(() => {
   if (!shouldFetchData) return;
-  
+
   const controller = new AbortController();
-  
+
   fetchData(params, controller.signal)
     .then(setData)
-    .catch(err => {
-      if (err.name !== 'AbortError') {
+    .catch((err) => {
+      if (err.name !== "AbortError") {
         setError(err.message);
       }
     });
@@ -371,12 +394,14 @@ useEffect(() => {
 ```
 
 ### Memory Management
+
 - **Clean up subscriptions** in useEffect cleanup
 - **Abort pending requests** when component unmounts
 - **Use appropriate dependencies** in useEffect/useMemo
 - **Avoid creating objects** in render methods
 
 ### Bundle Optimization
+
 - **Dynamic imports** for large chart libraries
 - **Code splitting** by route when applicable
 - **Tree shaking** enabled in Vite configuration
@@ -385,10 +410,11 @@ useEffect(() => {
 ## Common Patterns
 
 ### Data Loading with Error Handling
+
 ```typescript
 const useAsyncData = <T>(
   fetchFn: () => Promise<T>,
-  dependencies: unknown[]
+  dependencies: unknown[],
 ) => {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(false);
@@ -400,13 +426,13 @@ const useAsyncData = <T>(
     setError(null);
 
     fetchFn()
-      .then(result => {
+      .then((result) => {
         if (mounted) {
           setData(result);
           setError(null);
         }
       })
-      .catch(err => {
+      .catch((err) => {
         if (mounted) {
           setError(err.message);
           setData(null);
@@ -416,7 +442,9 @@ const useAsyncData = <T>(
         if (mounted) setLoading(false);
       });
 
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, dependencies);
 
   return { data, loading, error };
@@ -424,31 +452,39 @@ const useAsyncData = <T>(
 ```
 
 ### Form State Management
+
 ```typescript
 const useFormState = <T>(initialState: T) => {
   const [values, setValues] = useState<T>(initialState);
   const [errors, setErrors] = useState<Partial<Record<keyof T, string>>>({});
 
   const updateField = useCallback((field: keyof T, value: T[keyof T]) => {
-    setValues(prev => ({ ...prev, [field]: value }));
-    setErrors(prev => ({ ...prev, [field]: undefined }));
+    setValues((prev) => ({ ...prev, [field]: value }));
+    setErrors((prev) => ({ ...prev, [field]: undefined }));
   }, []);
 
-  const validate = useCallback((validators: Partial<Record<keyof T, (value: T[keyof T]) => string | undefined>>) => {
-    const newErrors: Partial<Record<keyof T, string>> = {};
-    let isValid = true;
+  const validate = useCallback(
+    (
+      validators: Partial<
+        Record<keyof T, (value: T[keyof T]) => string | undefined>
+      >,
+    ) => {
+      const newErrors: Partial<Record<keyof T, string>> = {};
+      let isValid = true;
 
-    Object.entries(validators).forEach(([field, validator]) => {
-      const error = validator(values[field as keyof T]);
-      if (error) {
-        newErrors[field as keyof T] = error;
-        isValid = false;
-      }
-    });
+      Object.entries(validators).forEach(([field, validator]) => {
+        const error = validator(values[field as keyof T]);
+        if (error) {
+          newErrors[field as keyof T] = error;
+          isValid = false;
+        }
+      });
 
-    setErrors(newErrors);
-    return isValid;
-  }, [values]);
+      setErrors(newErrors);
+      return isValid;
+    },
+    [values],
+  );
 
   return { values, errors, updateField, validate };
 };

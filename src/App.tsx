@@ -15,14 +15,14 @@ import GraphCard from "./components/GraphCard";
 
 /**
  * Main application component implementing a two-panel layout for the Energy Model Visualizer.
- * 
+ *
  * This component serves as the root of the visualization application, providing a responsive
  * layout for managing energy databases and displaying interactive charts.
  *
  * ## Layout Architecture:
  * - **Fixed Left Sidebar** (300px width): Database management panel with file upload,
  *   connection status, and database metadata display
- * - **Scrollable Main Content Area** (remaining width): Dynamic grid of visualization 
+ * - **Scrollable Main Content Area** (remaining width): Dynamic grid of visualization
  *   cards that users can add, configure, and remove
  * - **Fixed Toolbar** (80px height): Global controls spanning full application width
  *
@@ -53,7 +53,7 @@ export default function App() {
     <Stack p={0} h="100vh">
       {/* Fixed Toolbar - Global application controls and status */}
       <Toolbar />
-      
+
       <Box
         style={{
           display: "flex",

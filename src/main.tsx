@@ -43,7 +43,7 @@ import "primereact/resources/themes/lara-light-blue/theme.css";
 
 /**
  * Custom Mantine theme configuration for the Energy Model Visualizer.
- * 
+ *
  * Defines the visual identity and design system used throughout the application:
  * - Consistent color palette optimized for data visualization
  * - Typography hierarchy suitable for technical data presentation
@@ -52,16 +52,16 @@ import "primereact/resources/themes/lara-light-blue/theme.css";
 const theme = createTheme({
   /** Primary brand color used for buttons, links, and interactive elements */
   primaryColor: "blue",
-  
+
   /** Main font family for UI text - modern, readable sans-serif */
   fontFamily: "Outfit, sans-serif",
-  
+
   /** Monospace font for data display, code blocks, and technical content */
   fontFamilyMonospace: "Monaco, Courier, monospace",
-  
+
   /** Typography settings for heading elements (h1-h6) */
   headings: { fontFamily: "Outfit, sans-serif" },
-  
+
   // Future theme extensions can be added here:
   // - Custom color schemes for data visualization
   // - Component-specific styling overrides
@@ -70,12 +70,12 @@ const theme = createTheme({
 
 /**
  * Application initialization and root rendering.
- * 
+ *
  * React.StrictMode enables additional development-time checks:
  * - Detects unsafe lifecycles and deprecated APIs
  * - Warns about side effects in render methods
  * - Validates proper component patterns
- * 
+ *
  * MantineProvider supplies theme context to all child components,
  * enabling consistent styling and design system usage throughout the app.
  */

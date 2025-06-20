@@ -908,6 +908,7 @@ const table = arrow.tableFromIPC(arrowData);
 const assets = table.getColumn("asset").toArray();
 const capacities = table.getColumn("capacity").toArray();
 ```
+
 ### Data Types Mapping
 
 | SQL Type  | Arrow Type | TypeScript Type |
@@ -931,4 +932,3 @@ For more information, see:
 - [User Guide](./user-guide.md)
 - [Frontend Developer Guide](./developer-guide-frontend.md)
 - [Backend Developer Guide](./developer-guide-backend.md)
-

@@ -1,32 +1,32 @@
 /**
  * @fileoverview Production price analysis service for energy market pricing and dual value extraction.
- * 
+ *
  * This module provides production price analysis functionality by interfacing with Rust backend
  * services that extract dual values from optimization constraint equations. Supports configurable
  * time resolution aggregation and energy carrier filtering for comprehensive price analysis.
- * 
+ *
  * ## Price Analysis Features
- * 
+ *
  * - **Dual Value Extraction**: Marginal pricing from capacity constraint equations
  * - **Time Resolution**: Configurable aggregation (hourly, daily, weekly, monthly, yearly)
  * - **Carrier Filtering**: Analysis by specific energy carrier types (electricity, gas, etc.)
  * - **Economic Interpretation**: Market pricing insights and investment guidance
- * 
+ *
  * ## Data Flow Architecture
- * 
+ *
  * 1. Frontend requests price data with resolution and carrier parameters
  * 2. Service validates inputs and calls Rust backend via secure IPC
  * 3. Backend extracts dual values from DuckDB optimization results
  * 4. Data aggregated by time resolution and returned via Apache Arrow
  * 5. Results consumed by price visualization components
- * 
+ *
  * ## Business Applications
- * 
+ *
  * - Energy market price forecasting and analysis
  * - Investment decision support through dual value insights
  * - Capacity planning optimization guidance
  * - Economic efficiency assessment of energy assets
- * 
+ *
  * @module ProductionPriceQuery
  */
 

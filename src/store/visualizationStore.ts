@@ -29,7 +29,7 @@ export interface CapacityOptions {
 /**
  * Union type for all possible chart-specific configuration options.
  * Enables type-safe options handling across different visualization types.
- * 
+ *
  * Design Decision: Currently includes core option types with planned expansion
  * for additional chart-specific options as visualization features mature.
  * Future options will include storage-specific, transport-specific configurations.
@@ -42,7 +42,7 @@ export type ChartOptions =
 /**
  * Production price analysis configuration options.
  * Controls temporal resolution and year selection for price analysis.
- * 
+ *
  * Current Implementation: Basic resolution and year selection
  * Planned Extensions: Asset filtering, dual value types, method selection
  */

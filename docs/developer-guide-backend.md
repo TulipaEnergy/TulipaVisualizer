@@ -1,6 +1,7 @@
 # Backend Developer Guide
 
 ## Table of Contents
+
 1. [Architecture Overview](#architecture-overview)
 2. [Development Setup](#development-setup)
 3. [Project Structure](#project-structure)
@@ -13,6 +14,7 @@
 ## Architecture Overview
 
 ### Technology Stack
+
 - **Rust 2021**: Systems programming language for performance and safety
 - **Tauri 2.x**: Cross-platform desktop framework with IPC
 - **DuckDB 1.2.2**: Embedded analytical database engine
@@ -20,6 +22,7 @@
 - **Once Cell**: Lazy static initialization for connection pooling
 
 ### Design Principles
+
 - **Memory Safety**: Rust's ownership system prevents common bugs
 - **Performance First**: Zero-cost abstractions and efficient data processing
 - **Type Safety**: Comprehensive compile-time error checking
@@ -27,6 +30,7 @@
 - **Error Handling**: Consistent Result types with detailed error messages
 
 ### Request Flow
+
 ```
 Frontend IPC Call → Tauri Command → Service Layer → Database Query → Apache Arrow Serialization → Response
 ```
@@ -34,6 +38,7 @@ Frontend IPC Call → Tauri Command → Service Layer → Database Query → Apa
 ## Development Setup
 
 ### Prerequisites
+
 ```bash
 # Install Rust toolchain
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
@@ -46,6 +51,7 @@ rustup update
 ```
 
 ### Development Commands
+
 ```bash
 # Build and test
 cargo build                 # Development build
@@ -61,6 +67,7 @@ npm run tauri build          # Application bundle
 ```
 
 ### IDE Setup
+
 - **VS Code**: Rust Analyzer extension
 - **CLion**: Rust plugin
 - **Vim/Neovim**: rust.vim or coc-rust-analyzer
@@ -87,6 +94,7 @@ src-tauri/src/
 ```
 
 ### Naming Conventions
+
 - **Files**: snake_case (`system_cost.rs`)
 - **Functions**: snake_case (`get_capacity`)
 - **Types**: PascalCase (`GraphConfig`)
@@ -95,16 +103,17 @@ src-tauri/src/
 ## Service Layer Patterns
 
 ### Tauri Command Pattern
+
 ```rust
 use tauri::ipc::Response;
 use duckdb::{ types::Value, arrow::{array::RecordBatch, datatypes::Schema} };
 
 /// Calculates asset capacity evolution over time.
-/// 
+///
 /// # Parameters
 /// * `db_path` - Database file path (validated for .duckdb extension)
 /// * `asset_name` - Asset identifier for analysis
-/// 
+///
 /// # Returns
 /// * `Ok(Response)` - Apache Arrow serialized capacity data
 /// * `Err(String)` - Error message with context
@@ -120,20 +129,21 @@ pub fn get_capacity(
 
     // Database query execution
     let res: (Vec<RecordBatch>, Schema) = run_query_rb(
-        db_path, 
-        CAPACITY_SQL.to_string(), 
+        db_path,
+        CAPACITY_SQL.to_string(),
         vec![Value::from(asset_name)]
     )?;
-    
+
     // Apache Arrow serialization
     serialize_recordbatch(res.0, res.1)
 }
 ```
 
 ### SQL Query Organization
+
 ```rust
 /// Complex capacity evolution query with business logic documentation.
-/// 
+///
 /// Algorithm:
 /// 1. Discovers all milestone years with capacity data
 /// 2. Calculates point-in-time investments and decommissions
@@ -146,7 +156,7 @@ const CAPACITY_SQL: &str = "
             SELECT milestone_year AS year FROM asset_both WHERE asset = $1
             UNION
             SELECT milestone_year AS year FROM var_assets_investment WHERE asset = $1
-            UNION  
+            UNION
             SELECT milestone_year AS year FROM var_assets_decommission WHERE asset = $1
         ) t
     )
@@ -155,8 +165,8 @@ const CAPACITY_SQL: &str = "
            COALESCE(i.solution * af.capacity, -1) AS investment,
            COALESCE(d.solution * af.capacity, -1) AS decommission,
            -- Business logic: Final = Initial + Investments - Decommissions
-           (COALESCE(SUM(ab.initial_units), 0) + 
-            COALESCE(inv_sum.total, 0) - 
+           (COALESCE(SUM(ab.initial_units), 0) +
+            COALESCE(inv_sum.total, 0) -
             COALESCE(dec_sum.total, 0)) * af.capacity AS final_capacity
     FROM years y
     CROSS JOIN asset af
@@ -167,6 +177,7 @@ const CAPACITY_SQL: &str = "
 ```
 
 ### Error Handling Pattern
+
 ```rust
 use std::fmt;
 
@@ -211,6 +222,7 @@ pub fn handle_query_error(error: duckdb::Error, context: &str) -> String {
 ## Database Integration
 
 ### Connection Management
+
 ```rust
 use duckdb::{Connection, Result as DuckResult};
 use once_cell::sync::Lazy;
@@ -253,6 +265,7 @@ impl ConnectionHandler {
 ```
 
 ### Query Execution Patterns
+
 ```rust
 /// Execute query returning Apache Arrow RecordBatch for efficient data transfer
 pub fn run_query_rb(
@@ -262,7 +275,7 @@ pub fn run_query_rb(
 ) -> Result<(Vec<RecordBatch>, Schema), String> {
     let mut conn_handler = CONN_HANDLER.lock()
         .map_err(|e| format!("Failed to acquire connection lock: {}", e))?;
-    
+
     let conn = conn_handler.get_connection(&db_path)
         .map_err(|e| format!("Database connection failed: {}", e))?;
 
@@ -289,7 +302,7 @@ where
 {
     let mut conn_handler = CONN_HANDLER.lock()
         .map_err(|e| format!("Failed to acquire connection lock: {}", e))?;
-    
+
     let conn = conn_handler.get_connection(&db_path)
         .map_err(|e| format!("Database connection failed: {}", e))?;
 
@@ -305,6 +318,7 @@ where
 ```
 
 ### Schema Compatibility Handling
+
 ```rust
 /// Checks if a specific column exists in a table for graceful degradation
 pub fn check_column_in_table(
@@ -339,6 +353,7 @@ pub fn ensure_schema_compatibility(db_path: String) -> Result<(), String> {
 ## IPC Communication
 
 ### Apache Arrow Serialization
+
 ```rust
 use arrow_ipc::writer::StreamWriter;
 use tauri::ipc::Response;
@@ -349,7 +364,7 @@ pub fn serialize_recordbatch(
     schema: Schema,
 ) -> Result<Response, String> {
     let mut buffer = Vec::new();
-    
+
     {
         let mut writer = StreamWriter::try_new(&mut buffer, &schema)
             .map_err(|e| format!("Failed to create Arrow writer: {}", e))?;
@@ -368,6 +383,7 @@ pub fn serialize_recordbatch(
 ```
 
 ### Command Registration
+
 ```rust
 // lib.rs
 use tauri::Builder;
@@ -382,28 +398,28 @@ pub fn run() {
             // Metadata operations
             services::metadata::get_assets,
             services::metadata::get_tables,
-            
+
             // Capacity analysis
             services::capacity::get_capacity,
             services::capacity::get_available_years,
-            
+
             // Cost analysis
             services::system_cost::get_fixed_asset_cost,
             services::system_cost::get_unit_on_cost,
             services::system_cost::get_fixed_flow_cost,
             services::system_cost::get_variable_flow_cost,
-            
+
             // Price analysis
             services::production_price::get_production_price_resolution,
             services::storage_price::get_storage_price_resolution,
             services::transport_price::get_transportation_price_resolution,
             services::transport_price::get_transportation_carriers,
-            
+
             // Flow analysis
             services::residual_load::get_supply,
             services::import_export::get_import,
             services::import_export::get_export,
-            
+
             // Direct queries
             services::query::run_serialize_query_on_db,
         ])
@@ -415,6 +431,7 @@ pub fn run() {
 ## Testing Patterns
 
 ### Unit Testing with Mock Data
+
 ```rust
 #[cfg(test)]
 mod tests {
@@ -439,7 +456,7 @@ mod tests {
     fn test_get_assets_success() {
         let temp_db = create_test_database().unwrap();
         let db_path = temp_db.path().to_str().unwrap().to_string() + ".duckdb";
-        
+
         // Copy test file to .duckdb extension
         std::fs::copy(temp_db.path(), &db_path).unwrap();
 
@@ -460,6 +477,7 @@ mod tests {
 ```
 
 ### Integration Testing
+
 ```rust
 #[cfg(test)]
 mod integration_tests {
@@ -475,11 +493,11 @@ mod integration_tests {
     #[test]
     fn test_capacity_analysis_workflow() {
         let db_path = get_test_db_path();
-        
+
         // Test asset discovery
         let assets_result = get_assets(db_path.clone()).unwrap();
         // Verify assets are returned
-        
+
         // Test capacity analysis for first asset
         // let capacity_result = get_capacity(db_path, first_asset).unwrap();
         // Verify capacity data structure
@@ -488,7 +506,7 @@ mod integration_tests {
     #[test]
     fn test_cross_service_consistency() {
         let db_path = get_test_db_path();
-        
+
         // Test that all services work with same database
         let _assets = get_assets(db_path.clone()).unwrap();
         let _tables = get_tables(db_path.clone()).unwrap();
@@ -500,6 +518,7 @@ mod integration_tests {
 ## Performance Guidelines
 
 ### Query Optimization
+
 ```rust
 /// Optimized query patterns for large datasets
 impl QueryOptimization {
@@ -510,7 +529,7 @@ impl QueryOptimization {
         for asset in assets {
             let result = stmt.query_arrow(&[Value::from(asset)])?;
         }
-        
+
         // ❌ Bad: Prepare query each time
         for asset in assets {
             let query = format!("SELECT * FROM asset WHERE name = '{}'", asset);
@@ -522,10 +541,10 @@ impl QueryOptimization {
     fn optimize_data_selection() {
         // ✅ Good: Select only needed columns
         const OPTIMIZED_QUERY: &str = "
-            SELECT year, investment, final_capacity 
-            FROM capacity_analysis 
+            SELECT year, investment, final_capacity
+            FROM capacity_analysis
             WHERE asset = $1";
-        
+
         // ❌ Bad: Select all columns
         const INEFFICIENT_QUERY: &str = "SELECT * FROM capacity_analysis WHERE asset = $1";
     }
@@ -533,6 +552,7 @@ impl QueryOptimization {
 ```
 
 ### Memory Management
+
 ```rust
 /// Efficient batch processing for large datasets
 pub fn process_large_dataset(
@@ -574,6 +594,7 @@ pub fn cleanup_connections() {
 ```
 
 ### Error Recovery
+
 ```rust
 /// Robust error handling with retry logic
 pub fn execute_with_retry<T, F>(
@@ -584,13 +605,13 @@ where
     F: Fn() -> Result<T, String>,
 {
     let mut last_error = None;
-    
+
     for attempt in 0..=max_retries {
         match operation() {
             Ok(result) => return Ok(result),
             Err(error) => {
                 last_error = Some(error.clone());
-                
+
                 if attempt < max_retries {
                     std::thread::sleep(std::time::Duration::from_millis(100 * (attempt + 1) as u64));
                     continue;
@@ -598,7 +619,7 @@ where
             }
         }
     }
-    
+
     Err(last_error.unwrap_or_else(|| "Operation failed".to_string()))
 }
 ```
@@ -606,6 +627,7 @@ where
 ## Common Patterns
 
 ### Dynamic SQL Construction
+
 ```rust
 pub mod query_builder {
     /// Builds time resolution queries with proper SQL injection prevention
@@ -624,7 +646,7 @@ pub mod query_builder {
         };
 
         format!(
-            "SELECT {}, 
+            "SELECT {},
                     {}({}::DOUBLE) as y_axis,
                     FLOOR({}/{}) * {} as period
              FROM ({})
@@ -645,6 +667,7 @@ pub mod query_builder {
 ```
 
 ### Configuration Management
+
 ```rust
 /// Application configuration with environment variable support
 #[derive(Debug)]

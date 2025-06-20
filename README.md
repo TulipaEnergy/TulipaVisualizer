@@ -57,11 +57,13 @@ Before running or building the project, ensure the following are installed:
 ## Quick Start
 
 ### System Requirements
+
 - **Windows**: Windows 10 (1909) or later, WebView2
 - **macOS**: macOS 10.15 (Catalina) or later
 - **Linux**: Modern distribution with WebKit2GTK 4.1
 
 ### Installation
+
 1. Download the latest release for your platform from [GitHub Releases](../../releases)
 2. Install following platform-specific instructions
 3. Launch the Energy Model Visualizer
@@ -71,6 +73,7 @@ Before running or building the project, ensure the following are installed:
 ## Development Setup
 
 ### Prerequisites
+
 1. **Node.js** (18.0+) - [Download](https://nodejs.org/)
 2. **Rust** (1.70+) - [Install](https://www.rust-lang.org/tools/install)
 3. **Platform-specific requirements**:
@@ -79,6 +82,7 @@ Before running or building the project, ensure the following are installed:
    - **Windows**: Microsoft C++ Build Tools
 
 ### Setup Instructions
+
 ```bash
 # Clone repository
 git clone <repository-url>
@@ -97,14 +101,15 @@ npm run tauri build
 ## Development Commands
 
 ### Essential Commands
+
 ```bash
 npm run tauri dev     # Start full application in development
 npm run tauri build   # Build complete application
-npm test              # Run all tests
+npm run test              # Run all tests
 npm run test:coverage # Run tests with coverage
 npx prettier . --write --end-of-line auto        # Format code with Prettier
 npm run analyze       # Run code quality analysis
-cargo doc --open      # Generate and open documentation
+npm run docs:rust:open      # Generate and open documentation
 ```
 
 ## Project Structure
@@ -135,17 +140,20 @@ cargo doc --open      # Generate and open documentation
 ## Testing
 
 ### Testing Stack
+
 - **Frontend**: Vitest + React Testing Library
 - **Backend**: Rust native testing
 - **Coverage**: V8 provider with enforced thresholds
 
 ### Coverage Requirements
+
 - **Statements**: 70% minimum
 - **Branches**: 80% minimum
 - **Functions**: 50% minimum
 - **Lines**: 70% minimum
 
 ### Test Commands
+
 ```bash
 npm test                    # Run all tests
 ```
@@ -155,20 +163,24 @@ For detailed testing guidelines, see [Testing.md](docs/Testing.md).
 ## Documentation
 
 ### 📖 **User Documentation**
+
 - **[User Guide](docs/user-guide.md)** - Complete user manual
 - Installation, features, troubleshooting
 
 ### 🛠️ **Developer Documentation**
+
 - **[Frontend Guide](docs/developer-guide-frontend.md)** - React/TypeScript development
 - **[Backend Guide](docs/developer-guide-backend.md)** - Rust/Tauri development
 - **[API Reference](docs/api-reference.md)** - Complete IPC command reference
 
 ### 🔧 **Generated Documentation**
+
 - **[RustDoc](docs/rustdoc/tauri_app_lib/index.html)** - Complete Rust API documentation
 
 ## Code Quality
 
 ### Quality Standards
+
 - **Type Safety**: Full TypeScript with strict mode
 - **Testing**: Comprehensive unit, integration testing
 - **Documentation**: Inline docs and comprehensive guides
@@ -176,6 +188,7 @@ For detailed testing guidelines, see [Testing.md](docs/Testing.md).
 - **Performance**: Lazy loading, memoization, efficient data transfer
 
 ### Quality Tools
+
 ```bash
 npm run analyze           # Code quality analysis
 npm run lint              # ESLint checking
@@ -185,6 +198,7 @@ npx prettier . --write --end-of-line auto        # Format code with Prettier
 ## Support
 
 ### Getting Help
+
 - **User Issues**: See [User Guide](docs/user-guide.md) troubleshooting
 - **Development**: Check [Developer Guides](docs/)
 - **API Usage**: Refer to [API Reference](docs/api-reference.md)

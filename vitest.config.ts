@@ -25,17 +25,17 @@ export default defineConfig({
         // Infrastructure and build artifacts
         "node_modules/**",
         "dist/**",
-        "src-tauri/**",        // Rust backend tested separately
-        "**/*.d.ts",           // TypeScript declarations don't need coverage
-        "**/index.ts",         // Simple re-export files
-        "src/test/**",         // Test utilities themselves
-        "coverage/**",         // Coverage reports
+        "src-tauri/**", // Rust backend tested separately
+        "**/*.d.ts", // TypeScript declarations don't need coverage
+        "**/index.ts", // Simple re-export files
+        "src/test/**", // Test utilities themselves
+        "coverage/**", // Coverage reports
         "**/*.config.{js,ts}", // Configuration files
-        "**/*.setup.{js,ts}",  // Setup files
-        "**/types/**",         // Type definition files
-        "**/*.type.{js,ts}",   // Type-only files
-        "src/main.tsx",        // Entry point file - minimal logic
-        "src/vite-env.d.ts",   // Vite type definitions
+        "**/*.setup.{js,ts}", // Setup files
+        "**/types/**", // Type definition files
+        "**/*.type.{js,ts}", // Type-only files
+        "src/main.tsx", // Entry point file - minimal logic
+        "src/vite-env.d.ts", // Vite type definitions
       ],
       // Focus coverage on actual application source code
       include: ["src/**/*.{js,ts,jsx,tsx}"],
@@ -45,19 +45,19 @@ export default defineConfig({
       // Starting conservative and increasing as test coverage improves
       thresholds: {
         global: {
-          statements: 70,  // 70% statement coverage prevents regression
-          branches: 80,    // 80% branch coverage ensures decision logic testing
-          functions: 50,   // 50% function coverage allows for utility function flexibility
-          lines: 70,       // 70% line coverage matches statement coverage
+          statements: 70, // 70% statement coverage prevents regression
+          branches: 80, // 80% branch coverage ensures decision logic testing
+          functions: 50, // 50% function coverage allows for utility function flexibility
+          lines: 70, // 70% line coverage matches statement coverage
         },
       },
       // Watermarks for coverage display colors in HTML reports
       // Based on industry standards for frontend application testing
       watermarks: {
         statements: [20, 60], // Red below 20%, yellow 20-60%, green above 60%
-        branches: [15, 50],   // Branches typically harder to cover completely
-        functions: [20, 60],  // Function coverage follows statement pattern
-        lines: [20, 60],      // Line coverage matches statement thresholds
+        branches: [15, 50], // Branches typically harder to cover completely
+        functions: [20, 60], // Function coverage follows statement pattern
+        lines: [20, 60], // Line coverage matches statement thresholds
       },
     },
     deps: {

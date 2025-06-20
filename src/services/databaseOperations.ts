@@ -4,13 +4,13 @@ import { Table } from "apache-arrow";
 
 /**
  * Initiates secure file upload dialog for selecting DuckDB database files.
- * 
+ *
  * Error Handling Strategy:
  * - User cancellation returns null (not an error condition)
  * - File system errors propagated to caller for component-level handling
  * - Tauri dialog errors logged with context for debugging
  * - No retry mechanism - user must initiate new upload attempt
- * 
+ *
  * @returns Selected file path or null if cancelled
  * @throws {Error} File system access errors, permission denied, invalid file selection
  */
@@ -28,17 +28,17 @@ export async function uploadDatabaseFile(): Promise<string | null> {
 
 /**
  * Executes arbitrary SQL queries against DuckDB database with validation.
- * 
+ *
  * Input Validation Strategy:
  * - Query emptiness check prevents accidental empty executions
  * - Database path validation ensures connection target exists
  * - No SQL injection protection (handled by DuckDB prepared statements)
- * 
+ *
  * Error Categories:
  * - Validation errors: thrown immediately with descriptive messages
  * - Database errors: connection failures, syntax errors, table not found
  * - Network errors: IPC communication failures with Tauri backend
- * 
+ *
  * @param dbPath Validated database file path
  * @param query SQL query string (non-empty, validated)
  * @returns Apache Arrow table with query results
@@ -55,7 +55,7 @@ export async function runCustomQuery(
   if (!dbPath) {
     throw new Error("Database path cannot be empty");
   }
-  
+
   // Database query execution with error propagation
   // Errors include: SQL syntax, table not found, connection failures
   return await apacheIPC("run_serialize_query_on_db", {
@@ -66,12 +66,12 @@ export async function runCustomQuery(
 
 /**
  * Extracts structured data from Apache Arrow tables for UI rendering.
- * 
+ *
  * Data Processing Reliability:
  * - Schema field extraction handles missing or malformed schemas gracefully
  * - Row access function provides null safety for out-of-bounds access
  * - Memory-efficient lazy row access prevents large table memory issues
- * 
+ *
  * Error Handling:
  * - Invalid table schemas result in empty column arrays
  * - Out-of-bounds row access returns null instead of throwing

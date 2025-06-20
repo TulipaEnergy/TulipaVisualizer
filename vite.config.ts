@@ -14,13 +14,13 @@ export default defineConfig({
   // Tauri expects a fixed port, fail if that port is not available
   // This ensures consistent IPC communication between frontend and Rust backend
   server: {
-    port: 1420,        // Fixed port required by Tauri for stable IPC communication
-    strictPort: true,  // Fail if port unavailable instead of finding alternative
-    host: true,        // Accept connections from any host for network development
+    port: 1420, // Fixed port required by Tauri for stable IPC communication
+    strictPort: true, // Fail if port unavailable instead of finding alternative
+    host: true, // Accept connections from any host for network development
     hmr: {
-      protocol: "ws",     // WebSocket protocol for hot module replacement
-      host: "localhost",  // HMR server host for development
-      port: 1421,         // Separate port for HMR to avoid conflicts with app
+      protocol: "ws", // WebSocket protocol for hot module replacement
+      host: "localhost", // HMR server host for development
+      port: 1421, // Separate port for HMR to avoid conflicts with app
     },
     watch: {
       // Prevent watching Rust backend files to avoid unnecessary rebuilds

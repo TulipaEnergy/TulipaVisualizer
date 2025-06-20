@@ -5,7 +5,7 @@ import { TreeNode } from "primereact/treenode";
 
 /**
  * Retrieves all asset names from the database for filtering and selection.
- * 
+ *
  * Error Handling:
  * - Database connection errors logged and re-thrown for component handling
  * - Malformed asset data handled gracefully with type conversion
@@ -29,7 +29,7 @@ type AssetJson = {
 
 /**
  * Retrieves database table names for schema exploration and debugging.
- * 
+ *
  * Error Recovery Strategy:
  * - Database schema errors logged with full context
  * - Missing tables table handled as empty schema (valid state)
@@ -49,14 +49,14 @@ export async function getTables(dbPath: string): Promise<string[]> {
 
 // Using mock metadata structure until database schema includes asset categorization tables
 // Real implementation requires:
-// 1. asset_category table with hierarchical relationships  
+// 1. asset_category table with hierarchical relationships
 // 2. category table with parent-child structure
 // 3. Backend service to query and build tree structure
 // Current mock provides development environment for metadata filtering UI
 export async function getAllMetadata(): Promise<MetaTreeRootsByCategoryName> {
   // Using mock metadata structure until database schema includes asset categorization tables
   // Real implementation requires:
-  // 1. asset_category table with hierarchical relationships  
+  // 1. asset_category table with hierarchical relationships
   // 2. category table with parent-child structure
   // 3. Backend service to query and build tree structure
   // Current mock provides development environment for metadata filtering UI
