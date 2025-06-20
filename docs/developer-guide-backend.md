@@ -1,938 +1,673 @@
 # Backend Developer Guide
 
 ## Table of Contents
+1. [Architecture Overview](#architecture-overview)
+2. [Development Setup](#development-setup)
+3. [Project Structure](#project-structure)
+4. [Service Layer Patterns](#service-layer-patterns)
+5. [Database Integration](#database-integration)
+6. [IPC Communication](#ipc-communication)
+7. [Testing Patterns](#testing-patterns)
+8. [Performance Guidelines](#performance-guidelines)
 
-- [Overview](#overview)
-- [Technology Stack](#technology-stack)
-- [Development Setup](#development-setup)
-- [Project Architecture](#project-architecture)
-- [Database Layer](#database-layer)
-- [Service Layer](#service-layer)
-- [IPC Communication](#ipc-communication)
-- [Error Handling](#error-handling)
-- [Testing](#testing)
-- [Performance Optimization](#performance-optimization)
-- [Build and Deployment](#build-and-deployment)
-- [Security Considerations](#security-considerations)
-- [Code Style and Patterns](#code-style-and-patterns)
+## Architecture Overview
 
-## Overview
-
-The backend of the Energy Model Visualizer is built with Rust using the Tauri framework. It provides a secure, performant bridge between the React frontend and DuckDB data sources, handling data queries, processing, and serialization.
-
-### Key Responsibilities
-
-- **Database Management**: Connection pooling and query execution for multiple DuckDB files
-- **Data Processing**: Complex SQL query building and result transformation
-- **IPC Communication**: Secure command handlers for frontend-backend communication
-- **Data Serialization**: Efficient Apache Arrow-based data transfer
-- **Security**: File access validation and SQL injection prevention
-
-## Technology Stack
-
-### Core Technologies
-
+### Technology Stack
 - **Rust 2021**: Systems programming language for performance and safety
-- **Tauri 2.x**: Cross-platform desktop app framework
-- **DuckDB 1.2.2**: Embedded analytical database
+- **Tauri 2.x**: Cross-platform desktop framework with IPC
+- **DuckDB 1.2.2**: Embedded analytical database engine
 - **Apache Arrow**: Columnar data format for efficient serialization
+- **Once Cell**: Lazy static initialization for connection pooling
 
-### Key Dependencies
+### Design Principles
+- **Memory Safety**: Rust's ownership system prevents common bugs
+- **Performance First**: Zero-cost abstractions and efficient data processing
+- **Type Safety**: Comprehensive compile-time error checking
+- **Modular Architecture**: Domain-driven service organization
+- **Error Handling**: Consistent Result types with detailed error messages
 
-```toml
-tauri = { version = "2", features = [] }
-duckdb = { version = "1.2.2", features = ["bundled"] }
-arrow-ipc = "54.3.1"
-once_cell = "1.21.3"
-serde = { version = "1", features = ["derive"] }
-tauri-plugin-fs = "2"
-tauri-plugin-dialog = "2.2.1"
-tauri-plugin-opener = "2"
+### Request Flow
 ```
-
-### Development Dependencies
-
-- **mockall**: Mocking framework for unit tests
-- **serial_test**: Test serialization for shared resources
+Frontend IPC Call → Tauri Command → Service Layer → Database Query → Apache Arrow Serialization → Response
+```
 
 ## Development Setup
 
 ### Prerequisites
-
-1. **Rust Toolchain** (1.70+)
-
-   ```bash
-   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-   rustup update
-   ```
-
-2. **Platform-specific Requirements**
-   - **Linux**: WebKit2GTK development libraries
-     ```bash
-     sudo apt update
-     sudo apt install libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
-     ```
-   - **macOS**: Xcode Command Line Tools
-   - **Windows**: Microsoft C++ Build Tools
-
-### Development Environment
-
-1. **IDE Setup**: VS Code with Rust Analyzer extension
-2. **Code Formatting**:
-   ```bash
-   rustup component add rustfmt
-   cargo fmt
-   ```
-3. **Linting**:
-   ```bash
-   rustup component add clippy
-   cargo clippy
-   ```
-
-### Build Commands
-
 ```bash
-# Development build
-cargo build
+# Install Rust toolchain
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+rustup update
 
-# Release build
-cargo build --release
-
-# Run tests
-cargo test
-
-# Generate documentation
-cargo doc --open
+# Platform-specific dependencies
+# Linux: sudo apt install libwebkit2gtk-4.1-dev build-essential curl wget file libssl-dev
+# macOS: xcode-select --install
+# Windows: Microsoft C++ Build Tools
 ```
 
-## Project Architecture
+### Development Commands
+```bash
+# Build and test
+cargo build                 # Development build
+cargo build --release       # Production build
+cargo test                  # Run tests
+cargo clippy                # Linting
+cargo fmt                   # Code formatting
+cargo doc --open            # Generate documentation
 
-### Directory Structure
+# Tauri integration
+npm run tauri dev            # Full-stack development
+npm run tauri build          # Application bundle
+```
+
+### IDE Setup
+- **VS Code**: Rust Analyzer extension
+- **CLion**: Rust plugin
+- **Vim/Neovim**: rust.vim or coc-rust-analyzer
+
+## Project Structure
 
 ```
 src-tauri/src/
-├── lib.rs              # Main application entry and command registration
-├── main.rs             # Binary entry point
-├── duckdb_conn.rs      # Database connection layer
-└── services/           # Business logic modules
-    ├── mod.rs          # Service module exports
-    ├── capacity.rs     # Asset capacity queries
-    ├── metadata.rs     # Database metadata operations
-    ├── system_cost.rs  # System cost calculations
-    ├── production_price.rs   # Production pricing data
-    ├── storage_price.rs      # Storage pricing data
-    ├── transport_price.rs    # Transportation pricing
-    ├── residual_load.rs      # Renewable/non-renewable load
-    ├── import_export.rs      # Geographic flow data
-    ├── query.rs             # Arbitrary SQL execution
-    └── query_builder.rs     # SQL query construction utilities
+├── lib.rs                  # Command registration and exports
+├── main.rs                 # Binary entry point
+├── duckdb_conn.rs         # Database connection management
+└── services/              # Domain service modules
+    ├── mod.rs             # Service module exports
+    ├── capacity.rs        # Asset capacity analysis
+    ├── system_cost.rs     # Economic cost calculations
+    ├── production_price.rs # Production pricing analysis
+    ├── storage_price.rs   # Storage system pricing
+    ├── transport_price.rs # Transportation cost analysis
+    ├── residual_load.rs   # Renewable energy supply analysis
+    ├── import_export.rs   # Geographic energy flow analysis
+    ├── metadata.rs        # Database schema operations
+    ├── query.rs           # Direct SQL execution
+    └── query_builder.rs   # SQL construction utilities
 ```
 
-### Architectural Patterns
+### Naming Conventions
+- **Files**: snake_case (`system_cost.rs`)
+- **Functions**: snake_case (`get_capacity`)
+- **Types**: PascalCase (`GraphConfig`)
+- **Constants**: SCREAMING_SNAKE_CASE (`CAPACITY_SQL`)
 
-#### Service Layer Pattern
+## Service Layer Patterns
 
-Each domain-specific service module provides:
-
-- **Command Handlers**: Tauri-decorated functions for IPC
-- **Business Logic**: Domain-specific query construction
-- **Data Validation**: Input sanitization and validation
-- **Error Handling**: Consistent error responses
-
+### Tauri Command Pattern
 ```rust
+use tauri::ipc::Response;
+use duckdb::{ types::Value, arrow::{array::RecordBatch, datatypes::Schema} };
+
+/// Calculates asset capacity evolution over time.
+/// 
+/// # Parameters
+/// * `db_path` - Database file path (validated for .duckdb extension)
+/// * `asset_name` - Asset identifier for analysis
+/// 
+/// # Returns
+/// * `Ok(Response)` - Apache Arrow serialized capacity data
+/// * `Err(String)` - Error message with context
 #[tauri::command]
 pub fn get_capacity(
     db_path: String,
     asset_name: String,
-    start_year: u32,
-    end_year: u32,
 ) -> Result<Response, String> {
-    // Input validation, query building, execution
-}
-```
-
-#### Connection Pool Pattern
-
-Singleton connection manager for multi-database support:
-
-- **Lazy Initialization**: Connections created on first access
-- **Resource Sharing**: Reuse connections across requests
-- **Error Recovery**: Graceful handling of connection failures
-
-## Database Layer
-
-### Connection Management
-
-The `duckdb_conn.rs` module provides a centralized database layer with connection pooling:
-
-```rust
-static CONN_HANDLER: Lazy<Mutex<ConnectionHandler>> =
-    Lazy::new(|| Mutex::new(ConnectionHandler::new()));
-```
-
-#### Key Features
-
-- **Connection Pool**: Maintains multiple database connections
-- **Thread Safety**: Mutex-protected shared state
-- **Path Validation**: Ensures `.duckdb` file extension
-- **Error Handling**: Detailed error messages with context
-
-#### Public Interface
-
-```rust
-// Execute query returning Apache Arrow RecordBatch
-pub fn run_query_rb(
-    db_path: String,
-    q: String,
-    args: Vec<Value>
-) -> Result<(Vec<RecordBatch>, Schema), String>
-
-// Execute query with row mapping
-pub fn run_query_row<F, T>(
-    db_path: String,
-    q: String,
-    args: Vec<Value>,
-    row_mapper: F
-) -> Result<Vec<T>, String>
-```
-
-### Data Serialization
-
-Apache Arrow integration for efficient data transfer:
-
-```rust
-pub fn serialize_recordbatch(
-    rec_batch: Vec<RecordBatch>,
-    schema: Schema
-) -> Result<Response, String> {
-    let mut vec_writer = Cursor::new(Vec::new());
-    let mut writer = StreamWriter::try_new(&mut vec_writer, &schema)?;
-
-    for batch in rec_batch {
-        writer.write(&batch)?;
+    // Input validation
+    if asset_name.trim().is_empty() {
+        return Err("Asset name cannot be empty".to_string());
     }
-    writer.finish()?;
 
-    Ok(Response::new(vec_writer.into_inner()))
-}
-```
-
-### Query Construction
-
-The `query_builder.rs` module provides utilities for dynamic SQL generation:
-
-#### Resolution Query Builder
-
-```rust
-pub fn build_resolution_query(
-    source_table: &str,
-    value_col: &str,
-    group_cols: &[&str],
-    agg: &str,
-    resolution: &str,
-    clustered: bool,
-) -> String
-```
-
-Features:
-
-- **Time Resolution**: Configurable data aggregation periods
-- **Clustering Support**: Both clustered and non-clustered queries
-- **SQL Injection Prevention**: Parameterized query construction
-- **Flexible Grouping**: Dynamic GROUP BY clause generation
-
-## Service Layer
-
-### Service Module Organization
-
-Each service module follows a consistent pattern:
-
-```rust
-// Command handler
-#[tauri::command]
-pub fn service_function(params: Type) -> Result<Response, String> {
-    // 1. Input validation
-    // 2. Query construction
-    // 3. Database execution
-    // 4. Result serialization
-}
-
-// SQL constants
-const QUERY_SQL: &str = "SELECT ...";
-
-// Helper functions (private)
-fn build_dynamic_query(params: &Params) -> String { ... }
-```
-
-### Key Service Modules
-
-#### Metadata Service (`metadata.rs`)
-
-- **Asset Discovery**: `get_assets()` - List available assets
-- **Table Information**: `get_tables()` - Database schema inspection
-- **Column Validation**: `check_column_in_table()` - Schema verification
-
-```rust
-#[tauri::command]
-pub fn get_assets(db_path: String) -> Result<Response, String> {
-    let res = run_query_rb(db_path, ASSET_SQL.to_string(), vec![])?;
+    // Database query execution
+    let res: (Vec<RecordBatch>, Schema) = run_query_rb(
+        db_path, 
+        CAPACITY_SQL.to_string(), 
+        vec![Value::from(asset_name)]
+    )?;
+    
+    // Apache Arrow serialization
     serialize_recordbatch(res.0, res.1)
 }
 ```
 
-#### Capacity Service (`capacity.rs`)
-
-- **Investment Analysis**: Asset capacity changes over time
-- **Conditional Logic**: Handles optional database columns
-- **Complex Queries**: Multi-table joins with subqueries
-
+### SQL Query Organization
 ```rust
-#[tauri::command]
-pub fn get_capacity(
+/// Complex capacity evolution query with business logic documentation.
+/// 
+/// Algorithm:
+/// 1. Discovers all milestone years with capacity data
+/// 2. Calculates point-in-time investments and decommissions
+/// 3. Computes cumulative capacity changes over time
+/// 4. Handles missing solution data with -1 sentinel values
+const CAPACITY_SQL: &str = "
+    WITH years AS (
+        -- Comprehensive year discovery across capacity tables
+        SELECT DISTINCT year FROM (
+            SELECT milestone_year AS year FROM asset_both WHERE asset = $1
+            UNION
+            SELECT milestone_year AS year FROM var_assets_investment WHERE asset = $1
+            UNION  
+            SELECT milestone_year AS year FROM var_assets_decommission WHERE asset = $1
+        ) t
+    )
+    -- Main query with cumulative capacity calculations
+    SELECT y.year,
+           COALESCE(i.solution * af.capacity, -1) AS investment,
+           COALESCE(d.solution * af.capacity, -1) AS decommission,
+           -- Business logic: Final = Initial + Investments - Decommissions
+           (COALESCE(SUM(ab.initial_units), 0) + 
+            COALESCE(inv_sum.total, 0) - 
+            COALESCE(dec_sum.total, 0)) * af.capacity AS final_capacity
+    FROM years y
+    CROSS JOIN asset af
+    -- Additional joins and calculations...
+    WHERE af.asset = $1
+    ORDER BY y.year;
+";
+```
+
+### Error Handling Pattern
+```rust
+use std::fmt;
+
+/// Custom error type for service operations
+#[derive(Debug)]
+pub enum ServiceError {
+    DatabaseError(String),
+    ValidationError(String),
+    QueryError(String),
+}
+
+impl fmt::Display for ServiceError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            ServiceError::DatabaseError(msg) => write!(f, "Database error: {}", msg),
+            ServiceError::ValidationError(msg) => write!(f, "Validation error: {}", msg),
+            ServiceError::QueryError(msg) => write!(f, "Query error: {}", msg),
+        }
+    }
+}
+
+impl From<ServiceError> for String {
+    fn from(error: ServiceError) -> String {
+        error.to_string()
+    }
+}
+
+/// Enhanced error handling with context
+pub fn handle_query_error(error: duckdb::Error, context: &str) -> String {
+    match error {
+        duckdb::Error::SqliteFailure(code, msg) => {
+            format!("{}: SQLite error {}: {}", context, code, msg.unwrap_or_default())
+        }
+        duckdb::Error::InvalidColumnName(name) => {
+            format!("{}: Column '{}' not found", context, name)
+        }
+        _ => format!("{}: {}", context, error),
+    }
+}
+```
+
+## Database Integration
+
+### Connection Management
+```rust
+use duckdb::{Connection, Result as DuckResult};
+use once_cell::sync::Lazy;
+use std::collections::HashMap;
+use std::sync::Mutex;
+
+/// Thread-safe connection pool with path-based caching
+static CONN_HANDLER: Lazy<Mutex<ConnectionHandler>> =
+    Lazy::new(|| Mutex::new(ConnectionHandler::new()));
+
+struct ConnectionHandler {
+    connections: HashMap<String, Connection>,
+}
+
+impl ConnectionHandler {
+    fn new() -> Self {
+        Self {
+            connections: HashMap::new(),
+        }
+    }
+
+    /// Gets or creates database connection with validation
+    fn get_connection(&mut self, db_path: &str) -> DuckResult<&Connection> {
+        // Validate file extension
+        if !db_path.ends_with(".duckdb") {
+            return Err(duckdb::Error::InvalidPath(
+                "Database path must end with .duckdb".into()
+            ));
+        }
+
+        // Get existing or create new connection
+        if !self.connections.contains_key(db_path) {
+            let conn = Connection::open(db_path)?;
+            self.connections.insert(db_path.to_string(), conn);
+        }
+
+        Ok(self.connections.get(db_path).unwrap())
+    }
+}
+```
+
+### Query Execution Patterns
+```rust
+/// Execute query returning Apache Arrow RecordBatch for efficient data transfer
+pub fn run_query_rb(
     db_path: String,
-    asset_name: String,
-    start_year: u32,
-    end_year: u32,
-) -> Result<Response, String>
-```
+    query: String,
+    params: Vec<Value>,
+) -> Result<(Vec<RecordBatch>, Schema), String> {
+    let mut conn_handler = CONN_HANDLER.lock()
+        .map_err(|e| format!("Failed to acquire connection lock: {}", e))?;
+    
+    let conn = conn_handler.get_connection(&db_path)
+        .map_err(|e| format!("Database connection failed: {}", e))?;
 
-#### System Cost Service (`system_cost.rs`)
+    // Prepare statement with parameters
+    let mut stmt = conn.prepare(&query)
+        .map_err(|e| format!("Query preparation failed: {}", e))?;
 
-- **Cost Categories**: Fixed asset, flow, variable, and unit costs
-- **Discount Factors**: Time-value calculations
-- **Conditional Queries**: Adapts to available database columns
+    // Execute with Apache Arrow result
+    let arrow_result = stmt.query_arrow(params.as_slice())
+        .map_err(|e| format!("Query execution failed: {}", e))?;
 
-#### Price Services
-
-- **Production Prices** (`production_price.rs`)
-- **Storage Prices** (`storage_price.rs`)
-- **Transportation Prices** (`transport_price.rs`)
-
-Common patterns:
-
-- Time resolution configuration
-- Year-based filtering
-- Dual value calculations from optimization constraints
-
-#### Load Analysis Service (`residual_load.rs`)
-
-- **Renewable Sources**: Assets with availability profiles
-- **Non-renewable Sources**: Conventional generation
-- **Temporal Aggregation**: Configurable time resolutions
-
-### Service Testing
-
-Each service includes comprehensive test suites:
-
-```rust
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::duckdb_conn::serialize_recordbatch;
-
-    #[test]
-    fn test_service_function() {
-        // Test implementation
-    }
-}
-```
-
-## IPC Communication
-
-### Command Registration
-
-Commands are registered in `lib.rs` using Tauri's `generate_handler!` macro:
-
-```rust
-.invoke_handler(tauri::generate_handler![
-    query::run_serialize_query_on_db,
-    capacity::get_capacity,
-    capacity::get_available_years,
-    metadata::get_assets,
-    metadata::get_tables,
-    // ... additional commands
-])
-```
-
-### Command Handler Pattern
-
-All command handlers follow a consistent pattern:
-
-```rust
-#[tauri::command]
-pub fn command_name(
-    param1: String,
-    param2: u32,
-) -> Result<Response, String> {
-    // Input validation
-    if param1.is_empty() {
-        return Err("Parameter cannot be empty".to_string());
-    }
-
-    // Business logic
-    let result = process_data(param1, param2)?;
-
-    // Serialization
-    serialize_recordbatch(result.0, result.1)
-}
-```
-
-### Security Considerations
-
-#### Path Validation
-
-```rust
-if !db_path.ends_with(".duckdb") {
-    return Err("Database path must end with .duckdb".to_string());
+    Ok((arrow_result.0, arrow_result.1))
 }
 
-if !Path::new(db_path).exists() {
-    return Err(format!("File not found: '{}'", db_path));
-}
-```
-
-#### SQL Injection Prevention
-
-- **Parameterized Queries**: Use `duckdb::params_from_iter()`
-- **Input Sanitization**: Validate all user inputs
-- **Query Construction**: Use compile-time SQL constants
-
-## Error Handling
-
-### Error Types and Patterns
-
-#### Result Pattern
-
-All functions return `Result<T, String>` for consistent error handling:
-
-```rust
-pub fn database_operation() -> Result<Data, String> {
-    let connection = get_connection()
-        .map_err(|e| format!("Connection failed: {}", e))?;
-
-    let result = execute_query(&connection)
-        .map_err(|e| format!("Query failed: {}", e))?;
-
-    Ok(result)
-}
-```
-
-#### Error Context
-
-Provide meaningful error messages with context:
-
-```rust
-.map_err(|e| format!("Failed to open database '{}': {}", db_path, e))
-```
-
-#### Error Categories
-
-- **Database Errors**: Connection, query execution, schema issues
-- **Validation Errors**: Invalid parameters, missing files
-- **Serialization Errors**: Arrow format conversion issues
-- **Business Logic Errors**: Domain-specific validation failures
-
-### Error Handling Best Practices
-
-1. **Early Validation**: Check inputs before expensive operations
-2. **Contextual Messages**: Include relevant details in error messages
-3. **Error Propagation**: Use `?` operator for clean error propagation
-4. **Graceful Degradation**: Handle optional features gracefully
-5. **Logging**: Use `println!` for development debugging
-
-```rust
-// Example: Graceful handling of optional columns
-let has_solution = check_column_in_table(db_path.clone(), "table", "solution")?;
-let expression = if has_solution {
-    "COALESCE(solution, 0)"
-} else {
-    "0"
-};
-```
-
-## Testing
-
-### Test Organization
-
-#### Unit Tests
-
-Located in each module using `#[cfg(test)]`:
-
-```rust
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_function_name() {
-        // Test implementation
-    }
-
-    #[test]
-    fn test_error_handling() {
-        // Error case testing
-    }
-}
-```
-
-#### Integration Tests
-
-For cross-module functionality and database operations:
-
-```rust
-#[test]
-#[serial] // Serialize database tests
-fn test_database_integration() {
-    // Database setup
-    // Test execution
-    // Cleanup
-}
-```
-
-### Test Utilities
-
-#### Mock Database
-
-Use `mockall` for service layer testing:
-
-```rust
-use mockall::predicate::*;
-use mockall::mock;
-
-mock! {
-    DatabaseConnection {
-        fn execute_query(&self, sql: &str) -> Result<RecordBatch, String>;
-    }
-}
-```
-
-#### Test Data Serialization
-
-Utility functions for testing Apache Arrow serialization:
-
-```rust
-pub fn deserialize_rb<A, E, R, F>(
-    response: Response,
-    idx: usize,
-    mapper: F
-) -> Result<Vec<R>, String>
+/// Execute query with custom row mapping for complex data structures
+pub fn run_query_row<F, T>(
+    db_path: String,
+    query: String,
+    params: Vec<Value>,
+    row_mapper: F,
+) -> Result<Vec<T>, String>
 where
-    A: Array + 'static,
-    F: Fn(&E) -> R,
-```
+    F: Fn(&duckdb::Row) -> DuckResult<T>,
+{
+    let mut conn_handler = CONN_HANDLER.lock()
+        .map_err(|e| format!("Failed to acquire connection lock: {}", e))?;
+    
+    let conn = conn_handler.get_connection(&db_path)
+        .map_err(|e| format!("Database connection failed: {}", e))?;
 
-### Testing Best Practices
+    let mut stmt = conn.prepare(&query)
+        .map_err(|e| format!("Query preparation failed: {}", e))?;
 
-1. **Test Coverage**: Aim for >80% code coverage
-2. **Error Testing**: Test both success and error cases
-3. **Edge Cases**: Test boundary conditions and invalid inputs
-4. **Database Tests**: Use test databases, not production data
-5. **Serialization Tests**: Verify Arrow format compatibility
+    let rows = stmt.query_map(params.as_slice(), row_mapper)
+        .map_err(|e| format!("Query execution failed: {}", e))?;
 
-### Running Tests
-
-```bash
-# Run all tests
-cargo test
-
-# Run specific test module
-cargo test capacity
-
-# Run tests with output
-cargo test -- --nocapture
-
-# Run tests serially (for database tests)
-cargo test -- --test-threads=1
-```
-
-## Performance Optimization
-
-### Database Performance
-
-#### Connection Pooling
-
-- **Reuse Connections**: Avoid repeated connection overhead
-- **Lazy Loading**: Create connections only when needed
-- **Resource Management**: Proper cleanup and lifecycle management
-
-#### Query Optimization
-
-- **Prepared Statements**: Use parameterized queries for repeated operations
-- **Index Usage**: Understand DuckDB indexing for query optimization
-- **Result Streaming**: Use Apache Arrow for efficient data transfer
-
-```rust
-// Efficient query execution
-let mut prepared_statement = conn.prepare(&sql)?;
-let arrow_result = prepared_statement
-    .query_arrow(duckdb::params_from_iter(args.iter()))?;
-```
-
-### Memory Management
-
-#### Rust Ownership
-
-- **Zero-copy Operations**: Use references where possible
-- **RAII Pattern**: Automatic resource cleanup
-- **Memory Safety**: Rust's ownership system prevents leaks
-
-#### Apache Arrow Optimization
-
-- **Columnar Format**: Efficient for analytical queries
-- **Compression**: Built-in compression for data transfer
-- **Streaming**: Process large datasets incrementally
-
-### Compilation Optimizations
-
-#### Release Build
-
-```toml
-[profile.release]
-opt-level = 3
-lto = true
-codegen-units = 1
-panic = "abort"
-```
-
-#### Target-specific Optimization
-
-```bash
-# CPU-specific optimizations
-RUSTFLAGS="-C target-cpu=native" cargo build --release
-```
-
-## Build and Deployment
-
-### Development Build
-
-```bash
-# Standard development build
-cargo build
-
-# Watch mode for continuous compilation
-cargo watch -x build
-```
-
-### Release Build
-
-```bash
-# Optimized release build
-cargo build --release
-
-# Cross-compilation for different targets
-cargo build --release --target x86_64-pc-windows-gnu
-```
-
-### Tauri Integration
-
-#### Bundle Configuration
-
-The backend is automatically bundled with the frontend during Tauri build:
-
-```bash
-# Build complete application
-npm run tauri build
-
-# Development mode with hot reload
-npm run tauri dev
-```
-
-#### Platform-specific Considerations
-
-##### Windows
-
-- **WebView2**: Automatic installation handling
-- **Code Signing**: Configure for distribution
-- **Windows Subsystem**: GUI mode configuration
-
-##### macOS
-
-- **App Notarization**: For macOS distribution
-- **Universal Binary**: ARM64 + x86_64 support
-- **Bundle Identifier**: Unique app identification
-
-##### Linux
-
-- **AppImage**: Self-contained application format
-- **System Dependencies**: WebKit2GTK requirements
-- **Desktop Integration**: .desktop file generation
-
-### CI/CD Pipeline
-
-#### GitHub Actions Example
-
-```yaml
-name: Build Backend
-on: [push, pull_request]
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-      - name: Install dependencies
-        run: sudo apt-get install libwebkit2gtk-4.1-dev
-      - name: Build
-        run: cargo build --release
-      - name: Test
-        run: cargo test
-```
-
-## Security Considerations
-
-### File System Security
-
-#### Path Validation
-
-```rust
-// Validate file extensions
-if !db_path.ends_with(".duckdb") {
-    return Err("Invalid file type".to_string());
-}
-
-// Check file existence and accessibility
-if !Path::new(&db_path).exists() {
-    return Err("File not found".to_string());
+    rows.collect::<DuckResult<Vec<T>>>()
+        .map_err(|e| format!("Row mapping failed: {}", e))
 }
 ```
 
-#### Tauri Security Context
-
-- **Allowlist System**: Explicitly enable required APIs
-- **CSP Headers**: Content Security Policy for web content
-- **IPC Validation**: All command parameters are validated
-
-### SQL Injection Prevention
-
-#### Parameterized Queries
-
+### Schema Compatibility Handling
 ```rust
-// Safe: Using parameters
-let result = conn.prepare(&sql)?
-    .query_arrow(duckdb::params_from_iter(args.iter()))?;
+/// Checks if a specific column exists in a table for graceful degradation
+pub fn check_column_in_table(
+    db_path: String,
+    table_name: &str,
+    column_name: &str,
+) -> Result<bool, String> {
+    let query = "SELECT COUNT(*) FROM pragma_table_info(?) WHERE name = ?";
+    let params = vec![Value::from(table_name), Value::from(column_name)];
 
-// Unsafe: String concatenation (NEVER DO THIS)
-// let sql = format!("SELECT * FROM {} WHERE id = {}", table, id);
-```
+    let row_mapper = |row: &duckdb::Row| {
+        let count: i64 = row.get(0)?;
+        Ok(count > 0)
+    };
 
-#### Input Sanitization
+    let results = run_query_row(db_path, query.to_string(), params, row_mapper)?;
+    Ok(results.into_iter().next().unwrap_or(false))
+}
 
-```rust
-fn validate_asset_name(name: &str) -> Result<(), String> {
-    if name.is_empty() || name.len() > 100 {
-        return Err("Invalid asset name".to_string());
-    }
-    if name.contains(';') || name.contains('--') {
-        return Err("Invalid characters in asset name".to_string());
+/// Conditionally adds missing columns for backward compatibility
+pub fn ensure_schema_compatibility(db_path: String) -> Result<(), String> {
+    if !check_column_in_table(db_path.clone(), "var_assets_investment", "solution")? {
+        execute_batch(
+            db_path.clone(),
+            "ALTER TABLE var_assets_investment ADD COLUMN solution DOUBLE".to_string()
+        )?;
     }
     Ok(())
 }
 ```
 
-### Data Privacy
+## IPC Communication
 
-#### Local Processing
-
-- **No Network Requests**: All data processing happens locally
-- **No Data Collection**: No telemetry or analytics
-- **File Permissions**: Respect operating system file permissions
-
-## Code Style and Patterns
-
-### Rust Style Guidelines
-
-#### Naming Conventions
-
+### Apache Arrow Serialization
 ```rust
-// Functions: snake_case
-pub fn get_asset_capacity() -> Result<Data, String> { }
+use arrow_ipc::writer::StreamWriter;
+use tauri::ipc::Response;
 
-// Types: PascalCase
-pub struct DatabaseConnection { }
+/// Serializes Apache Arrow data for efficient frontend transfer
+pub fn serialize_recordbatch(
+    batches: Vec<RecordBatch>,
+    schema: Schema,
+) -> Result<Response, String> {
+    let mut buffer = Vec::new();
+    
+    {
+        let mut writer = StreamWriter::try_new(&mut buffer, &schema)
+            .map_err(|e| format!("Failed to create Arrow writer: {}", e))?;
 
-// Constants: SCREAMING_SNAKE_CASE
-const MAX_QUERY_SIZE: usize = 1024;
+        for batch in batches {
+            writer.write(&batch)
+                .map_err(|e| format!("Failed to write batch: {}", e))?;
+        }
 
-// Modules: snake_case
-mod database_connection;
+        writer.finish()
+            .map_err(|e| format!("Failed to finalize Arrow stream: {}", e))?;
+    }
+
+    Ok(Response::new(buffer))
+}
 ```
 
-#### Documentation
+### Command Registration
+```rust
+// lib.rs
+use tauri::Builder;
 
-````rust
-/// Retrieves asset capacity data for a given time range.
-///
-/// # Arguments
-/// * `db_path` - Path to the DuckDB database file
-/// * `asset_name` - Name of the asset to query
-/// * `start_year` - Starting year for the query range
-/// * `end_year` - Ending year for the query range
-///
-/// # Returns
-/// * `Ok(Response)` - Serialized capacity data
-/// * `Err(String)` - Error message describing the failure
-///
-/// # Examples
-/// ```
-/// let response = get_capacity(
-///     "/path/to/db.duckdb".to_string(),
-///     "WindFarm_1".to_string(),
-///     2025,
-///     2030
-/// )?;
-/// ```
-#[tauri::command]
-pub fn get_capacity(
+#[cfg_attr(mobile, tauri::mobile_entry_point)]
+pub fn run() {
+    Builder::default()
+        .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_opener::init())
+        .invoke_handler(tauri::generate_handler![
+            // Metadata operations
+            services::metadata::get_assets,
+            services::metadata::get_tables,
+            
+            // Capacity analysis
+            services::capacity::get_capacity,
+            services::capacity::get_available_years,
+            
+            // Cost analysis
+            services::system_cost::get_fixed_asset_cost,
+            services::system_cost::get_unit_on_cost,
+            services::system_cost::get_fixed_flow_cost,
+            services::system_cost::get_variable_flow_cost,
+            
+            // Price analysis
+            services::production_price::get_production_price_resolution,
+            services::storage_price::get_storage_price_resolution,
+            services::transport_price::get_transportation_price_resolution,
+            services::transport_price::get_transportation_carriers,
+            
+            // Flow analysis
+            services::residual_load::get_supply,
+            services::import_export::get_import,
+            services::import_export::get_export,
+            
+            // Direct queries
+            services::query::run_serialize_query_on_db,
+        ])
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}
+```
+
+## Testing Patterns
+
+### Unit Testing with Mock Data
+```rust
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use duckdb::{Connection, Result as DuckResult};
+    use tempfile::NamedTempFile;
+
+    fn create_test_database() -> DuckResult<NamedTempFile> {
+        let temp_file = NamedTempFile::new().unwrap();
+        let conn = Connection::open(temp_file.path())?;
+
+        // Create test schema
+        conn.execute_batch(
+            "CREATE TABLE asset (asset VARCHAR, capacity DOUBLE);
+             INSERT INTO asset VALUES ('wind_onshore', 100.0), ('solar_pv', 50.0);"
+        )?;
+
+        Ok(temp_file)
+    }
+
+    #[test]
+    fn test_get_assets_success() {
+        let temp_db = create_test_database().unwrap();
+        let db_path = temp_db.path().to_str().unwrap().to_string() + ".duckdb";
+        
+        // Copy test file to .duckdb extension
+        std::fs::copy(temp_db.path(), &db_path).unwrap();
+
+        let result = get_assets(db_path);
+        assert!(result.is_ok());
+
+        // Cleanup
+        std::fs::remove_file(db_path).ok();
+    }
+
+    #[test]
+    fn test_invalid_database_path() {
+        let result = get_assets("invalid_file.txt".to_string());
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Database path must end with .duckdb"));
+    }
+}
+```
+
+### Integration Testing
+```rust
+#[cfg(test)]
+mod integration_tests {
+    use super::*;
+    use std::path::PathBuf;
+
+    fn get_test_db_path() -> String {
+        let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        path.push("tests/fixtures/test_energy_model.duckdb");
+        path.to_str().unwrap().to_string()
+    }
+
+    #[test]
+    fn test_capacity_analysis_workflow() {
+        let db_path = get_test_db_path();
+        
+        // Test asset discovery
+        let assets_result = get_assets(db_path.clone()).unwrap();
+        // Verify assets are returned
+        
+        // Test capacity analysis for first asset
+        // let capacity_result = get_capacity(db_path, first_asset).unwrap();
+        // Verify capacity data structure
+    }
+
+    #[test]
+    fn test_cross_service_consistency() {
+        let db_path = get_test_db_path();
+        
+        // Test that all services work with same database
+        let _assets = get_assets(db_path.clone()).unwrap();
+        let _tables = get_tables(db_path.clone()).unwrap();
+        // Verify no conflicts or state issues
+    }
+}
+```
+
+## Performance Guidelines
+
+### Query Optimization
+```rust
+/// Optimized query patterns for large datasets
+impl QueryOptimization {
+    /// Use prepared statements for repeated queries
+    fn use_prepared_statements() {
+        // ✅ Good: Reuse prepared statement
+        let mut stmt = conn.prepare(CAPACITY_SQL)?;
+        for asset in assets {
+            let result = stmt.query_arrow(&[Value::from(asset)])?;
+        }
+        
+        // ❌ Bad: Prepare query each time
+        for asset in assets {
+            let query = format!("SELECT * FROM asset WHERE name = '{}'", asset);
+            let result = conn.execute(&query)?;
+        }
+    }
+
+    /// Limit data transfer with appropriate SELECT clauses
+    fn optimize_data_selection() {
+        // ✅ Good: Select only needed columns
+        const OPTIMIZED_QUERY: &str = "
+            SELECT year, investment, final_capacity 
+            FROM capacity_analysis 
+            WHERE asset = $1";
+        
+        // ❌ Bad: Select all columns
+        const INEFFICIENT_QUERY: &str = "SELECT * FROM capacity_analysis WHERE asset = $1";
+    }
+}
+```
+
+### Memory Management
+```rust
+/// Efficient batch processing for large datasets
+pub fn process_large_dataset(
     db_path: String,
-    asset_name: String,
-    start_year: u32,
-    end_year: u32,
-) -> Result<Response, String>
-````
+    batch_size: usize,
+) -> Result<Vec<RecordBatch>, String> {
+    let mut results = Vec::new();
+    let mut offset = 0;
 
-#### Error Handling Patterns
+    loop {
+        let query = format!(
+            "SELECT * FROM large_table LIMIT {} OFFSET {}",
+            batch_size, offset
+        );
 
-```rust
-// Use ? operator for error propagation
-fn process_data(input: &str) -> Result<Data, String> {
-    let validated = validate_input(input)?;
-    let processed = transform_data(validated)?;
-    Ok(processed)
+        let (mut batches, _schema) = run_query_rb(
+            db_path.clone(),
+            query,
+            vec![]
+        )?;
+
+        if batches.is_empty() {
+            break;
+        }
+
+        results.append(&mut batches);
+        offset += batch_size;
+    }
+
+    Ok(results)
 }
 
-// Provide context in error messages
-.map_err(|e| format!("Failed to process {}: {}", input_name, e))
-```
-
-### Project-specific Patterns
-
-#### Service Module Structure
-
-```rust
-// Public command handlers
-#[tauri::command]
-pub fn public_command() -> Result<Response, String> { }
-
-// Private helper functions
-fn helper_function() -> Result<InternalType, String> { }
-
-// SQL constants at module bottom
-const QUERY_SQL: &str = "SELECT ...";
-```
-
-#### Database Query Pattern
-
-```rust
-pub fn database_operation(params: Params) -> Result<Response, String> {
-    // 1. Input validation
-    validate_params(&params)?;
-
-    // 2. Query construction
-    let sql = build_query(&params);
-
-    // 3. Database execution
-    let result = run_query_rb(params.db_path, sql, params.args)?;
-
-    // 4. Serialization
-    serialize_recordbatch(result.0, result.1)
+/// Connection pool cleanup for long-running applications
+pub fn cleanup_connections() {
+    if let Ok(mut handler) = CONN_HANDLER.lock() {
+        handler.connections.clear();
+    }
 }
 ```
 
-#### Conditional Logic Pattern
-
+### Error Recovery
 ```rust
-// Check for optional database features
-let has_feature = check_column_in_table(db_path.clone(), "table", "column")?;
-let query_part = if has_feature {
-    "complex_calculation(column)"
-} else {
-    "default_value"
-};
+/// Robust error handling with retry logic
+pub fn execute_with_retry<T, F>(
+    operation: F,
+    max_retries: usize,
+) -> Result<T, String>
+where
+    F: Fn() -> Result<T, String>,
+{
+    let mut last_error = None;
+    
+    for attempt in 0..=max_retries {
+        match operation() {
+            Ok(result) => return Ok(result),
+            Err(error) => {
+                last_error = Some(error.clone());
+                
+                if attempt < max_retries {
+                    std::thread::sleep(std::time::Duration::from_millis(100 * (attempt + 1) as u64));
+                    continue;
+                }
+            }
+        }
+    }
+    
+    Err(last_error.unwrap_or_else(|| "Operation failed".to_string()))
+}
 ```
 
-### Code Quality Tools
+## Common Patterns
 
-#### Formatting
+### Dynamic SQL Construction
+```rust
+pub mod query_builder {
+    /// Builds time resolution queries with proper SQL injection prevention
+    pub fn build_resolution_query(
+        table_name: &str,
+        value_column: &str,
+        group_columns: &[&str],
+        aggregate_function: &str,
+        resolution_hours: &str,
+        is_period_based: bool,
+    ) -> String {
+        let time_columns = if is_period_based {
+            "period_block_start, period_block_end"
+        } else {
+            "time_block_start, time_block_end"
+        };
 
-```bash
-# Format code
-cargo fmt
-
-# Check formatting
-cargo fmt -- --check
+        format!(
+            "SELECT {}, 
+                    {}({}::DOUBLE) as y_axis,
+                    FLOOR({}/{}) * {} as period
+             FROM ({})
+             WHERE year = $1
+             GROUP BY {}, period
+             ORDER BY period",
+            group_columns.join(", "),
+            aggregate_function,
+            value_column,
+            time_columns.split(',').next().unwrap().trim(),
+            resolution_hours,
+            resolution_hours,
+            table_name,
+            group_columns.join(", ")
+        )
+    }
+}
 ```
 
-#### Linting
+### Configuration Management
+```rust
+/// Application configuration with environment variable support
+#[derive(Debug)]
+pub struct Config {
+    pub max_connections: usize,
+    pub query_timeout: u64,
+    pub log_level: String,
+}
 
-```bash
-# Run Clippy linter
-cargo clippy
-
-# Clippy with all features
-cargo clippy --all-features --all-targets
+impl Config {
+    pub fn from_env() -> Self {
+        Self {
+            max_connections: std::env::var("MAX_CONNECTIONS")
+                .unwrap_or_else(|_| "10".to_string())
+                .parse()
+                .unwrap_or(10),
+            query_timeout: std::env::var("QUERY_TIMEOUT")
+                .unwrap_or_else(|_| "30".to_string())
+                .parse()
+                .unwrap_or(30),
+            log_level: std::env::var("LOG_LEVEL")
+                .unwrap_or_else(|_| "info".to_string()),
+        }
+    }
+}
 ```
-
-#### Documentation
-
-```bash
-# Generate and open documentation
-cargo doc --open
-
-# Check documentation links
-cargo doc --document-private-items
-```
-
-### Generated Documentation
-
-#### RustDoc Integration
-
-The project includes comprehensive RustDoc documentation for all backend modules:
-
-**Generate RustDoc:**
-
-```bash
-# From project root
-npm run docs:rust:build
-
-# Or manually from src-tauri directory
-cd src-tauri
-cargo doc --no-deps --document-private-items
-```
-
-**View Documentation:**
-
-```bash
-# Open generated documentation in browser
-npm run docs:rust:open
-
-# Or manually open
-open docs/rustdoc/tauri_app_lib/index.html
-```
-
-**Documentation Location:**
-
-- **Generated HTML**: `docs/rustdoc/tauri_app_lib/index.html`
-- **Service Modules**: `docs/rustdoc/tauri_app_lib/services/index.html`
-- **Database Layer**: `docs/rustdoc/tauri_app_lib/duckdb_conn/index.html`
-
-#### Documentation Standards
-
-- **Module Documentation**: All modules have comprehensive `//!` comments
-- **Function Documentation**: All public functions have `///` doc comments
-- **Examples**: Code examples included where appropriate
-- **Cross-references**: Links between related modules and functions
-- **Error Documentation**: Return types and error conditions documented
-
----
-
-For more information, see:
-
-- **[Generated RustDoc](../docs/rustdoc/tauri_app_lib/index.html)** - Complete API documentation
-- [Tauri Documentation](https://tauri.app/v1/guides/)
-- [DuckDB Rust API](https://docs.rs/duckdb/latest/duckdb/)
-- [Apache Arrow Rust](https://docs.rs/arrow/latest/arrow/)
-- [User Guide](./user-guide.md)
-- [Frontend Developer Guide](./developer-guide-frontend.md)
