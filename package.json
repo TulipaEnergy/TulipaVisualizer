@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "tauri:test": "cargo llvm-cov --workspace --cobertura --output-path cargo-coverage.xml --manifest-path src-tauri/Cargo.toml",
-    "test": "vitest run --silent='passed-only'",
+    "test": "vitest run --silent='passed-only' && cargo llvm-cov --workspace --cobertura --output-path cargo-coverage.xml --manifest-path src-tauri/Cargo.toml",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage --silent='passed-only' --coverage.reporter=json-summary",
     "test:coverage:ui": "vitest run --coverage && (xdg-open coverage/index.html || open coverage/index.html || start coverage/index.html)",
@@ -19,8 +19,7 @@
     "format": "npx prettier . --write --end-of-line auto",
     "clean": "git clean -f -X .",
     "analyze": "node code-analysis/analyze.js && (xdg-open analysis-reports/index.html || open analysis-reports/index.html || start analysis-reports/index.html)",
-    "analyze:setup": "bash ./code-analysis/setup-analysis.sh"
-    "clean": "rm -rf coverage && rm -rf dist && rm -rf node_modules && rm -rf src-tauri/target",
+    "analyze:setup": "bash ./code-analysis/setup-analysis.sh",
     "docs:rust": "cd src-tauri && cargo doc --no-deps --document-private-items",
     "docs:rust:copy": "mkdir -p docs/rustdoc && cp -r src-tauri/target/doc/* docs/rustdoc/",
     "docs:rust:build": "npm run docs:rust && npm run docs:rust:copy",

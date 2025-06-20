@@ -30,7 +30,7 @@ analysis-reports/
 *.njsproj
 *.sln
 *.sw?
-.cursor
+.cursorrules
 .scannerwork
 sonar-project.properties
 docs/rustdoc
