@@ -139,43 +139,6 @@ pub fn get_capacity(
 }
 ```
 
-### SQL Query Organization
-
-```rust
-/// Complex capacity evolution query with business logic documentation.
-///
-/// Algorithm:
-/// 1. Discovers all milestone years with capacity data
-/// 2. Calculates point-in-time investments and decommissions
-/// 3. Computes cumulative capacity changes over time
-/// 4. Handles missing solution data with -1 sentinel values
-const CAPACITY_SQL: &str = "
-    WITH years AS (
-        -- Comprehensive year discovery across capacity tables
-        SELECT DISTINCT year FROM (
-            SELECT milestone_year AS year FROM asset_both WHERE asset = $1
-            UNION
-            SELECT milestone_year AS year FROM var_assets_investment WHERE asset = $1
-            UNION
-            SELECT milestone_year AS year FROM var_assets_decommission WHERE asset = $1
-        ) t
-    )
-    -- Main query with cumulative capacity calculations
-    SELECT y.year,
-           COALESCE(i.solution * af.capacity, -1) AS investment,
-           COALESCE(d.solution * af.capacity, -1) AS decommission,
-           -- Business logic: Final = Initial + Investments - Decommissions
-           (COALESCE(SUM(ab.initial_units), 0) +
-            COALESCE(inv_sum.total, 0) -
-            COALESCE(dec_sum.total, 0)) * af.capacity AS final_capacity
-    FROM years y
-    CROSS JOIN asset af
-    -- Additional joins and calculations...
-    WHERE af.asset = $1
-    ORDER BY y.year;
-";
-```
-
 ### Error Handling Pattern
 
 ```rust

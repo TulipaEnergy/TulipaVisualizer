@@ -24,10 +24,8 @@ Tulipa Energy Visualizer uses a comprehensive testing strategy with **Vitest** a
 ### Essential Commands
 
 ```bash
-npm test                    # Run all tests once
-npm run test:watch         # Run tests in watch mode
-npm run test:coverage      # Run tests with coverage report
-npm run test:coverage:ui   # Interactive coverage viewer
+npm test                    # Run all tests(front and back end) once
+npm run test:coverage      # Run front end tests with coverage report
 npm run tauri:test         # Run Rust backend tests
 ```
 

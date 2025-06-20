@@ -109,7 +109,8 @@ npm run test              # Run all tests
 npm run test:coverage # Run tests with coverage
 npx prettier . --write --end-of-line auto        # Format code with Prettier
 npm run analyze       # Run code quality analysis
-npm run docs:rust:open      # Generate and open documentation
+npm run docs:rust:build      # Generate and open documentation
+npm run analyze:build      # Set up analysis tool and run analysis
 ```
 
 ## Project Structure
@@ -172,6 +173,7 @@ For detailed testing guidelines, see [Testing.md](docs/Testing.md).
 - **[Frontend Guide](docs/developer-guide-frontend.md)** - React/TypeScript development
 - **[Backend Guide](docs/developer-guide-backend.md)** - Rust/Tauri development
 - **[API Reference](docs/api-reference.md)** - Complete IPC command reference
+- **[Analysis & Data Processing](docs/analysis-and-data-processing.md)** - Code quality tools and Python utilities
 
 ### 🔧 **Generated Documentation**
 
