@@ -20,10 +20,10 @@
     "clean": "git clean -f -X .",
     "analyze": "node code-analysis/analyze.js && (xdg-open analysis-reports/index.html || open analysis-reports/index.html || start analysis-reports/index.html)",
     "analyze:setup": "bash ./code-analysis/setup-analysis.sh",
+    "analyze:build": "npm run analyze:setup && npm run analyze",
     "docs:rust": "cd src-tauri && cargo doc --no-deps --document-private-items",
     "docs:rust:copy": "mkdir -p docs/rustdoc && cp -r src-tauri/target/doc/* docs/rustdoc/",
-    "docs:rust:build": "npm run docs:rust && npm run docs:rust:copy",
-    "docs:rust:open": "npm run docs:rust:build && (xdg-open docs/rustdoc/tauri_app_lib/index.html || open docs/rustdoc/tauri_app_lib/index.html || start docs/rustdoc/tauri_app_lib/index.html)"
+    "docs:rust:build": "npm run docs:rust && npm run docs:rust:copy"
   },
   "dependencies": {
     "@mantine/core": "^8.0.1",
