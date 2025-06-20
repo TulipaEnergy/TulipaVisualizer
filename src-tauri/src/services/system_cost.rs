@@ -1,3 +1,28 @@
+//! System-wide economic cost analysis service for energy model optimization results.
+//! 
+//! This module provides comprehensive cost calculations for Tulipa Energy Model results,
+//! including fixed asset costs, variable flow costs, and financial analysis with discount factors.
+//! Implements the economic methodology from TulipaEnergyModel.jl for consistent cost accounting.
+//! 
+//! ## Cost Categories
+//! 
+//! - **Fixed Asset Costs**: CAPEX, fixed O&M, construction costs
+//! - **Fixed Flow Costs**: Transmission infrastructure, transport capacity
+//! - **Variable Flow Costs**: Energy transmission per MWh, variable O&M
+//! - **Unit Commitment Costs**: Start-up costs, operational switching costs
+//! 
+//! ## Financial Methodology
+//! 
+//! - Discount factor calculations using compound interest formula
+//! - Multi-year analysis with milestone year progression
+//! - Commission year tracking for asset lifetime management
+//! - Representative period weighting for annual cost scaling
+//! 
+//! ## Schema Compatibility
+//! 
+//! Handles optional database columns gracefully with fallback queries
+//! when optimization solution data is unavailable.
+
 use duckdb::arrow::{array::RecordBatch, datatypes::Schema};
 use tauri::ipc::Response;
 use crate::duckdb_conn::{run_query_rb, serialize_recordbatch};

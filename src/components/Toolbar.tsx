@@ -2,6 +2,12 @@ import useVisualizationStore from "../store/visualizationStore";
 import { Paper, Text, Title, Image, Anchor, Flex, Group } from "@mantine/core";
 import logo from "../assets/tulipaLogo.png";
 
+/**
+ * Fixed application header with branding, navigation, and status indicators.
+ * Displays the Tulipa Energy logo, application title, documentation link,
+ * and loading state when database operations are in progress. Positioned
+ * as a fixed overlay at the top of the application.
+ */
 const Toolbar: React.FC = () => {
   const { isLoading, hasAnyDatabase } = useVisualizationStore();
 

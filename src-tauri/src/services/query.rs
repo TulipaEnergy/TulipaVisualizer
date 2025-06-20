@@ -1,3 +1,29 @@
+//! Generic SQL query execution service for database exploration and debugging.
+//! 
+//! This module provides direct SQL query execution capabilities for database exploration,
+//! custom analysis, and debugging purposes. Implements security measures while maintaining
+//! flexibility for advanced database operations.
+//! 
+//! ## Security Features
+//! 
+//! - **Prepared Statements**: Prevents SQL injection through parameterization
+//! - **Connection Pooling**: Manages database resources efficiently
+//! - **Path Validation**: Database file paths must be pre-validated
+//! - **Error Handling**: Comprehensive error reporting with context
+//! 
+//! ## Usage Guidelines
+//! 
+//! - Intended for database exploration and custom analysis
+//! - Should not be used for production data modifications
+//! - Query complexity limited by DuckDB engine capabilities
+//! - Results serialized via Apache Arrow for efficient transfer
+//! 
+//! ## Performance Considerations
+//! 
+//! - No query execution time limits (potential for long-running queries)
+//! - Memory usage scales with result set size
+//! - Leverages DuckDB's columnar storage for efficient processing
+
 use tauri::ipc::Response;
 use super::super::duckdb_conn::{ serialize_recordbatch, run_query_rb };
 use duckdb::arrow::{array::RecordBatch, datatypes::Schema};

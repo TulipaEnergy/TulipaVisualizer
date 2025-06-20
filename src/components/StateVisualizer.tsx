@@ -3,6 +3,12 @@ import { Accordion, Box, Code, Text, Divider } from "@mantine/core";
 import { IconChevronUp } from "@tabler/icons-react";
 import useVisualizationStore from "../store/visualizationStore";
 
+/**
+ * Development debugging component that displays the current application state.
+ * Renders the complete Zustand store state in a collapsible JSON viewer for
+ * debugging and development purposes. Positioned as a semi-transparent overlay
+ * at the bottom of the database list for easy access during development.
+ */
 const StateVisualizer: React.FC = () => {
   const visualizationState = useVisualizationStore();
 

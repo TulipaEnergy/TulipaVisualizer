@@ -1,3 +1,30 @@
+//! Production price analysis service using dual values from optimization constraints.
+//! 
+//! This module calculates energy production prices by extracting dual values from
+//! capacity constraint equations in the Tulipa Energy Model optimization results.
+//! Supports multiple optimization methods and provides time-resolution aggregation.
+//! 
+//! ## Price Calculation Methodology
+//! 
+//! - **Dual Values**: Marginal cost of capacity constraint relaxation
+//! - **Economic Interpretation**: Value of additional production capacity
+//! - **Asset Types**: Producer, storage, and conversion assets
+//! - **Time Resolution**: Configurable aggregation (hourly, daily, etc.)
+//! 
+//! ## Optimization Method Support
+//! 
+//! - **Simple Method**: Individual asset constraints
+//! - **Compact Method**: Aggregated constraint formulations
+//! - **Hybrid Support**: Combines both methods when available
+//! - **Graceful Fallback**: Handles missing constraint tables
+//! 
+//! ## Business Applications
+//! 
+//! - Energy pricing analysis and forecasting
+//! - Investment decision support and ROI calculations
+//! - Market price discovery and benchmarking
+//! - Capacity planning and optimization insights
+
 use duckdb::arrow::{array::RecordBatch, datatypes::Schema};
 use duckdb::{ types::Value};
 use tauri::ipc::Response;

@@ -1,3 +1,30 @@
+//! Renewable energy supply analysis service for demand-supply balance calculations.
+//! 
+//! This module analyzes renewable energy supply patterns and residual load calculations
+//! from Tulipa Energy Model optimization results. Focuses on renewable energy sources
+//! feeding consumer demand with configurable filtering and time resolution analysis.
+//! 
+//! ## Supply Analysis Methodology
+//! 
+//! - **Renewable Classification**: Assets with availability profiles
+//! - **Consumer Flow Filtering**: Energy flows directed to demand assets
+//! - **Temporal Aggregation**: Configurable time resolution for analysis
+//! - **Metadata Filtering**: Advanced filtering by asset categories and properties
+//! 
+//! ## Renewable Energy Sources
+//! 
+//! - Wind power (onshore and offshore)
+//! - Solar photovoltaic and thermal
+//! - Hydroelectric and run-of-river
+//! - Other variable renewable energy sources
+//! 
+//! ## Business Applications
+//! 
+//! - Renewable energy integration analysis
+//! - Grid balancing and storage requirement planning
+//! - Demand-supply matching and forecasting
+//! - Energy system flexibility assessment
+
 use duckdb::arrow::{array::RecordBatch, datatypes::Schema};
 use duckdb::types::Value;
 use tauri::ipc::Response;

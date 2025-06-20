@@ -1,3 +1,48 @@
+/**
+ * @fileoverview Asset capacity analysis service for investment and decommission tracking over time.
+ * 
+ * This module provides comprehensive capacity evolution analysis functionality by interfacing with
+ * Rust backend services that handle complex capacity calculations. Tracks asset capacity changes
+ * including initial capacity, investments, decommissions, and cumulative capacity evolution.
+ * 
+ * ## Capacity Analysis Features
+ * 
+ * - **Capacity Evolution Tracking**: Initial, investment, decommission, and final capacity over time
+ * - **Asset-Specific Analysis**: Detailed capacity tracking for individual energy assets
+ * - **Year Discovery**: Identification of all available milestone years for analysis
+ * - **Missing Data Handling**: Graceful handling of databases without investment/decommission data
+ * 
+ * ## Business Logic Implementation
+ * 
+ * - **Initial Capacity**: Base asset units from commissioning specifications
+ * - **Investment Capacity**: New capacity additions from optimization decisions
+ * - **Decommission Capacity**: Capacity removals and retirements
+ * - **Cumulative Calculations**: Final capacity = Initial + Investments - Decommissions
+ * 
+ * ## Data Interpretation
+ * 
+ * - **Positive Investment Values**: Capacity additions in MW for the given year
+ * - **Positive Decommission Values**: Capacity removals in MW for the given year
+ * - **Negative Values (-1)**: Indicates data not available in database schema
+ * - **Capacity Evolution**: Year-over-year capacity development trends
+ * 
+ * ## Business Applications
+ * 
+ * - Investment planning and capacity expansion analysis
+ * - Asset lifecycle management and retirement planning
+ * - Energy system capacity adequacy assessment
+ * - Long-term energy infrastructure development strategies
+ * 
+ * ## Technical Implementation
+ * 
+ * - Secure IPC communication with Rust backend for complex SQL execution
+ * - Apache Arrow serialization for efficient numerical data transfer
+ * - Type-safe data structures with clear semantics for missing data
+ * - Error handling and validation for robust service operation
+ * 
+ * @module CapacityQuery
+ */
+
 import { Table } from "apache-arrow";
 import { apacheIPC, genericApacheIPC } from "../gateway/db";
 

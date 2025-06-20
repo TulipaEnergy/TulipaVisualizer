@@ -1,3 +1,29 @@
+//! Storage pricing analysis service for energy storage systems.
+//! 
+//! This module analyzes storage pricing using dual values from energy balance constraints
+//! in the Tulipa Energy Model optimization results. Supports both short-term and long-term
+//! storage systems with different constraint formulations and temporal resolutions.
+//! 
+//! ## Storage Analysis Types
+//! 
+//! - **Short-term Storage**: Intra-period balance constraints (batteries, pumped hydro)
+//! - **Long-term Storage**: Inter-period balance constraints (seasonal storage)
+//! - **Combined Analysis**: Comparative analysis of both storage types
+//! 
+//! ## Price Calculation Methodology
+//! 
+//! - **Dual Values**: Marginal value of storage balance constraints
+//! - **Time Resolution**: Configurable aggregation for different analysis needs
+//! - **Representative Periods**: Weighted scaling for annual projections
+//! - **Carrier Filtering**: Analysis by energy carrier type
+//! 
+//! ## Business Applications
+//! 
+//! - Storage system valuation and pricing
+//! - Optimal storage sizing and placement analysis
+//! - Energy arbitrage opportunity identification
+//! - Storage technology comparison and selection
+
 use duckdb::arrow::{array::RecordBatch, datatypes::Schema};
 use duckdb::{ types::Value};
 use tauri::ipc::Response;
@@ -5,8 +31,24 @@ use crate::duckdb_conn::{run_query_rb, serialize_recordbatch};
 use crate::services::query_builder::{build_resolution_query, build_resolution_query_both};
 use crate::services::metadata::{check_column_in_table, apply_carrier_filter};
 
-
-
+/// Calculates storage pricing using dual values from energy balance constraints.
+/// 
+/// Storage Price Analysis:
+/// - Extracts dual values from storage balance constraint equations
+/// - Supports short-term (intra-period) and long-term (inter-period) storage
+/// - Applies time resolution aggregation and carrier filtering
+/// - Handles missing constraint tables with empty result fallbacks
+/// 
+/// Constraint Types:
+/// - **Short-term**: `cons_balance_storage_rep_period` for hourly/daily storage
+/// - **Long-term**: `cons_balance_storage_over_clustered_year` for seasonal storage
+/// - **Combined**: Both constraint types for comprehensive analysis
+/// 
+/// # Parameters
+/// * `year` - Analysis year for milestone data
+/// * `resolution` - Time aggregation resolution in hours
+/// * `storage_type` - Storage analysis type: "short-term", "long-term", or "both"
+/// * `carrier` - Energy carrier filter for specific energy types
 #[tauri::command]
 pub fn get_storage_price_resolution(db_path: String, year: u32, resolution: u32, storage_type: String, carrier: String) -> Result<Response, String> {
     

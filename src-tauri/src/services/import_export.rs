@@ -1,3 +1,30 @@
+//! Geographic energy flow analysis service for import/export trade calculations.
+//! 
+//! This module analyzes energy flows between geographic regions using hierarchical
+//! category relationships from Tulipa Energy Model optimization results. Provides
+//! comprehensive trade analysis with temporal aggregation and spatial data processing.
+//! 
+//! ## Geographic Flow Analysis
+//! 
+//! - **Hierarchical Categories**: Province → Country → Continental level analysis
+//! - **Bidirectional Trade**: Separate import and export flow calculations
+//! - **Partner Identification**: Trade relationship mapping between regions
+//! - **Temporal Aggregation**: Representative period weighting for annual scaling
+//! 
+//! ## Spatial Data Processing
+//! 
+//! - **Category Mapping**: Database ID to geographic name translation
+//! - **Sibling Regions**: Analysis between regions at same hierarchical level
+//! - **Flow Filtering**: Excludes intra-regional flows for accurate trade balance
+//! - **Multi-level Hierarchy**: Supports nested geographic categorizations
+//! 
+//! ## Business Applications
+//! 
+//! - Energy trade balance analysis and reporting
+//! - Cross-border transmission planning and optimization
+//! - Regional energy security and dependency assessment
+//! - International energy market analysis and forecasting
+
 use crate::duckdb_conn::{ serialize_recordbatch, run_query_rb, run_query_row };
 use duckdb::{ arrow::{array::RecordBatch, datatypes::Schema}, types::Value };
 use tauri::ipc::Response;

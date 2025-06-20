@@ -1,3 +1,33 @@
+/**
+ * @fileoverview System cost analysis service for economic evaluation of energy model results.
+ * 
+ * This module provides comprehensive cost analysis functionality for Tulipa Energy Model
+ * optimization results, focusing on asset-based and flow-based cost calculations.
+ * Interfaces with Rust backend services via secure IPC for data retrieval and processing.
+ * 
+ * ## Cost Analysis Categories
+ * 
+ * - **Asset Costs**: Fixed asset costs and unit commitment costs by asset and year
+ * - **Flow Costs**: Fixed and variable transmission/transport costs by carrier and year
+ * - **Data Aggregation**: Year-based and carrier-based grouping for visualization
+ * - **Economic Metrics**: Cost totals, breakdowns, and comparative analysis
+ * 
+ * ## Usage Patterns
+ * 
+ * - Chart components call these functions to populate cost visualization data
+ * - Data flows through Apache Arrow IPC for efficient serialization
+ * - Results cached at component level to minimize redundant backend calls
+ * - Error handling propagated to UI for user feedback
+ * 
+ * ## Dependencies
+ * 
+ * - Rust backend services: `get_fixed_asset_cost`, `get_unit_on_cost`, `get_fixed_flow_cost`, `get_variable_flow_cost`
+ * - IPC communication: `genericApacheIPC` for type-safe data transfer
+ * - UI integration: Results consumed by cost visualization components
+ * 
+ * @module SystemCosts
+ */
+
 import { genericApacheIPC } from "../gateway/db";
 
 export async function getAssetCostsByYear(

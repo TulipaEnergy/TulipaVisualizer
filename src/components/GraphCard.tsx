@@ -34,10 +34,22 @@ import { useResizeHandle } from "../hooks/useResizeHandle";
 import "../styles/components/metadata/treeSelect.css";
 import { IconInfoCircle } from "@tabler/icons-react";
 
+/**
+ * Interactive graph configuration panel for energy model visualizations.
+ * Handles chart type selection, database connection, metadata filtering,
+ * and dynamic visualization rendering with resizable layout support.
+ */
 interface GraphCardProps {
+  /** Unique identifier for the graph instance used for state management */
   graphId: string;
 }
 
+/**
+ * Main visualization component that renders different chart types based on user selection.
+ * Provides a complete interface for configuring and displaying energy model data including
+ * database selection, metadata filtering, chart type switching, and interactive controls.
+ * Supports resizable panels and full-width expansion for detailed analysis.
+ */
 const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
   const { updateGraph, removeGraph, mustGetGraph } = useVisualizationStore();
 

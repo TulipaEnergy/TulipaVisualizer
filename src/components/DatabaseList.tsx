@@ -5,6 +5,12 @@ import UploadButton from "./UploadButton";
 import useVisualizationStore from "../store/visualizationStore";
 import StateVisualizer from "./StateVisualizer";
 
+/**
+ * Database management interface that displays all loaded DuckDB files.
+ * Provides functionality to upload new databases, view database metadata,
+ * and remove databases from the active session. Shows an empty state with
+ * guidance when no databases are loaded.
+ */
 const DatabaseList: React.FC = () => {
   const { databases, removeDatabase } = useVisualizationStore();
   return (
@@ -50,8 +56,15 @@ const DatabaseList: React.FC = () => {
                       }}
                     >
                       {db
+                        // Cross-platform path parsing - handles Windows backslashes and Unix forward slashes
+                        // Pattern [\\/] matches either \ or / to support both operating systems
+                        // Examples: "C:\data\model.duckdb" → ["C:", "data", "model.duckdb"]
+                        //          "/home/user/model.duckdb" → ["", "home", "user", "model.duckdb"]
                         .split(/[\\/]/)
                         .pop()
+                        // Clean filename display by removing .duckdb extension
+                        // Pattern \.duckdb$ matches literal ".duckdb" at end of string only
+                        // Examples: "energy_analysis.duckdb" → "energy_analysis"
                         ?.replace(/\.duckdb$/, "") ?? "PLACEHOLDER"}
                     </Text>
                   </Tooltip>

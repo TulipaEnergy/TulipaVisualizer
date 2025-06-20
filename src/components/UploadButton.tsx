@@ -3,6 +3,12 @@ import { Button } from "@mantine/core";
 import { uploadDatabaseFile } from "../services/databaseOperations";
 import useVisualizationStore from "../store/visualizationStore";
 
+/**
+ * Secure file upload interface for adding DuckDB files to the application.
+ * Uses Tauri's secure file dialog to select .duckdb files with proper validation.
+ * Handles upload state management, error reporting, and integration with the
+ * global database registry. Prevents multiple concurrent uploads with loading state.
+ */
 const UploadButton: React.FC = () => {
   const { setError, addDatabase } = useVisualizationStore();
   const [isUploading, setIsUploading] = useState(false);

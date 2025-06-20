@@ -3,11 +3,23 @@ import { Select, Group } from "@mantine/core";
 import { IconDatabase } from "@tabler/icons-react";
 import useVisualizationStore from "../store/visualizationStore";
 
+/**
+ * Database selection dropdown component for individual graph configurations.
+ * Allows users to assign a specific database to a graph for visualization.
+ */
 interface DatabaseSelectorProps {
+  /** Unique identifier of the graph that will use the selected database */
   graphId: string;
+  /** Size variant for the select input to match surrounding UI elements */
   size: "xs" | "sm" | "md" | "lg" | "xl";
 }
 
+/**
+ * Dropdown selector that connects a specific graph to a loaded database.
+ * Displays friendly database names (without paths and extensions) while
+ * maintaining the full file path for backend operations. Updates the graph's
+ * database association when selection changes.
+ */
 const DatabaseSelector: React.FC<DatabaseSelectorProps> = ({
   graphId,
   size,
@@ -21,8 +33,12 @@ const DatabaseSelector: React.FC<DatabaseSelectorProps> = ({
       value: db,
       label:
         db
+          // Extract filename from full path - handles both Windows (\) and Unix (/) separators
+          // Examples: "/path/to/file.duckdb" → "file.duckdb", "C:\folder\file.duckdb" → "file.duckdb"
           .split(/[\\/]/)
           .pop()
+          // Remove .duckdb extension for cleaner UI display
+          // Examples: "energy_model.duckdb" → "energy_model", "data.duckdb" → "data"
           ?.replace(/\.duckdb$/, "") ?? "PLACEHOLDER",
     })),
   ];

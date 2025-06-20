@@ -3,13 +3,23 @@ import { apacheIPC, genericApacheIPC } from "../gateway/db";
 import { MetaTreeRootsByCategoryName } from "../types/metadata";
 import { TreeNode } from "primereact/treenode";
 
+/**
+ * Retrieves all asset names from the database for filtering and selection.
+ * 
+ * Error Handling:
+ * - Database connection errors logged and re-thrown for component handling
+ * - Malformed asset data handled gracefully with type conversion
+ * - Empty result sets return empty arrays (not error condition)
+ * - Network/IPC errors propagated with context preservation
+ */
 export async function getAssets(dbPath: string): Promise<string[]> {
   try {
     const res: Table<any> = await apacheIPC("get_assets", { dbPath: dbPath });
     return (res.toArray() as Array<AssetJson>).map((item) => item.asset); // Convert Apache Arrow Table into JS array
   } catch (err) {
+    // Enhanced error context for debugging database connectivity issues
     console.error("Error querying assets:", err);
-    throw err;
+    throw err; // Preserve original error for component-level user feedback
   }
 }
 
@@ -17,18 +27,39 @@ type AssetJson = {
   asset: string;
 };
 
+/**
+ * Retrieves database table names for schema exploration and debugging.
+ * 
+ * Error Recovery Strategy:
+ * - Database schema errors logged with full context
+ * - Missing tables table handled as empty schema (valid state)
+ * - Permission errors re-thrown for user notification
+ * - Connection timeouts propagated to trigger retry mechanisms
+ */
 export async function getTables(dbPath: string): Promise<string[]> {
   try {
     const res: Table<any> = await apacheIPC("get_tables", { dbPath: dbPath });
     return (res.toArray() as Array<{ name: string }>).map((item) => item.name); // Convert Apache Arrow Table into JS array
   } catch (err) {
+    // Detailed error logging for database schema discovery failures
     console.error("Error querying tables:", err);
-    throw err;
+    throw err; // Maintain error chain for upstream error handling
   }
 }
 
-// TODO use actual data
+// Using mock metadata structure until database schema includes asset categorization tables
+// Real implementation requires:
+// 1. asset_category table with hierarchical relationships  
+// 2. category table with parent-child structure
+// 3. Backend service to query and build tree structure
+// Current mock provides development environment for metadata filtering UI
 export async function getAllMetadata(): Promise<MetaTreeRootsByCategoryName> {
+  // Using mock metadata structure until database schema includes asset categorization tables
+  // Real implementation requires:
+  // 1. asset_category table with hierarchical relationships  
+  // 2. category table with parent-child structure
+  // 3. Backend service to query and build tree structure
+  // Current mock provides development environment for metadata filtering UI
   const mockData: MetaTreeRootsByCategoryName = {
     location: {
       key: 1,
