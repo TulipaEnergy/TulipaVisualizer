@@ -1,11 +1,11 @@
 import { Table } from "apache-arrow";
-import { apacheIPC } from "../gateway/db";
+import { apacheIPC, genericApacheIPC } from "../gateway/db";
 import { MetaTreeRootsByCategoryName } from "../types/metadata";
 import { TreeNode } from "primereact/treenode";
 
 export async function getAssets(dbPath: string): Promise<string[]> {
   try {
-    let res: Table<any> = await apacheIPC("get_assets", { dbPath: dbPath });
+    const res: Table<any> = await apacheIPC("get_assets", { dbPath: dbPath });
     return (res.toArray() as Array<AssetJson>).map((item) => item.asset); // Convert Apache Arrow Table into JS array
   } catch (err) {
     console.error("Error querying assets:", err);
@@ -17,10 +17,10 @@ type AssetJson = {
   asset: string;
 };
 
-export async function getTables(dbPath: String): Promise<string[]> {
+export async function getTables(dbPath: string): Promise<string[]> {
   try {
-    let res: Table<any> = await apacheIPC("get_tables", { dbPath: dbPath });
-    return (res.toArray() as Array<TableJson>).map((item) => item.name); // Convert Apache Arrow Table into JS array
+    const res: Table<any> = await apacheIPC("get_tables", { dbPath: dbPath });
+    return (res.toArray() as Array<{ name: string }>).map((item) => item.name); // Convert Apache Arrow Table into JS array
   } catch (err) {
     console.error("Error querying tables:", err);
     throw err;
@@ -58,7 +58,14 @@ export async function getAllMetadata(): Promise<MetaTreeRootsByCategoryName> {
           label: "renewables",
           children: [
             { key: 10, label: "solar", children: [] },
-            { key: 11, label: "wind", children: [] },
+            {
+              key: 11,
+              label: "wind",
+              children: [
+                { key: 14, label: "off-shore", children: [] },
+                { key: 15, label: "on-shore", children: [] },
+              ],
+            },
           ],
         },
         {
@@ -68,15 +75,9 @@ export async function getAllMetadata(): Promise<MetaTreeRootsByCategoryName> {
             {
               key: 12,
               label: "ccgt",
-              children: [
-                { key: 17, label: "ccgt-a", children: [] },
-                { key: 18, label: "ccgt-b", children: [] },
-              ],
+              children: [],
             },
-            { key: 13, label: "coal", children: [] },
-            { key: 14, label: "gas", children: [] },
-            { key: 15, label: "oil", children: [] },
-            { key: 16, label: "nuclear", children: [] },
+            { key: 13, label: "nuclear", children: [] },
           ],
         },
       ],
@@ -89,6 +90,25 @@ export function mustGetKey(n: TreeNode): number {
   return n.key! as number;
 }
 
-type TableJson = {
-  name: string;
-};
+export async function hasMetadata(dbPath: string): Promise<boolean> {
+  console.log(dbPath);
+  let res: boolean = false;
+  if (dbPath.endsWith("Enhanced.duckdb")) {
+    res = true;
+  }
+  return Promise.resolve(res);
+}
+
+export async function getAssetsCarriers(
+  dbPath: string,
+): Promise<{ carrier: string }[]> {
+  return genericApacheIPC<{ carrier: string }>("get_assets_carriers", {
+    dbPath: dbPath,
+  });
+}
+
+export async function getYears(dbPath: string): Promise<{ year: number }[]> {
+  return genericApacheIPC<{ year: number }>("get_years", {
+    dbPath: dbPath,
+  });
+}

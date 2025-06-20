@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, Dispatch, SetStateAction } from "react";
 import ReactECharts from "echarts-for-react";
 import {
   Stack,
@@ -12,24 +12,33 @@ import {
   ActionIcon,
   Divider,
   Button,
+  Alert,
+  Tooltip,
 } from "@mantine/core";
-import useVisualizationStore, { ChartType } from "../store/visualizationStore";
+import useVisualizationStore, {
+  ChartType,
+  GraphConfig,
+} from "../store/visualizationStore";
 import DatabaseViewer from "./database-viewer/DatabaseViewer";
 import DatabaseSelector from "./DatabaseSelector";
 import Capacity from "./kpis/Capacity";
 import SystemCosts from "./kpis/SystemCosts";
 import ProductionPricesDurationSeries from "./kpis/ProductionPrices";
-import StoragePrices from "./kpis/Storage Prices";
+import StoragePrices from "./kpis/StoragePrices";
 import GeoImportsExports from "./kpis/GeoImportsExports";
 import TransportationPricesDurationSeries from "./kpis/TransportationPrices";
 import FilteringScrollMenu from "./metadata/FilteringScrollMenu";
 import SupplyStackedBarSeries from "./kpis/ResidualLoad";
 import BreakdownMenu from "./metadata/BreakdownMenu";
 import "../styles/components/metadata/treeSelect.css";
+import { hasMetadata } from "../services/metadata";
+import { IconInfoCircle } from "@tabler/icons-react";
 
 interface GraphCardProps {
   graphId: string;
 }
+
+type MetadataShowStatus = "Hide" | "Disable" | "Enable";
 
 const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
   const { updateGraph, removeGraph, mustGetGraph } = useVisualizationStore();
@@ -40,6 +49,8 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
   const [height, setHeight] = useState(400);
   const [isResizing, setIsResizing] = useState(false);
   const [isFullWidth, setIsFullWidth] = useState(false);
+  const [enableMetadata, setEnableMetadata] =
+    useState<MetadataShowStatus>("Hide");
   const chartRef = useRef<ReactECharts>(null);
 
   const chartTypes: { value: ChartType; label: string }[] = [
@@ -53,18 +64,42 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
     { value: "database", label: "SQL explorer" },
   ];
 
-  const chartTypesWithMetadata = new Set<string>(
-    chartTypes.map((t) => t.value).filter((t) => t != "database"),
-  );
+  useEffect(() => {
+    (async () => {
+      if (!graph.graphDBFilePath) {
+        setEnableMetadata("Hide");
+        return;
+      }
+
+      const chartsWithMetaFeatures = [
+        "residual-load",
+        "system-costs",
+        "production-prices-duration-series",
+        "storage-prices",
+      ];
+      if (!chartsWithMetaFeatures.includes(graph.type as string)) {
+        setEnableMetadata("Hide");
+        return;
+      }
+
+      if (!(await hasMetadata(graph.graphDBFilePath))) {
+        setEnableMetadata("Disable");
+        return;
+      }
+
+      setEnableMetadata("Enable");
+    })();
+  }, [graph.graphDBFilePath, graph.type]);
 
   // Dynamic height adjustment based on chart type
   useEffect(() => {
     if (graph?.type == "database") {
-      setHeight(1200);
+      setHeight(1150);
+      setIsFullWidth(true);
     } else {
       setHeight(400);
     }
-  }, [graph?.type]);
+  }, [graph.type]);
 
   // Mouse-based resize interaction handling
   useEffect(() => {
@@ -205,28 +240,9 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
           </Group>
         </Group>
 
-        <DatabaseSelector graphId={graphId} size="xs" showBadge={true} />
+        <DatabaseSelector graphId={graphId} size="xs" />
 
-        {chartTypesWithMetadata.has(graph.type) ? (
-          <>
-            <FilteringScrollMenu graphId={graphId} />
-
-            <BreakdownMenu graphId={graphId} />
-
-            <Button
-              size="xs"
-              variant="outline"
-              style={{ maxWidth: "200px" }}
-              onClick={() => {
-                updateGraph(graph.id, { lastApplyTimestamp: Date.now() });
-              }}
-            >
-              Apply filter and breakdown
-            </Button>
-          </>
-        ) : (
-          <></>
-        )}
+        {getMetadataComponent(graph, enableMetadata, setEnableMetadata)}
 
         <Divider />
 
@@ -281,3 +297,66 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
 };
 
 export default GraphCard;
+
+function getMetadataComponent(
+  graph: GraphConfig,
+  enable: MetadataShowStatus,
+  setEnableMetadata: Dispatch<SetStateAction<MetadataShowStatus>>,
+) {
+  const { updateGraph } = useVisualizationStore();
+  const icon = <IconInfoCircle />;
+
+  switch (enable) {
+    case "Enable": {
+      return (
+        <>
+          <FilteringScrollMenu graphId={graph.id} />
+
+          <BreakdownMenu graphId={graph.id} />
+
+          <Button
+            disabled={hasEmptyTreeSelection(graph)}
+            size="xs"
+            variant="outline"
+            style={{ maxWidth: "200px" }}
+            onClick={() => {
+              updateGraph(graph.id, { lastApplyTimestamp: Date.now() });
+            }}
+          >
+            Apply filter and breakdown
+          </Button>
+        </>
+      );
+    }
+    case "Disable": {
+      return (
+        <Tooltip
+          label="Filtering and breakdown features require a metadata-enriched DuckDB file. See User Guide for further details."
+          withArrow={true}
+        >
+          <Alert
+            variant="light"
+            color="yellow"
+            radius="xs"
+            withCloseButton
+            title="Metadata features disabled"
+            icon={icon}
+            onClose={() => {
+              setEnableMetadata("Hide");
+            }}
+            style={{ maxWidth: "fit-content", padding: "10px" }}
+          ></Alert>
+        </Tooltip>
+      );
+    }
+    case "Hide": {
+      return <></>;
+    }
+  }
+}
+
+function hasEmptyTreeSelection(graph: GraphConfig): boolean {
+  return Object.values(graph.filtersByCategory).some(
+    (selectedNodesInTree) => selectedNodesInTree.length === 0,
+  );
+}

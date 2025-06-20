@@ -3,7 +3,7 @@ use duckdb::{ types::Value};
 use tauri::ipc::Response;
 use crate::services::query_builder::build_resolution_query;
 use crate::duckdb_conn::{run_query_rb, serialize_recordbatch};
-use crate::services::metadata::check_column_in_table;
+use crate::services::metadata::{check_column_in_table, apply_carrier_filter};
 
 /// Calculates production prices using dual values from optimization constraints.
 /// 
@@ -22,11 +22,11 @@ use crate::services::metadata::check_column_in_table;
 /// * `year` - Milestone year for analysis
 /// * `resolution` - Time aggregation resolution in hours
 #[tauri::command]
-pub fn get_production_price_resolution(db_path: String, year: u32, resolution: u32) -> Result<Response, String> {
+pub fn get_production_price_resolution(db_path: String, year: u32, resolution: u32, carrier: String) -> Result<Response, String> {
     let sql = build_resolution_query(
         "production_table",
         "dual_value",
-        &["asset"],
+        &["carrier"],
         "avg",
         &resolution.to_string(),
         false,
@@ -48,8 +48,8 @@ pub fn get_production_price_resolution(db_path: String, year: u32, resolution: u
                     {}
                 ) AS subquery
                 ",
-                PRODUCTION_DATA_SIMPLE_SQL,
-                PRODUCTION_DATA_COMPACT_SQL,
+                apply_carrier_filter(PRODUCTION_DATA_SIMPLE_SQL, &carrier),
+                apply_carrier_filter(PRODUCTION_DATA_COMPACT_SQL, &carrier),
                 sql
             );
         } else {
@@ -63,7 +63,7 @@ pub fn get_production_price_resolution(db_path: String, year: u32, resolution: u
                     {}
                 ) AS subquery
                 ",
-                PRODUCTION_DATA_COMPACT_SQL,
+                apply_carrier_filter(PRODUCTION_DATA_COMPACT_SQL, &carrier),
                 sql
             );
         }
@@ -81,11 +81,16 @@ pub fn get_production_price_resolution(db_path: String, year: u32, resolution: u
                     {}
                 ) AS subquery
                 ",
-                PRODUCTION_DATA_SIMPLE_SQL,
+                apply_carrier_filter(PRODUCTION_DATA_SIMPLE_SQL, &carrier),
                 sql
             );
         } else {
-            return Err("No valid production data found in the database.".to_string());
+            query = format!(
+                "
+                {}
+                ",
+                EMPTY_SQL
+            );
         }
     }
     let res: (Vec<RecordBatch>, Schema) = run_query_rb(db_path, query, vec![Value::from(year)])?;
@@ -94,64 +99,42 @@ pub fn get_production_price_resolution(db_path: String, year: u32, resolution: u
 
 }
 
-/// Retrieves all available years with production price data.
-/// Used for populating year selection UI components.
-#[tauri::command]
-pub fn get_production_years(db_path: String) -> Result<Response, String> {
-    let res: (Vec<RecordBatch>, Schema) = run_query_rb(db_path, PRODUCTION_YEARS_SQL.to_string(), vec![])?;
-
-    return serialize_recordbatch(res.0, res.1);
-}
 // --- TESTING ---
 
 // --- QUERIES ---
+    const PRODUCTION_DATA_SIMPLE_SQL: &str = "
+        SELECT
+            simple.asset,
+            simple.year,
+            simple.rep_period,
+            simple.time_block_start,
+            simple.time_block_end,
+            simple.dual_max_output_flows_limit_simple_method as dual_value
+        FROM cons_capacity_outgoing_simple_method AS simple
+        JOIN asset AS a ON a.asset = simple.asset
+        WHERE a.type = 'producer' OR a.type = 'storage' OR a.type = 'conversion'
+    ";
 
-/// SQL query to find all years with consumer balance data.
-/// Uses consumer balance table as proxy for production data availability.
-const PRODUCTION_YEARS_SQL: &str = "
-    SELECT DISTINCT year
-    FROM cons_balance_consumer
-    ORDER BY year;
-";
+    const PRODUCTION_DATA_COMPACT_SQL: &str = "
+        SELECT
+            compact.asset,
+            compact.year,
+            compact.rep_period,
+            compact.time_block_start,
+            compact.time_block_end,
+            compact.dual_max_output_flows_limit_compact_method as dual_value
+        FROM cons_capacity_outgoing_compact_method AS compact
+        JOIN asset AS a ON a.asset = compact.asset
+        WHERE a.type = 'producer' OR a.type = 'storage' OR a.type = 'conversion'
+    ";
 
-/// SQL query for production dual values using simple optimization method.
-/// 
-/// Data Sources:
-/// - cons_capacity_outgoing_simple_method: Simple constraint dual values
-/// - asset table: Asset type filtering (producer, storage, conversion)
-/// 
-/// Dual Value Context:
-/// - dual_max_output_flows_limit_simple_method: Marginal value of output capacity
-const PRODUCTION_DATA_SIMPLE_SQL: &str = "
-    SELECT
-        simple.asset,
-        simple.year,
-        simple.rep_period,
-        simple.time_block_start,
-        simple.time_block_end,
-        simple.dual_max_output_flows_limit_simple_method as dual_value
-    FROM cons_capacity_outgoing_simple_method AS simple
-    JOIN asset AS a ON a.asset = simple.asset
-    WHERE a.type = 'producer' OR a.type = 'storage' OR a.type = 'conversion'
-";
-
-/// SQL query for production dual values using compact optimization method.
-/// 
-/// Data Sources:
-/// - cons_capacity_outgoing_compact_method: Compact constraint dual values
-/// - asset table: Asset type filtering
-/// 
-/// Dual Value Context:
-/// - dual_max_output_flows_limit_compact_method: Marginal value of output capacity
-const PRODUCTION_DATA_COMPACT_SQL: &str = "
-    SELECT
-        compact.asset,
-        compact.year,
-        compact.rep_period,
-        compact.time_block_start,
-        compact.time_block_end,
-        compact.dual_max_output_flows_limit_compact_method as dual_value
-    FROM cons_capacity_outgoing_compact_method AS compact
-    JOIN asset AS a ON a.asset = compact.asset
-    WHERE a.type = 'producer' OR a.type = 'storage' OR a.type = 'conversion'
-";
+    const EMPTY_SQL: &str = "
+                SELECT 
+                    '' AS carrier,
+                    0 AS year,
+                    0 AS rep_period,
+                    0 AS time_block_start,
+                    0 AS time_block_end,
+                    0 AS dual_value
+                FROM cons_capacity_outgoing_simple_method
+                ";

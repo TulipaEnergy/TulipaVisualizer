@@ -6,17 +6,12 @@ import {
   Stack,
   Select,
   Group,
-  Checkbox,
 } from "@mantine/core";
 import { useState, useEffect } from "react";
 import ReactECharts from "echarts-for-react";
 
-import {
-  getNonRenewables,
-  getRenewables,
-  getSupplyYears,
-  SupplyRow,
-} from "../../services/residualLoadQuery";
+import { getSupply } from "../../services/residualLoadQuery";
+import { getYears } from "../../services/metadata";
 import useVisualizationStore from "../../store/visualizationStore";
 import { Resolution } from "../../types/resolution";
 
@@ -29,18 +24,20 @@ const SupplyStackedBarSeries: React.FC<SupplyStackedBarSeriesProps> = ({
   graphId,
   height = 500,
 }) => {
-  const { getGraphDatabase, updateGraph } = useVisualizationStore();
+  const { getGraphDatabase, updateGraph, mustGetGraph } =
+    useVisualizationStore();
+
+  // grab the whole graph config, including filtersByCategory
+  const graph = mustGetGraph(graphId);
+  const dbPath = getGraphDatabase(graphId);
 
   // States for dropdowns and data
   const [availableYears, setAvailableYears] = useState<number[]>([]);
   const [year, setYear] = useState<number | null>(null);
-  const [resolution, setResolution] = useState<Resolution>(Resolution.Hours);
+  const [resolution, setResolution] = useState<Resolution>(Resolution.Days);
   const [chartOptions, setChartOptions] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showIndividual, setShowIndividual] = useState(true); // toggle between individual sources or grouped
-
-  const dbPath = getGraphDatabase(graphId);
 
   useEffect(() => {
     updateGraph(graphId, { title: "Supply by source" });
@@ -49,12 +46,12 @@ const SupplyStackedBarSeries: React.FC<SupplyStackedBarSeriesProps> = ({
   // Load available years
   useEffect(() => {
     if (!dbPath) return;
-    getSupplyYears(dbPath)
+    getYears(dbPath)
       .then((ys) => {
         const yrs = ys.map((y) => y.year).sort();
         setAvailableYears(yrs);
         if (yrs.length && year === null) {
-          setYear(yrs[0]); // default to first year if none selected yet
+          setYear(yrs[0]);
         }
       })
       .catch((e) => {
@@ -68,109 +65,47 @@ const SupplyStackedBarSeries: React.FC<SupplyStackedBarSeriesProps> = ({
     if (!dbPath || year === null) return;
 
     (async () => {
+      setLoading(true);
+      setError(null);
+
       try {
-        setLoading(true);
-        setError(null);
-
-        var [renewablesData, nonData] = await Promise.all([
-          getRenewables(dbPath, resolution, year),
-          getNonRenewables(dbPath, resolution, year),
-        ]);
-        function expandData(data: SupplyRow[]): SupplyRow[] {
-          const expanded: SupplyRow[] = [];
-
-          for (const row of data) {
-            const { global_start, global_end, y_axis, ...rest } = row;
-            const duration = global_end - global_start;
-
-            if (duration === 0) continue;
-
-            for (let t = global_start; t < global_end; t++) {
-              expanded.push({
-                ...rest,
-                global_start: Number(t),
-                global_end: Number(t) + 1,
-                y_axis,
-              });
-            }
-          }
-
-          return expanded;
-        }
-        renewablesData = expandData(renewablesData);
-        nonData = expandData(nonData);
-        const allData = [...renewablesData, ...nonData]; // merge renewables and nonrenewables
-
+        const supplyData = await getSupply(
+          dbPath,
+          resolution,
+          year,
+          graph.filtersByCategory,
+          graph.breakdownNodes,
+        );
         const times = Array.from(
-          new Set(allData.map((d) => Number(d.global_start))),
+          new Set(supplyData.map((d) => Number(d.global_start))),
         ).sort((a, b) => a - b);
 
-        // compute duration per time for the tooltip below
         const durationMap = new Map<number, number>(
-          allData.map((d) => {
+          supplyData.map((d) => {
             const start = Number(d.global_start);
             const end = Number(d.global_end);
             return [start, end - start];
           }),
         );
 
-        let series: any[];
+        // group by asset → build one bar‐series per asset
+        const byAsset = new Map<string, Map<number, number>>();
+        supplyData.forEach((d) => {
+          const start = Number(d.global_start);
+          const value = d.y_axis;
+          const asset = d.asset;
+          if (!byAsset.has(asset)) byAsset.set(asset, new Map());
+          byAsset.get(asset)!.set(start, value);
+        });
 
-        if (showIndividual) {
-          // Build one series per asset
-          const byAsset = new Map<string, Map<number, number>>();
-          allData.forEach((d) => {
-            const start = Number(d.global_start);
-            const value = d.y_axis;
-            const asset = d.asset;
-            if (!byAsset.has(asset)) byAsset.set(asset, new Map());
-            byAsset.get(asset)!.set(start, value);
-          });
+        const series = Array.from(byAsset.entries()).map(([asset, map]) => ({
+          name: asset,
+          type: "bar",
+          stack: "total",
+          data: times.map((t) => map.get(t) ?? 0),
+        }));
 
-          series = Array.from(byAsset.entries()).map(([asset, map]) => ({
-            name: asset,
-            type: "bar",
-            stack: "total", // stack all on top of each other
-            data: times.map((t) => map.get(t) ?? 0),
-          }));
-        } else {
-          // Aggregate into two series: Renewables and Nonrenewables
-          const renewableSums = new Map<number, number>();
-          const nonSums = new Map<number, number>();
-
-          times.forEach((t) => {
-            // sum all renewables at time t
-            const rSum = renewablesData
-              .filter((d) => Number(d.global_start) === t)
-              .reduce((acc, d) => acc + d.y_axis, 0);
-            // sum all nonrenewables at time t
-            const nrSum = nonData
-              .filter((d) => Number(d.global_start) === t)
-              .reduce((acc, d) => acc + d.y_axis, 0);
-
-            renewableSums.set(t, rSum);
-            nonSums.set(t, nrSum);
-          });
-
-          // Two stacked series only
-          series = [
-            {
-              name: "Renewables",
-              type: "bar",
-              stack: "total",
-              data: times.map((t) => renewableSums.get(t) ?? 0),
-            },
-            {
-              name: "Nonrenewables",
-              type: "bar",
-              stack: "total",
-              data: times.map((t) => nonSums.get(t) ?? 0),
-            },
-          ];
-        }
-
-        // Common chart options
-        const options = {
+        setChartOptions({
           tooltip: {
             trigger: "axis",
             axisPointer: { type: "shadow" },
@@ -208,9 +143,7 @@ const SupplyStackedBarSeries: React.FC<SupplyStackedBarSeriesProps> = ({
               filterMode: "none",
               left: 20,
             },
-            {
-              type: "inside",
-            },
+            { type: "inside" },
           ],
           grid: {
             left: "60px",
@@ -220,9 +153,7 @@ const SupplyStackedBarSeries: React.FC<SupplyStackedBarSeriesProps> = ({
             containLabel: true,
           },
           series,
-        };
-
-        setChartOptions(options);
+        });
       } catch (err) {
         console.error(err);
         setError("Failed to load supply data.");
@@ -230,7 +161,8 @@ const SupplyStackedBarSeries: React.FC<SupplyStackedBarSeriesProps> = ({
         setLoading(false);
       }
     })();
-  }, [dbPath, year, resolution, showIndividual]);
+    // re-run when filters change as well
+  }, [dbPath, year, resolution, graph.lastApplyTimestamp]);
 
   if (error) {
     return (
@@ -259,7 +191,6 @@ const SupplyStackedBarSeries: React.FC<SupplyStackedBarSeriesProps> = ({
   return (
     <Container size="xl" style={{ paddingTop: 20 }}>
       <Stack gap="md">
-        {/* Controls: resolution, year, and toggle */}
         <Group justify="apart" align="flex-end">
           <Group>
             <Select
@@ -287,15 +218,8 @@ const SupplyStackedBarSeries: React.FC<SupplyStackedBarSeriesProps> = ({
               placeholder="Select year"
             />
           </Group>
-          {/* Checkbox toggles between views */}
-          <Checkbox
-            label="Show individual sources"
-            checked={showIndividual}
-            onChange={(e) => setShowIndividual(e.currentTarget.checked)}
-          />
         </Group>
 
-        {/* Chart container */}
         <Paper p="md" radius="md" withBorder shadow="xs" style={{ height }}>
           <ReactECharts
             option={chartOptions}

@@ -122,33 +122,27 @@ const FilterPerTree: React.FC<FilterPerTreeProps> = ({
     <TreeSelect
       value={selectorState}
       onChange={(e: TreeSelectChangeEvent) => {
-        if (!e.value || Object.keys(e.value).length === 0) {
-          // do not allow for no value to be selected, since that would yield an empyt asset subset
-          setSelectorState(getAllSelected(currentTree));
-          updateFiltersForCategory(graphId, categoryRootKey, [categoryRootKey]);
-        } else {
-          const selectorState = e.value as SelectedFilteringKeys;
+        const selectorState = e.value as SelectedFilteringKeys;
 
-          // disregard all keys which are not checked, or are only partially checked
-          const selectedCheckedKeysSet: Set<number> = new Set(
-            Object.keys(selectorState)
-              .filter((key) => selectorState[key].checked)
-              .map((t) => Number(t)),
-          );
+        // disregard all keys which are not checked, or are only partially checked
+        const selectedCheckedKeysSet: Set<number> = new Set(
+          Object.keys(selectorState)
+            .filter((key) => selectorState[key].checked)
+            .map((t) => Number(t)),
+        );
 
-          // conver the set of checked keys to an array of nodes
-          const selectedNodes: TreeNode[] = allCurrentCategoryNodes.filter(
-            (t) => selectedCheckedKeysSet.has(mustGetKey(t)),
-          );
+        // conver the set of checked keys to an array of nodes
+        const selectedNodes: TreeNode[] = allCurrentCategoryNodes.filter((t) =>
+          selectedCheckedKeysSet.has(mustGetKey(t)),
+        );
 
-          updateFiltersForCategory(
-            graphId,
-            categoryRootKey,
-            reduceNodeArrayToKeys(selectedNodes),
-          );
+        updateFiltersForCategory(
+          graphId,
+          categoryRootKey,
+          reduceNodeArrayToKeys(selectedNodes),
+        );
 
-          setSelectorState(selectorState);
-        }
+        setSelectorState(selectorState);
       }}
       options={currentTree}
       selectionMode="checkbox"

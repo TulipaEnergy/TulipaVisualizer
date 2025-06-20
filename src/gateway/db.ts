@@ -6,9 +6,9 @@ export async function apacheIPC(
   args?: InvokeArgs,
 ): Promise<Table<any>> {
   try {
-    let buffer = await invoke<ArrayBuffer>(cmd, args);
-    let byteArr = new Uint8Array(buffer);
-    let table = tableFromIPC(byteArr);
+    const buffer = await invoke<ArrayBuffer>(cmd, args);
+    const byteArr = new Uint8Array(buffer);
+    const table = tableFromIPC(byteArr);
     return table;
   } catch (error) {
     console.error(

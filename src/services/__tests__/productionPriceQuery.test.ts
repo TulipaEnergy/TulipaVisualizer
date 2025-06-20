@@ -1,9 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import {
   getProductionPriceDurationSeries,
-  getProductionYears,
   type ProductionPriceDurationSeriesRow,
-  type YearJson,
 } from "../productionPriceQuery";
 import { Resolution } from "../../types/resolution";
 
@@ -41,18 +39,19 @@ describe("Production Price Query Service", () => {
   describe("getProductionPriceDurationSeries", () => {
     const mockDbPath = "/path/to/test.duckdb";
     const mockYear = 2023;
+    const mockCarrier = "electricity";
 
     it("should fetch production price data for yearly resolution", async () => {
       const mockData: ProductionPriceDurationSeriesRow[] = [
         {
-          asset: "wind_farm_1",
+          carrier: "electricity",
           milestone_year: 2023,
           global_start: 0,
           global_end: 8760,
           y_axis: 50.5,
         },
         {
-          asset: "solar_plant_1",
+          carrier: "gas",
           milestone_year: 2023,
           global_start: 0,
           global_end: 8760,
@@ -66,6 +65,7 @@ describe("Production Price Query Service", () => {
         mockDbPath,
         Resolution.Years,
         mockYear,
+        mockCarrier,
       );
 
       expect(genericApacheIPC).toHaveBeenCalledWith(
@@ -74,6 +74,7 @@ describe("Production Price Query Service", () => {
           dbPath: mockDbPath,
           resolution: "years_table",
           year: mockYear,
+          carrier: mockCarrier,
         },
       );
       expect(result).toEqual(mockData);
@@ -82,14 +83,14 @@ describe("Production Price Query Service", () => {
     it("should fetch production price data for hourly resolution", async () => {
       const mockData: ProductionPriceDurationSeriesRow[] = [
         {
-          asset: "wind_farm_1",
+          carrier: "gas",
           milestone_year: 2023,
           global_start: 0,
           global_end: 1,
           y_axis: 52.1,
         },
         {
-          asset: "wind_farm_1",
+          carrier: "gas",
           milestone_year: 2023,
           global_start: 1,
           global_end: 2,
@@ -103,6 +104,7 @@ describe("Production Price Query Service", () => {
         mockDbPath,
         Resolution.Hours,
         mockYear,
+        mockCarrier,
       );
 
       expect(genericApacheIPC).toHaveBeenCalledWith(
@@ -111,6 +113,7 @@ describe("Production Price Query Service", () => {
           dbPath: mockDbPath,
           year: mockYear,
           resolution: "hours_table",
+          carrier: mockCarrier,
         },
       );
       expect(result).toEqual(mockData);
@@ -119,7 +122,7 @@ describe("Production Price Query Service", () => {
     it("should fetch production price data for daily resolution", async () => {
       const mockData: ProductionPriceDurationSeriesRow[] = [
         {
-          asset: "solar_plant_1",
+          carrier: "electricity",
           milestone_year: 2023,
           global_start: 0,
           global_end: 24,
@@ -133,6 +136,7 @@ describe("Production Price Query Service", () => {
         mockDbPath,
         Resolution.Days,
         mockYear,
+        mockCarrier,
       );
 
       expect(genericApacheIPC).toHaveBeenCalledWith(
@@ -141,6 +145,7 @@ describe("Production Price Query Service", () => {
           dbPath: mockDbPath,
           year: mockYear,
           resolution: "days_table",
+          carrier: mockCarrier,
         },
       );
       expect(result).toEqual(mockData);
@@ -149,7 +154,7 @@ describe("Production Price Query Service", () => {
     it("should fetch production price data for weekly resolution", async () => {
       const mockData: ProductionPriceDurationSeriesRow[] = [
         {
-          asset: "wind_farm_1",
+          carrier: "hydrogen",
           milestone_year: 2023,
           global_start: 0,
           global_end: 168,
@@ -163,6 +168,7 @@ describe("Production Price Query Service", () => {
         mockDbPath,
         Resolution.Weeks,
         mockYear,
+        mockCarrier,
       );
 
       expect(genericApacheIPC).toHaveBeenCalledWith(
@@ -171,6 +177,7 @@ describe("Production Price Query Service", () => {
           dbPath: mockDbPath,
           year: mockYear,
           resolution: "weeks_table",
+          carrier: mockCarrier,
         },
       );
       expect(result).toEqual(mockData);
@@ -179,7 +186,7 @@ describe("Production Price Query Service", () => {
     it("should fetch production price data for monthly resolution", async () => {
       const mockData: ProductionPriceDurationSeriesRow[] = [
         {
-          asset: "wind_farm_1",
+          carrier: "hydrogen",
           milestone_year: 2023,
           global_start: 0,
           global_end: 744,
@@ -193,6 +200,7 @@ describe("Production Price Query Service", () => {
         mockDbPath,
         Resolution.Months,
         mockYear,
+        "all",
       );
 
       expect(genericApacheIPC).toHaveBeenCalledWith(
@@ -201,6 +209,7 @@ describe("Production Price Query Service", () => {
           dbPath: mockDbPath,
           year: mockYear,
           resolution: "months_table",
+          carrier: "all",
         },
       );
       expect(result).toEqual(mockData);
@@ -214,6 +223,7 @@ describe("Production Price Query Service", () => {
           mockDbPath,
           invalidResolution,
           mockYear,
+          mockCarrier,
         ),
       ).rejects.toThrow(
         "Invalid resolution specified. Use 'hours', 'days', 'weeks', 'months' or 'years'.",
@@ -231,6 +241,7 @@ describe("Production Price Query Service", () => {
         mockDbPath,
         Resolution.Hours,
         mockYear,
+        mockCarrier,
       );
 
       expect(result).toEqual([]);
@@ -239,14 +250,14 @@ describe("Production Price Query Service", () => {
     it("should handle production price data with zero values", async () => {
       const mockDataWithZeros: ProductionPriceDurationSeriesRow[] = [
         {
-          asset: "wind_farm_1",
+          carrier: "wind",
           milestone_year: 2023,
           global_start: 0,
           global_end: 1,
           y_axis: 0,
         },
         {
-          asset: "solar_plant_1",
+          carrier: "gas",
           milestone_year: 2023,
           global_start: 1,
           global_end: 2,
@@ -260,6 +271,7 @@ describe("Production Price Query Service", () => {
         mockDbPath,
         Resolution.Hours,
         mockYear,
+        mockCarrier,
       );
 
       expect(result).toEqual(mockDataWithZeros);
@@ -268,7 +280,7 @@ describe("Production Price Query Service", () => {
     it("should handle production price data with negative values", async () => {
       const mockDataWithNegatives: ProductionPriceDurationSeriesRow[] = [
         {
-          asset: "wind_farm_1",
+          carrier: "wind",
           milestone_year: 2023,
           global_start: 0,
           global_end: 1,
@@ -282,6 +294,7 @@ describe("Production Price Query Service", () => {
         mockDbPath,
         Resolution.Hours,
         mockYear,
+        mockCarrier,
       );
 
       expect(result).toEqual(mockDataWithNegatives);
@@ -296,6 +309,7 @@ describe("Production Price Query Service", () => {
           mockDbPath,
           Resolution.Hours,
           mockYear,
+          mockCarrier,
         ),
       ).rejects.toThrow("Database connection failed");
 
@@ -305,6 +319,7 @@ describe("Production Price Query Service", () => {
           dbPath: mockDbPath,
           year: mockYear,
           resolution: "hours_table",
+          carrier: mockCarrier,
         },
       );
     });
@@ -314,14 +329,19 @@ describe("Production Price Query Service", () => {
       vi.mocked(genericApacheIPC).mockRejectedValueOnce(mockError);
 
       await expect(
-        getProductionPriceDurationSeries(mockDbPath, Resolution.Years, 1999),
+        getProductionPriceDurationSeries(
+          mockDbPath,
+          Resolution.Years,
+          1999,
+          mockCarrier,
+        ),
       ).rejects.toThrow("Year not found in database");
     });
 
-    it("should handle assets with special characters", async () => {
+    it("should handle carriers with special characters", async () => {
       const mockData: ProductionPriceDurationSeriesRow[] = [
         {
-          asset: "wind_farm-1@location_2",
+          carrier: "wind@2",
           milestone_year: 2023,
           global_start: 0,
           global_end: 1,
@@ -335,108 +355,10 @@ describe("Production Price Query Service", () => {
         mockDbPath,
         Resolution.Hours,
         mockYear,
+        "wind@2",
       );
 
       expect(result).toEqual(mockData);
-    });
-  });
-
-  describe("getProductionYears", () => {
-    const mockDbPath = "/path/to/test.duckdb";
-
-    it("should fetch available production years successfully", async () => {
-      const mockYearData: YearJson[] = [
-        { year: 2020 },
-        { year: 2021 },
-        { year: 2022 },
-        { year: 2023 },
-      ];
-
-      vi.mocked(genericApacheIPC).mockResolvedValueOnce(mockYearData);
-
-      const result = await getProductionYears(mockDbPath);
-
-      expect(genericApacheIPC).toHaveBeenCalledWith("get_production_years", {
-        dbPath: mockDbPath,
-      });
-      expect(result).toEqual(mockYearData);
-    });
-
-    it("should handle empty years list", async () => {
-      const mockEmptyYearData: YearJson[] = [];
-
-      vi.mocked(genericApacheIPC).mockResolvedValueOnce(mockEmptyYearData);
-
-      const result = await getProductionYears(mockDbPath);
-
-      expect(genericApacheIPC).toHaveBeenCalledWith("get_production_years", {
-        dbPath: mockDbPath,
-      });
-      expect(result).toEqual([]);
-    });
-
-    it("should handle single year", async () => {
-      const mockSingleYearData: YearJson[] = [{ year: 2023 }];
-
-      vi.mocked(genericApacheIPC).mockResolvedValueOnce(mockSingleYearData);
-
-      const result = await getProductionYears(mockDbPath);
-
-      expect(result).toEqual(mockSingleYearData);
-    });
-
-    it("should handle unsorted years", async () => {
-      const mockUnsortedYearData: YearJson[] = [
-        { year: 2022 },
-        { year: 2020 },
-        { year: 2023 },
-        { year: 2021 },
-      ];
-
-      vi.mocked(genericApacheIPC).mockResolvedValueOnce(mockUnsortedYearData);
-
-      const result = await getProductionYears(mockDbPath);
-
-      // Function returns data as received from database
-      expect(result).toEqual(mockUnsortedYearData);
-    });
-
-    it("should handle IPC errors gracefully", async () => {
-      const mockError = new Error("Database query failed");
-      vi.mocked(genericApacheIPC).mockRejectedValueOnce(mockError);
-
-      await expect(getProductionYears(mockDbPath)).rejects.toThrow(
-        "Database query failed",
-      );
-
-      expect(genericApacheIPC).toHaveBeenCalledWith("get_production_years", {
-        dbPath: mockDbPath,
-      });
-    });
-
-    it("should handle database not found errors", async () => {
-      const mockError = new Error("Database file not found");
-      vi.mocked(genericApacheIPC).mockRejectedValueOnce(mockError);
-
-      await expect(
-        getProductionYears("/nonexistent/path.duckdb"),
-      ).rejects.toThrow("Database file not found");
-    });
-
-    it("should handle malformed year data", async () => {
-      // Test with unexpected data structure
-      const mockMalformedData = [
-        { year: 2020 },
-        { invalid_field: "not_a_year" },
-        { year: null },
-      ] as any as YearJson[];
-
-      vi.mocked(genericApacheIPC).mockResolvedValueOnce(mockMalformedData);
-
-      const result = await getProductionYears(mockDbPath);
-
-      // Function returns data as received, type safety is handled by TypeScript
-      expect(result).toEqual(mockMalformedData);
     });
   });
 
@@ -444,13 +366,10 @@ describe("Production Price Query Service", () => {
     it("should handle complete workflow with years and price data", async () => {
       const mockDbPath = "/path/to/test.duckdb";
 
-      // Mock available years
-      const mockYearData: YearJson[] = [{ year: 2022 }, { year: 2023 }];
-
       // Mock production price data
       const mockPriceData: ProductionPriceDurationSeriesRow[] = [
         {
-          asset: "wind_farm_1",
+          carrier: "wind",
           milestone_year: 2023,
           global_start: 0,
           global_end: 8760,
@@ -458,20 +377,17 @@ describe("Production Price Query Service", () => {
         },
       ];
 
-      vi.mocked(genericApacheIPC)
-        .mockResolvedValueOnce(mockYearData)
-        .mockResolvedValueOnce(mockPriceData);
+      vi.mocked(genericApacheIPC).mockResolvedValueOnce(mockPriceData);
 
       // Execute workflow
-      const availableYears = await getProductionYears(mockDbPath);
-      const latestYear = Math.max(...availableYears.map((y) => y.year));
+      const latestYear = 2023;
       const priceData = await getProductionPriceDurationSeries(
         mockDbPath,
         Resolution.Years,
         latestYear,
+        "wind",
       );
 
-      expect(availableYears).toEqual(mockYearData);
       expect(latestYear).toBe(2023);
       expect(priceData).toEqual(mockPriceData);
     });
@@ -480,31 +396,28 @@ describe("Production Price Query Service", () => {
       const mockDbPath = "/path/to/empty.duckdb";
 
       // Mock empty years and price data
-      const mockEmptyYears: YearJson[] = [];
       const mockEmptyPriceData: ProductionPriceDurationSeriesRow[] = [];
 
-      vi.mocked(genericApacheIPC)
-        .mockResolvedValueOnce(mockEmptyYears)
-        .mockResolvedValueOnce(mockEmptyPriceData);
+      vi.mocked(genericApacheIPC).mockResolvedValueOnce(mockEmptyPriceData);
 
-      const availableYears = await getProductionYears(mockDbPath);
       const priceData = await getProductionPriceDurationSeries(
         mockDbPath,
         Resolution.Hours,
         2023,
+        "wind",
       );
 
-      expect(availableYears).toEqual([]);
       expect(priceData).toEqual([]);
     });
 
     it("should handle different resolutions for same year", async () => {
       const mockDbPath = "/path/to/test.duckdb";
       const testYear = 2023;
+      const mockCarrier = "wind";
 
       const mockHourlyData: ProductionPriceDurationSeriesRow[] = [
         {
-          asset: "wind_farm_1",
+          carrier: "wind",
           milestone_year: 2023,
           global_start: 0,
           global_end: 1,
@@ -514,7 +427,7 @@ describe("Production Price Query Service", () => {
 
       const mockYearlyData: ProductionPriceDurationSeriesRow[] = [
         {
-          asset: "wind_farm_1",
+          carrier: "wind",
           milestone_year: 2023,
           global_start: 0,
           global_end: 8760,
@@ -531,11 +444,13 @@ describe("Production Price Query Service", () => {
         mockDbPath,
         Resolution.Hours,
         testYear,
+        mockCarrier,
       );
       const yearlyData = await getProductionPriceDurationSeries(
         mockDbPath,
         Resolution.Years,
         testYear,
+        mockCarrier,
       );
 
       expect(hourlyData).toEqual(mockHourlyData);
@@ -549,6 +464,7 @@ describe("Production Price Query Service", () => {
           dbPath: mockDbPath,
           year: testYear,
           resolution: "hours_table",
+          carrier: mockCarrier,
         },
       );
       expect(genericApacheIPC).toHaveBeenNthCalledWith(
@@ -558,6 +474,7 @@ describe("Production Price Query Service", () => {
           dbPath: mockDbPath,
           resolution: "years_table",
           year: testYear,
+          carrier: mockCarrier,
         },
       );
     });

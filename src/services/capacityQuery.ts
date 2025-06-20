@@ -66,7 +66,7 @@ export async function fetchAvailableYears(
   assetName: string,
 ): Promise<number[]> {
   try {
-    let res: Table<any> = await apacheIPC("get_available_years", {
+    const res: Table<any> = await apacheIPC("get_available_years", {
       dbPath: dbPath,
       assetName: assetName,
     });

@@ -5,6 +5,7 @@ export async function getProductionPriceDurationSeries(
   dbPath: string,
   resolution: Resolution,
   year: number,
+  carrier: string,
 ): Promise<ProductionPriceDurationSeriesRow[]> {
   if (!(resolution in resolutionToTable)) {
     throw new Error(
@@ -18,22 +19,13 @@ export async function getProductionPriceDurationSeries(
       dbPath: dbPath,
       year: year,
       resolution: resolutionToTable[resolution],
+      carrier: carrier,
     },
   );
 }
 
-export async function getProductionYears(dbPath: string): Promise<YearJson[]> {
-  return genericApacheIPC<YearJson>("get_production_years", {
-    dbPath: dbPath,
-  });
-}
-
-export type YearJson = {
-  year: number;
-};
-
 export type ProductionPriceDurationSeriesRow = {
-  asset: string;
+  carrier: string;
   milestone_year: number;
   global_start: number;
   global_end: number;

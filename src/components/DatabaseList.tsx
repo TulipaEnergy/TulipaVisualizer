@@ -27,15 +27,36 @@ const DatabaseList: React.FC = () => {
           {databases.map((db) => (
             <Card key={db} withBorder radius="sm" p="sm">
               <Group justify="space-between" wrap="nowrap">
-                <IconDatabase
-                  size={16}
-                  color="var(--mantine-color-blue-6)"
-                  style={{ flexShrink: 0 }}
-                />
-                <Text size="sm" fw={500}>
-                  {db}
-                </Text>
-                {/* Database removal with event propagation control */}
+                <Group wrap="nowrap">
+                  <IconDatabase
+                    size={16}
+                    color="var(--mantine-color-blue-6)"
+                    style={{ flexShrink: 0 }}
+                  />
+                  <Tooltip label={`${db}`}>
+                    <Text
+                      size="sm"
+                      lineClamp={3}
+                      style={{
+                        cursor: "help",
+                        color: "var(--mantine-color-blue-6)",
+                        fontWeight: 600,
+                        fontSize: "var(--mantine-font-size-xs)",
+                        // textAlign: "center",
+                        backgroundColor: "var(--mantine-color-blue-0)",
+                        padding: "4px 8px",
+                        borderRadius: "4px",
+                        width: "160px",
+                      }}
+                    >
+                      {db
+                        .split(/[\\/]/)
+                        .pop()
+                        ?.replace(/\.duckdb$/, "") ?? "PLACEHOLDER"}
+                    </Text>
+                  </Tooltip>
+                </Group>
+
                 <Tooltip label="Remove database" position="top">
                   <ActionIcon
                     size="sm"

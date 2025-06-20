@@ -10,15 +10,40 @@ def get_duckdb_in_path():
     file = filedialog.askopenfilename(filetypes=[("duckdb file", ".duckdb")])
     return file
 
-def get_duckdb_out_path():
-    Tk().withdraw()   
-    file = filedialog.asksaveasfilename(filetypes=[("duckdb file", ".duckdb")])
-    return file
+def get_duckdb_out_path(input_path):
+    # Automatically generate the output path
+    directory, filename = os.path.split(input_path)
+    name, ext = os.path.splitext(filename)
+    enhanced_filename = f"{name}Enhanced{ext}"
+    return os.path.join(directory, enhanced_filename)
 
+# BFS
 category_df = pl.DataFrame({
-    'name': ['location', 'Netherlands', 'Belgium', 'South Holland', 'North Holland', 'Antwerp', 'technology', 'renewable', 'fossil', 'solar', 'wind', 'ccgt'],
-    'parent_id': [None, 1, 1, 2, 2, 3, None, 7, 7, 8, 8, 9],
-    'level': [-1, 1, 1, 0, 0, 0, -1, 1, 1, 0, 0, 0]
+    'name': [
+        'location' , #1
+            'Netherlands', #2
+            'Belgium', #3
+                'South Holland', #4
+                'North Holland', #5
+                'Antwerp', #6
+        'technology', #7
+            'renewable', #8
+            'fossil', #9
+                'solar', #10
+                'wind', #11
+                'ccgt', #12
+                'nuclear', #13
+                    'off-shore', #14
+                    'on-shore', #15
+    ],
+    'parent_id': [
+        None, 1, 1, 2, 2, 3,
+        None, 7, 7, 8, 8, 9, 9, 11, 11
+    ],
+    'level': [
+        -1, 1, 1, 0, 0, 0,
+        -1, 1, 1, 0, 1, 0, 0, 0, 0
+    ]
 })
 
 recursive_root_leaf_sql = """
@@ -53,7 +78,7 @@ recursive_root_leaf_sql = """
 
 # 1) select in- and output-file
 file = get_duckdb_in_path()
-out_path = get_duckdb_out_path()
+out_path = get_duckdb_out_path(file)
 shutil.copy2(file, out_path)
 
 try:

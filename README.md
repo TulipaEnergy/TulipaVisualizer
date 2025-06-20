@@ -13,6 +13,7 @@
 - [Contributing](#contributing)
 - [Support](#support)
 - [License](#license)
+- [Code Analysis & Quality Metrics](#code-analysis--quality-metrics)
 
 ## About the Project
 
@@ -255,6 +256,7 @@ npm run test:coverage # Run tests with coverage report
 
 ### Code Quality
 
+- `npx prettier . --write --end-of-line auto` - Format code using Prettier
 ```bash
 npx prettier . --write --end-of-line auto  #Format code using Prettier
 npm run lint:fix      # Fix ESLint issues automatically

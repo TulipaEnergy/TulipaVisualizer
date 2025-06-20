@@ -6,6 +6,7 @@ export async function getStoragePriceDurationSeries(
   resolution: Resolution,
   year: number,
   storageType: string,
+  carrier: string,
 ): Promise<StoragePriceDurationSeriesRow[]> {
   if (!(resolution in resolutionToTable)) {
     throw new Error(
@@ -20,22 +21,13 @@ export async function getStoragePriceDurationSeries(
       year: year,
       resolution: resolutionToTable[resolution],
       storageType: storageType,
+      carrier: carrier,
     },
   );
 }
 
-export async function getStorageYears(dbPath: string): Promise<YearJson[]> {
-  return genericApacheIPC<YearJson>("get_storage_years", {
-    dbPath: dbPath,
-  });
-}
-
-export type YearJson = {
-  year: number;
-};
-
 export type StoragePriceDurationSeriesRow = {
-  asset: string;
+  carrier: string;
   milestone_year: number;
   global_start: number;
   global_end: number;

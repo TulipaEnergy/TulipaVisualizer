@@ -14,9 +14,9 @@ import ReactECharts from "echarts-for-react";
 import {
   getTransportationPriceDurationSeries,
   TransportationPriceDurationSeriesRow,
-  getTransportationYears,
   getTransportationCarriers,
 } from "../../services/transportPriceQuery";
+import { getYears } from "../../services/metadata";
 import useVisualizationStore from "../../store/visualizationStore";
 import { Resolution } from "../../types/resolution";
 
@@ -31,7 +31,7 @@ const TransportationPricesDurationSeries: React.FC<
   const [loadingData, setLoadingData] = useState(true);
   const [errorData, setErrorData] = useState<string | null>(null);
   const [chartOptions, setChartOptions] = useState<any>(null);
-  const [resolution, setResolution] = useState<Resolution>(Resolution.Hours);
+  const [resolution, setResolution] = useState<Resolution>(Resolution.Days);
   const [year, setYear] = useState<number | null>(null);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
   const [carrier, setCarrier] = useState<string | null>(null);
@@ -50,7 +50,7 @@ const TransportationPricesDurationSeries: React.FC<
   useEffect(() => {
     const fetchYears = async () => {
       try {
-        const years = await getTransportationYears(dbPath!);
+        const years = await getYears(dbPath!);
         setAvailableYears(years.map((y) => y.year));
         if (!year && years.length > 0) {
           setYear(years[0].year);
@@ -60,9 +60,7 @@ const TransportationPricesDurationSeries: React.FC<
       }
     };
     fetchYears();
-  }, [dbPath]);
 
-  useEffect(() => {
     const fetchCarriers = async () => {
       try {
         const carriers = await getTransportationCarriers(dbPath!);
@@ -100,7 +98,7 @@ const TransportationPricesDurationSeries: React.FC<
       try {
         setLoadingData(true);
         if (year === null || carrier === null) return;
-        var data: TransportationPriceDurationSeriesRow[] =
+        let data: TransportationPriceDurationSeriesRow[] =
           await getTransportationPriceDurationSeries(
             dbPath,
             year,

@@ -17,6 +17,9 @@ coverage
 *.duckdb
 commit.md
 
+# Analysis Reports
+analysis-reports/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

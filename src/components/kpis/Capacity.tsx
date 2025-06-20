@@ -176,6 +176,21 @@ const capacityGraph = async (
       bottom: "0%",
       type: "scroll",
     },
+    dataZoom: [
+      {
+        bottom: "40px",
+        orient: "horizontal",
+        minSpan: Math.floor(100 / years.length) - 1,
+        brushSelect: false,
+      },
+      {
+        orient: "vertical",
+        brushSelect: false,
+        minSpan: 10,
+        filterMode: "none",
+        left: 20,
+      },
+    ],
     xAxis: {
       type: "category",
       data: years,
@@ -189,10 +204,10 @@ const capacityGraph = async (
       axisLabel: { formatter: "{value}" },
     },
     grid: {
-      left: "3%",
-      right: "4%",
-      top: "12%",
-      bottom: "12%",
+      left: "60px",
+      right: "40px",
+      top: "30px",
+      bottom: "90px",
       containLabel: true,
     },
     series,

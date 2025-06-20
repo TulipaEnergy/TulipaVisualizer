@@ -61,13 +61,6 @@ let dual = &format!("dual_{}_transport_flow_limit_simple_method", column_type);
 }
 
 #[tauri::command]
-pub fn get_transportation_years(db_path: String) -> Result<Response, String> {
-    let res: (Vec<RecordBatch>, Schema) = run_query_rb(db_path, TRANSPORTATION_YEARS_SQL.to_string(), vec![])?;
-
-    return serialize_recordbatch(res.0, res.1);
-}
-
-#[tauri::command]
 pub fn get_transportation_carriers(db_path: String) -> Result<Response, String> {
     let res: (Vec<RecordBatch>, Schema) = run_query_rb(db_path, CARRIER_SQL.to_string(), vec![])?;
 
@@ -77,13 +70,6 @@ pub fn get_transportation_carriers(db_path: String) -> Result<Response, String> 
 // --- TESTING ---
 
 // --- QUERIES ---
-
-const TRANSPORTATION_YEARS_SQL: &str = "
-    SELECT DISTINCT year
-    FROM cons_transport_flow_limit_simple_method
-    ORDER BY year;
-";
-
 const CARRIER_SQL: &str = "
     SELECT DISTINCT carrier
     FROM flow

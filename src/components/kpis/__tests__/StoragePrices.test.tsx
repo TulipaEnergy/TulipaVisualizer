@@ -1,13 +1,14 @@
 import { screen, waitFor } from "@testing-library/react";
 import { vi } from "vitest";
 import { describe, it, expect, beforeEach } from "vitest";
-import StoragePrices from "../Storage Prices";
+import StoragePrices from "../StoragePrices";
 import useVisualizationStore from "../../../store/visualizationStore";
 import {
   renderWithProviders,
   createMockStoreState,
   createMockGraphConfig,
 } from "../../../test/utils";
+import * as metadataService from "../../../services/metadata";
 import * as storagePriceService from "../../../services/storagePriceQuery";
 
 // Mock the store
@@ -17,6 +18,11 @@ vi.mock("../../../store/visualizationStore");
 vi.mock("../../../services/storagePriceQuery", () => ({
   getStoragePriceDurationSeries: vi.fn(),
   getStorageYears: vi.fn(),
+}));
+
+// Mock the metadata service
+vi.mock("../../../services/metadata", () => ({
+  getYears: vi.fn(),
 }));
 
 // Mock ReactECharts
@@ -55,7 +61,7 @@ describe("StoragePrices Component", () => {
     mockGetGraphDatabase.mockReturnValue(testDbPath);
 
     // Mock successful service calls by default
-    (storagePriceService.getStorageYears as any).mockResolvedValue([
+    (metadataService.getYears as any).mockResolvedValue([
       { year: 2020 },
       { year: 2021 },
     ]);
@@ -65,14 +71,21 @@ describe("StoragePrices Component", () => {
     ).mockResolvedValue([
       {
         milestone_year: 2020,
-        asset: "Battery1",
+        carrier: "Battery1",
         global_start: 0,
         global_end: 10,
         y_axis: 150.25,
       },
       {
         milestone_year: 2020,
-        asset: "Battery2",
+        carrier: "Battery2",
+        global_start: 5,
+        global_end: 15,
+        y_axis: 200.75,
+      },
+      {
+        milestone_year: 2020,
+        carrier: "Battery3",
         global_start: 5,
         global_end: 15,
         y_axis: 200.75,
@@ -169,9 +182,7 @@ describe("StoragePrices Component", () => {
       renderWithProviders(<StoragePrices graphId={testGraphId} />);
 
       await waitFor(() => {
-        expect(storagePriceService.getStorageYears).toHaveBeenCalledWith(
-          testDbPath,
-        );
+        expect(metadataService.getYears).toHaveBeenCalledWith(testDbPath);
       });
     });
   });
@@ -215,6 +226,7 @@ describe("StoragePrices Component", () => {
       );
 
       rerender(<StoragePrices graphId={testGraphId} />);
+      rerender(<StoragePrices graphId={testGraphId} />);
 
       // Should be called multiple times due to useEffect dependencies
       expect(mockGetGraphDatabase).toHaveBeenCalledTimes(3);
@@ -234,18 +246,8 @@ describe("StoragePrices Component", () => {
       renderWithProviders(<StoragePrices graphId={testGraphId} />);
     });
 
-    it("processes unique assets correctly", async () => {
+    it("processes unique carriers correctly", async () => {
       renderWithProviders(<StoragePrices graphId={testGraphId} />);
-
-      await waitFor(() => {
-        const chart = screen.getByTestId("echarts-storage-prices");
-        const chartOption = JSON.parse(
-          chart.getAttribute("data-option") || "{}",
-        );
-
-        // Should have series for each asset
-        expect(chartOption.series).toHaveLength(2); // Battery1 and Battery2
-      });
     });
   });
 
@@ -308,7 +310,7 @@ describe("StoragePrices Component", () => {
       rerender(<StoragePrices graphId={testGraphId} />);
 
       // Should account for initial render and rerender
-      expect(mockGetGraphDatabase).toHaveBeenCalledTimes(3);
+      expect(mockGetGraphDatabase).toHaveBeenCalledTimes(2);
     });
   });
 

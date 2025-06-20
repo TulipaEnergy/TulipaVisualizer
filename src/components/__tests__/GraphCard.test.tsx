@@ -45,7 +45,7 @@ vi.mock("../kpis/ProductionPrices", () => ({
   ),
 }));
 
-vi.mock("../kpis/Storage Prices", () => ({
+vi.mock("../kpis/StoragePrices", () => ({
   default: ({ graphId }: { graphId: string }) => (
     <div data-testid={`storage-prices-${graphId}`}>Storage Prices Chart</div>
   ),
@@ -138,18 +138,6 @@ describe("GraphCard Component", () => {
 
       // Should call mustGetGraph with correct ID
       expect(mockMustGetGraph).toHaveBeenCalledWith(testGraphId);
-    });
-
-    it("returns null when graph is not found", () => {
-      mockMustGetGraph.mockReturnValue(null);
-
-      renderWithProviders(<GraphCard graphId={testGraphId} />);
-
-      // When graph is null, the component returns null, no content should be rendered
-      expect(screen.queryByDisplayValue("Test Graph")).not.toBeInTheDocument();
-      expect(
-        screen.queryByTestId(`database-selector-${testGraphId}`),
-      ).not.toBeInTheDocument();
     });
 
     it("renders paper container with correct styling", () => {

@@ -14,8 +14,8 @@ import ReactECharts from "echarts-for-react";
 import {
   getStoragePriceDurationSeries,
   StoragePriceDurationSeriesRow,
-  getStorageYears,
 } from "../../services/storagePriceQuery";
+import { getAssetsCarriers, getYears } from "../../services/metadata";
 import useVisualizationStore from "../../store/visualizationStore";
 import { Resolution } from "../../types/resolution";
 
@@ -28,11 +28,13 @@ const StoragePrices: React.FC<StoragePricesProps> = ({ graphId }) => {
   const [loadingData, setLoadingData] = useState<boolean>(true);
   const [errorData, setErrorData] = useState<string | null>(null);
   const [chartOptions, setChartOptions] = useState<any>(null);
-  const [resolution, setResolution] = useState<Resolution>(Resolution.Hours);
+  const [resolution, setResolution] = useState<Resolution>(Resolution.Days);
   const [year, setYear] = useState<number | null>(null);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
   const [checked, setChecked] = useState<boolean>(false);
   const [storageType, setStorageType] = useState<string>("short-term");
+  const [carrier, setCarrier] = useState<string>("all");
+  const [availableCarriers, setAvailableCarriers] = useState<string[]>([]);
 
   const dbPath = getGraphDatabase(graphId);
 
@@ -43,7 +45,7 @@ const StoragePrices: React.FC<StoragePricesProps> = ({ graphId }) => {
   useEffect(() => {
     const fetchYears = async () => {
       try {
-        const years = await getStorageYears(dbPath!);
+        const years = await getYears(dbPath!);
         setAvailableYears(years.map((y) => y.year));
         if (!year && years.length > 0) {
           setYear(years[0].year);
@@ -53,39 +55,39 @@ const StoragePrices: React.FC<StoragePricesProps> = ({ graphId }) => {
       }
     };
     fetchYears();
+    const fetchCarriers = async () => {
+      try {
+        const carriers = await getAssetsCarriers(dbPath!);
+        setAvailableCarriers(carriers.map((y) => y.carrier));
+        if (!carrier && carriers.length > 0) {
+          setCarrier(carriers[0].carrier);
+        }
+      } catch (err) {
+        console.error("Failed to fetch carriers:", err);
+      }
+    };
+    fetchCarriers();
   }, [dbPath]);
 
   useEffect(() => {
     const fetchDataAndConfigureChart = async () => {
       setErrorData(null);
+      setLoadingData(true);
+
       if (!dbPath) {
         setErrorData("No database selected");
         setLoadingData(false);
         return;
       }
 
-      if (year === null) {
-        setChartOptions(null);
-        setLoadingData(false);
-        return;
-      }
-
       try {
-        setLoadingData(true);
-
-        if (year === null) return;
-        console.log({
-          dbPath,
-          year,
-          resolution,
-          storageType,
-        });
-        var data: StoragePriceDurationSeriesRow[] =
+        let data: StoragePriceDurationSeriesRow[] =
           await getStoragePriceDurationSeries(
             dbPath,
             resolution,
-            year,
+            year!,
             storageType,
+            carrier,
           );
 
         const expandedData: StoragePriceDurationSeriesRow[] = [];
@@ -123,21 +125,23 @@ const StoragePrices: React.FC<StoragePricesProps> = ({ graphId }) => {
           ).sort((a, b) => a - b);
         }
 
-        const byAsset = new Map<string, Map<number, number>>();
+        const byCarrier = new Map<string, Map<number, number>>();
         data.forEach((d) => {
           const start = Number(d.global_start);
           const value = d.y_axis;
-          const asset = d.asset;
-          if (!byAsset.has(asset)) byAsset.set(asset, new Map());
-          byAsset.get(asset)!.set(start, value);
+          const carrier = d.carrier;
+          if (!byCarrier.has(carrier)) byCarrier.set(carrier, new Map());
+          byCarrier.get(carrier)!.set(start, value);
         });
 
-        const series = Array.from(byAsset.entries()).map(([asset, map]) => ({
-          name: asset,
-          type: "bar",
-          stack: "total",
-          data: times.map((t) => map.get(t)),
-        }));
+        const series = Array.from(byCarrier.entries()).map(
+          ([carrier, map]) => ({
+            name: carrier,
+            type: "bar",
+            stack: "total",
+            data: times.map((t) => map.get(t)),
+          }),
+        );
 
         const options = {
           barCategoryGap: "0%",
@@ -209,7 +213,7 @@ const StoragePrices: React.FC<StoragePricesProps> = ({ graphId }) => {
     };
 
     fetchDataAndConfigureChart();
-  }, [dbPath, resolution, year, checked, storageType]); // Refreshes whenever you select a diff db file
+  }, [dbPath, resolution, year, checked, storageType, carrier]); // Refreshes whenever you select a diff db file
 
   if (loadingData && year !== null) {
     return (
@@ -285,6 +289,28 @@ const StoragePrices: React.FC<StoragePricesProps> = ({ graphId }) => {
           style={{ maxWidth: 160 }}
           placeholder="Select year"
           disabled={availableYears.length === 0}
+        />
+        <Select
+          label="Carrier"
+          value={carrier}
+          onChange={(val) => {
+            if (!val) return;
+            if (val === carrier) {
+              return;
+            }
+            setCarrier(val);
+          }}
+          data={[
+            { value: "all", label: "all" },
+            ...availableCarriers.sort().map((c) => ({
+              value: c,
+              label: c,
+            })),
+          ]}
+          size="xs"
+          style={{ maxWidth: 160 }}
+          placeholder="Select carrier"
+          disabled={availableCarriers.length === 0}
         />
         <SegmentedControl
           value={storageType}

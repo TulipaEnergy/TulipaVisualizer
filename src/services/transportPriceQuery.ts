@@ -27,22 +27,6 @@ export async function getTransportationPriceDurationSeries(
 }
 
 /**
- * Retrieves available years with transportation price data for temporal analysis.
- *
- * Multi-Year Analysis:
- * - Enables tracking of infrastructure cost evolution over planning horizon
- * - Supports assessment of transmission investment timing and value
- * - Facilitates comparative analysis of transport vs local generation economics
- */
-export async function getTransportationYears(
-  dbPath: string,
-): Promise<YearJson[]> {
-  return genericApacheIPC<YearJson>("get_transportation_years", {
-    dbPath: dbPath,
-  });
-}
-
-/**
  * Retrieves available energy carriers with transportation infrastructure in the model.
  *
  * Carrier Portfolio:
@@ -60,10 +44,6 @@ export async function getTransportationCarriers(
 
 export type CarrierJson = {
   carrier: string;
-};
-
-export type YearJson = {
-  year: number;
 };
 
 export type TransportationPriceDurationSeriesRow = {

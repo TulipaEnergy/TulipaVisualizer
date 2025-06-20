@@ -77,22 +77,17 @@ pub fn run() {
             capacity::get_available_years,
             metadata::get_assets,
             metadata::get_tables,
+            metadata::get_assets_carriers,
+            metadata::get_years,
             system_cost::get_fixed_asset_cost,
             system_cost::get_fixed_flow_cost,
             system_cost::get_variable_flow_cost,
             system_cost::get_unit_on_cost,
             transport_price::get_transportation_price_resolution,
-            transport_price::get_transportation_years,
             transport_price::get_transportation_carriers,
             production_price::get_production_price_resolution,
-            production_price::get_production_years,
             storage_price::get_storage_price_resolution,
-            storage_price::get_storage_years,
-            residual_load::get_renewables,
-            residual_load::get_nonrenewables,
-            residual_load::get_yearly_renewables,
-            residual_load::get_yearly_nonrenewables,
-            residual_load::get_supply_years])
+            residual_load::get_supply])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

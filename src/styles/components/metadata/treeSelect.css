@@ -27,3 +27,7 @@
 .p-treeselect-label {
   padding: 10px !important;
 }
+
+.p-placeholder {
+  font-size: 10px;
+}

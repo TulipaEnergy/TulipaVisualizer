@@ -207,7 +207,7 @@ describe("App Integration Tests", () => {
   describe("Database Loading Flow", () => {
     it("completes end-to-end database upload flow", async () => {
       // Start with empty state, then simulate database being added
-      let storeState = createMockStoreState({
+      const storeState = createMockStoreState({
         databases: [],
         graphs: [],
         hasAnyDatabase: () => false,
@@ -276,8 +276,8 @@ describe("App Integration Tests", () => {
       renderWithProviders(<App />);
 
       expect(screen.getByText("Loaded Databases (2)")).toBeInTheDocument();
-      expect(screen.getByText(mockDatabasePath)).toBeInTheDocument();
-      expect(screen.getByText(mockDatabasePath2)).toBeInTheDocument();
+      expect(screen.getByText("test")).toBeInTheDocument();
+      expect(screen.getByText("test2")).toBeInTheDocument();
     });
 
     it("handles database removal", async () => {
