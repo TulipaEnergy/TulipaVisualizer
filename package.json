@@ -12,7 +12,7 @@
     "tauri:test": "cargo llvm-cov --workspace --cobertura --output-path cargo-coverage.xml --manifest-path src-tauri/Cargo.toml",
     "test": "vitest run --silent='passed-only' && cargo llvm-cov --workspace --cobertura --output-path cargo-coverage.xml --manifest-path src-tauri/Cargo.toml",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage --silent='passed-only' --coverage.reporter=json-summary",
+    "test:coverage": "vitest run --coverage",
     "test:coverage:ui": "vitest run --coverage && (xdg-open coverage/index.html || open coverage/index.html || start coverage/index.html)",
     "test:coverage:watch": "vitest --coverage --watch",
     "test:coverage:clean": "rm -rf coverage",

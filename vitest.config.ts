@@ -19,8 +19,7 @@ export default defineConfig({
     coverage: {
       // V8 provider offers better performance than c8 for large codebases
       provider: "v8",
-      // Multiple output formats for CI/CD integration and local development
-      reporter: ["text", "json", "html", "cobertura", "text-summary"],
+      reporter: ["text", "json-summary", "html", "cobertura", "text-summary"],
       exclude: [
         // Infrastructure and build artifacts
         "node_modules/**",
@@ -64,5 +63,6 @@ export default defineConfig({
       // Inline Zustand to prevent ESM import issues in test environment
       inline: ["zustand"],
     },
+    silent: "passed-only",
   },
 });
