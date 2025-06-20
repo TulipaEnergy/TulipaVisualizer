@@ -328,5 +328,3 @@ screen.debug(); // Prints DOM to console
 npm run test:coverage    # Used in CI pipeline
 npm run tauri:test      # Backend tests in CI
 ```
-
-The testing strategy emphasizes fast feedback, comprehensive coverage, and maintainable test code aligned with user behavior and business requirements.
