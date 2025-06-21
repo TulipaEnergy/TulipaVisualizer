@@ -123,8 +123,8 @@ pub fn build_resolution_query_with_filters(
 ///
 /// # Returns
 ///
-/// A string of SQL `AND` filter conditions.
-fn build_filter_conditions(filters_by_category: &HashMap<i32, Vec<i32>>) -> String {
+/// A string of SQL `AND` filter conditions. IMPORTANT: The returned SQL condition is valid when selecting from a table "ac" which has at least the "asset" column.
+pub fn build_filter_conditions(filters_by_category: &HashMap<i32, Vec<i32>>) -> String {
     if filters_by_category.is_empty() {
         return String::new();
     }
@@ -154,7 +154,7 @@ fn build_filter_conditions(filters_by_category: &HashMap<i32, Vec<i32>>) -> Stri
                 {desc_cte}
                 SELECT 1
                 FROM asset_category ac{0}
-                WHERE ac{0}.asset = f.from_asset
+                WHERE ac{0}.asset = ac.asset
                   AND ac{0}.root_id = {0}
                   AND ac{0}.leaf_id IN (SELECT id FROM sub{0})
             )",
