@@ -37,7 +37,7 @@ const Toolbar: React.FC = () => {
             <Image style={{ height: "30px", width: "30px" }} src={logo} />
             <Title order={2}>Tulipa Energy Visualizer</Title>
           </Group>
-          
+
           {/* Documentation access button */}
           <Button
             leftSection={<IconBook size={16} />}
