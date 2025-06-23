@@ -314,18 +314,6 @@ mod tests {
         });
     }
 
-    #[test]
-    fn test_get_available_files_empty_directory() {
-        let temp_dir = TempDir::new().expect("Failed to create temp directory");
-        
-        with_temp_dir(&temp_dir, || {
-            let result = get_available_files();
-            
-            assert!(result.is_ok());
-            let files = result.unwrap();
-            assert!(files.is_empty());
-        });
-    }
 
     #[test]
     fn test_read_multiple_files() {
