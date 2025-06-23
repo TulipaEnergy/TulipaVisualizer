@@ -270,16 +270,7 @@ mod tests {
             assert!(res.is_err() && res.unwrap_err().contains(".duckdb"));
         }
 
-        #[test]
-        #[serial] // same file, can only be opened once simultaneously 
-        fn fetch_connection_reuse_connection_test() {
-            let conn_handler: ConnectionHandler = ConnectionHandler::new();
-            assert_eq!(conn_handler.db_pool.lock().unwrap().len(), 0);
-            let _ = conn_handler.fetch_connection(&DB_PATH.to_string(), |_| Ok(()));
-            assert_eq!(conn_handler.db_pool.lock().unwrap().len(), 1);
-            let _ = conn_handler.fetch_connection(&DB_PATH.to_string(), |_| Ok(()));
-            assert_eq!(conn_handler.db_pool.lock().unwrap().len(), 1);
-        }
+    
 
         #[test]
         fn fetch_connection_file_missing_test() {

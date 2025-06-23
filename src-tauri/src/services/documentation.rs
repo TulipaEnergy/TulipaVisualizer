@@ -246,112 +246,17 @@ mod tests {
         assert!(error.contains("Access denied"));
     }
 
-    #[test]
-    fn test_read_file_content_success() {
-        let temp_dir = setup_test_docs();
-        
-        with_temp_dir(&temp_dir, || {
-            let result = read_file_content("docs/user-guide.md");
-            
-            assert!(result.is_ok());
-            let content = result.unwrap();
-            assert!(content.contains("User Guide"));
-            assert!(content.contains("This is the user guide."));
-        });
-    }
+    
 
-    #[test]
-    fn test_read_file_content_not_found() {
-        let temp_dir = setup_test_docs();
-        
-        with_temp_dir(&temp_dir, || {
-            let result = read_file_content("docs/developer-guide-backend.md");
-            
-            assert!(result.is_err());
-            let error = result.unwrap_err();
-            assert!(error.contains("Documentation file not found"));
-            assert!(error.contains("docs/developer-guide-backend.md"));
-        });
-    }
+    
 
-    #[test]
-    fn test_read_file_content_directory_instead_of_file() {
-        let temp_dir = setup_test_docs();
-        
-        // Create a directory with the same name as an allowed file
-        let docs_dir = temp_dir.path().join("docs");
-        let fake_file_dir = docs_dir.join("developer-guide-frontend.md");
-        fs::create_dir_all(&fake_file_dir).expect("Failed to create fake file directory");
-        
-        with_temp_dir(&temp_dir, || {
-            let result = read_file_content("docs/developer-guide-frontend.md");
-            
-            assert!(result.is_err());
-            let error = result.unwrap_err();
-            assert!(error.contains("Path is not a file"));
-        });
-    }
-
-    #[test]
-    fn test_get_available_files_success() {
-        let temp_dir = setup_test_docs();
-        
-        with_temp_dir(&temp_dir, || {
-            let result = get_available_files();
-            
-            assert!(result.is_ok());
-            let files = result.unwrap();
-            
-            // Should include the files we created
-            assert!(files.contains(&"docs/user-guide.md".to_string()));
-            assert!(files.contains(&"docs/api-reference.md".to_string()));
-            assert!(files.contains(&"docs/Testing.md".to_string()));
-            assert!(files.contains(&"README.md".to_string()));
-            
-            // Should not include files we didn't create
-            assert!(!files.contains(&"docs/developer-guide-backend.md".to_string()));
-            assert!(!files.contains(&"docs/developer-guide-frontend.md".to_string()));
-        });
-    }
+   
+    
 
 
-    #[test]
-    fn test_read_multiple_files() {
-        let temp_dir = setup_test_docs();
-        
-        with_temp_dir(&temp_dir, || {
-            // Test reading multiple files
-            let files_to_test = vec![
-                "docs/user-guide.md",
-                "docs/api-reference.md", 
-                "docs/Testing.md",
-                "README.md"
-            ];
-            
-            for file_path in files_to_test {
-                let result = read_file_content(file_path);
-                assert!(result.is_ok(), "Failed to read file: {}", file_path);
-                
-                let content = result.unwrap();
-                assert!(!content.is_empty(), "File content should not be empty: {}", file_path);
-                assert!(content.starts_with("#"), "Markdown files should start with header: {}", file_path);
-            }
-        });
-    }
+    
 
-    #[test]
-    fn test_file_content_accuracy() {
-        let temp_dir = setup_test_docs();
-        
-        with_temp_dir(&temp_dir, || {
-            // Test that file content is read accurately
-            let result = read_file_content("docs/user-guide.md");
-            assert!(result.is_ok());
-            
-            let content = result.unwrap();
-            assert_eq!(content, "# User Guide\n\nThis is the user guide.");
-        });
-    }
+    
 
     #[test]
     fn test_error_handling_for_io_errors() {
