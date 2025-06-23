@@ -4,6 +4,7 @@ import { IconBook, IconInfoCircle } from '@tabler/icons-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
+import { invoke } from '@tauri-apps/api/core';
 import 'highlight.js/styles/github.css'; // You can change this to other highlight.js themes
 
 interface DocumentationModalProps {
@@ -18,12 +19,13 @@ interface DocFile {
 }
 
 const DOC_FILES: DocFile[] = [
-  { name: 'user-guide', path: '/docs/user-guide.md', label: 'User Guide' },
-  { name: 'api-reference', path: '/docs/api-reference.md', label: 'API Reference' },
-  { name: 'developer-guide-frontend', path: '/docs/developer-guide-frontend.md', label: 'Frontend Developer Guide' },
-  { name: 'developer-guide-backend', path: '/docs/developer-guide-backend.md', label: 'Backend Developer Guide' },
-  { name: 'testing', path: '/docs/Testing.md', label: 'Testing Guide' },
-  { name: 'readme', path: '/README.md', label: 'Project Overview' },
+  { name: 'user-guide', path: 'docs/user-guide.md', label: 'User Guide' },
+  { name: 'api-reference', path: 'docs/api-reference.md', label: 'API Reference' },
+  { name: 'developer-guide-frontend', path: 'docs/developer-guide-frontend.md', label: 'Frontend Developer Guide' },
+  { name: 'developer-guide-backend', path: 'docs/developer-guide-backend.md', label: 'Backend Developer Guide' },
+  { name: 'testing', path: 'docs/Testing.md', label: 'Testing Guide' },
+  { name: 'analysis-data-processing', path: 'docs/analysis-and-data-processing.md', label: 'Analysis & Data Processing' },
+  { name: 'readme', path: 'README.md', label: 'Project Overview' },
 ];
 
 const DocumentationModal: React.FC<DocumentationModalProps> = ({ opened, onClose }) => {
@@ -31,6 +33,18 @@ const DocumentationModal: React.FC<DocumentationModalProps> = ({ opened, onClose
   const [content, setContent] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [availableFiles, setAvailableFiles] = useState<string[]>([]);
+
+  const loadAvailableFiles = async () => {
+    try {
+      const files = await invoke<string[]>('get_available_documentation_files');
+      setAvailableFiles(files);
+    } catch (err) {
+      console.error('Error loading available documentation files:', err);
+      // Fallback to all defined files if the command fails
+      setAvailableFiles(DOC_FILES.map(doc => doc.path));
+    }
+  };
 
   const loadDocContent = async (docName: string) => {
     setLoading(true);
@@ -42,47 +56,60 @@ const DocumentationModal: React.FC<DocumentationModalProps> = ({ opened, onClose
         throw new Error('Documentation file not found');
       }
 
-      // In a Tauri app, we need to read files from the file system
-      // For now, we'll use a placeholder implementation
-      // You may need to implement a Tauri command to read local files
-      const response = await fetch(docFile.path);
-      if (!response.ok) {
-        throw new Error(`Failed to load documentation: ${response.statusText}`);
-      }
+      // Use Tauri command to read the file
+      const content = await invoke<string>('read_documentation_file', { 
+        filePath: docFile.path 
+      });
       
-      const text = await response.text();
-      setContent(text);
+      setContent(content);
     } catch (err) {
       console.error('Error loading documentation:', err);
       setError(err instanceof Error ? err.message : 'Failed to load documentation');
-      // Fallback content for demonstration
-      setContent(`# ${DOC_FILES.find(doc => doc.name === docName)?.label || 'Documentation'}
+      
+      // Fallback content
+      const docFile = DOC_FILES.find(doc => doc.name === docName);
+      setContent(`# ${docFile?.label || 'Documentation'}
 
-Sorry, the documentation file could not be loaded from the local repository.
+## Welcome to Tulipa Energy Visualizer Documentation
 
-This is a placeholder content. In a production environment, you would implement a Tauri command to read local markdown files from the repository.
+This documentation system allows you to access comprehensive guides and references for the Tulipa Energy Visualizer application.
 
-## Features Available
+### Available Documentation Sections
 
-- Interactive markdown rendering
-- Syntax highlighting
-- GitHub-flavored markdown support
-- Multiple documentation sections
-- Responsive modal layout
+${DOC_FILES.map(doc => `- **${doc.label}**: Comprehensive guide for ${doc.label.toLowerCase()}`).join('\n')}
 
-## Implementation Notes
+### Features
 
-To fully implement this feature, you would need to:
+- **Interactive Visualizations**: Create and customize energy model visualizations
+- **Multi-Database Support**: Work with multiple DuckDB files simultaneously  
+- **Geographic Analysis**: Analyze energy flows across European regions
+- **Economic Analysis**: Examine costs, prices, and financial metrics
+- **Flexible Time Resolution**: From hourly to yearly analysis capabilities
 
-1. Create a Tauri command in the backend to read local files
-2. Update the frontend to call this command
-3. Handle file reading permissions appropriately
+### Getting Started
 
-For now, this demonstrates the UI structure and markdown rendering capabilities.`);
+1. **Load Data**: Upload your DuckDB files containing Tulipa Energy Model results
+2. **Create Visualizations**: Add graph cards and select chart types
+3. **Configure Analysis**: Set time periods, filters, and parameters
+4. **Export Results**: Save visualizations and analysis results
+
+### Support
+
+For technical support and additional resources, please refer to the complete documentation sections available in this viewer.
+
+---
+
+*Note: Error loading file "${docFile?.path}". This is fallback content demonstrating the documentation system capabilities.*`);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (opened) {
+      loadAvailableFiles();
+    }
+  }, [opened]);
 
   useEffect(() => {
     if (opened && selectedDoc) {
@@ -95,6 +122,9 @@ For now, this demonstrates the UI structure and markdown rendering capabilities.
       setSelectedDoc(value);
     }
   };
+
+  // Filter available DOC_FILES based on what's actually available
+  const filteredDocFiles = DOC_FILES.filter(doc => availableFiles.includes(doc.path));
 
   return (
     <Modal
@@ -123,7 +153,10 @@ For now, this demonstrates the UI structure and markdown rendering capabilities.
             placeholder="Choose a documentation section"
             value={selectedDoc}
             onChange={handleDocChange}
-            data={DOC_FILES.map(doc => ({
+            data={filteredDocFiles.length > 0 ? filteredDocFiles.map(doc => ({
+              value: doc.name,
+              label: doc.label
+            })) : DOC_FILES.map(doc => ({
               value: doc.name,
               label: doc.label
             }))}
@@ -136,8 +169,8 @@ For now, this demonstrates the UI structure and markdown rendering capabilities.
           {error && (
             <Alert 
               icon={<IconInfoCircle size={16} />}
-              title="Loading Error"
-              color="yellow"
+              title="Loading Information"
+              color="blue"
               mb="md"
             >
               {error}
@@ -263,6 +296,18 @@ For now, this demonstrates the UI structure and markdown rendering capabilities.
                   }}>
                     {children}
                   </td>
+                ),
+                a: ({ children, href }) => (
+                  <a href={href} style={{ 
+                    color: 'var(--mantine-primary-color-6)',
+                    textDecoration: 'none',
+                    borderBottom: '1px solid transparent'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.borderBottomColor = 'var(--mantine-primary-color-6)'}
+                  onMouseLeave={(e) => e.currentTarget.style.borderBottomColor = 'transparent'}
+                  >
+                    {children}
+                  </a>
                 )
               }}
             >
