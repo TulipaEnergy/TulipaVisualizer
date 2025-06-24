@@ -3,21 +3,25 @@ import { vi } from "vitest";
 import { describe, it, expect, beforeEach } from "vitest";
 import ProductionPrices from "../ProductionPrices";
 import useVisualizationStore from "../../../store/visualizationStore";
-import { renderWithProviders, createMockStoreState } from "../../../test/utils";
+import {
+  renderWithProviders,
+  createMockStoreState,
+  createMockGraphConfig,
+} from "../../../test/utils";
 import { getProductionPriceDurationSeries } from "../../../services/productionPriceQuery";
-import { getYears } from "../../../services/metadata";
+import { getYears, hasMetadata } from "../../../services/metadata";
 // Mock the store
 vi.mock("../../../store/visualizationStore");
 
 // Mock the production prices service
 vi.mock("../../../services/productionPriceQuery", () => ({
   getProductionPriceDurationSeries: vi.fn(),
-  getProductionYears: vi.fn(),
 }));
 
 // Mock the metadata service
 vi.mock("../../../services/metadata", () => ({
   getYears: vi.fn(),
+  hasMetadata: vi.fn(),
 }));
 
 // Mock ReactECharts
@@ -32,9 +36,11 @@ vi.mock("echarts-for-react", () => ({
 const mockGetProductionPriceDurationSeries =
   getProductionPriceDurationSeries as ReturnType<typeof vi.fn>;
 const mockGetProductionYears = getYears as ReturnType<typeof vi.fn>;
+const mockHasMetadata = hasMetadata as ReturnType<typeof vi.fn>;
 
 describe("ProductionPrices Component", () => {
   const mockGetGraphDatabase = vi.fn();
+  const mockMustGetGraph = vi.fn();
   const testGraphId = "test-graph-123";
   const testDbPath = "/path/to/test.duckdb";
 
@@ -70,17 +76,29 @@ describe("ProductionPrices Component", () => {
     ).mockReturnValue(
       createMockStoreState({
         getGraphDatabase: mockGetGraphDatabase,
+        mustGetGraph: mockMustGetGraph,
       }),
     );
 
     // Default database path
     mockGetGraphDatabase.mockReturnValue(testDbPath);
 
+    // Mock graph with lastApplyTimestamp
+    mockMustGetGraph.mockReturnValue(
+      createMockGraphConfig({
+        id: testGraphId,
+        lastApplyTimestamp: Date.now(),
+      }),
+    );
+
     // Setup default service mock return
     mockGetProductionPriceDurationSeries.mockResolvedValue(
       mockProductionPriceData,
     );
     mockGetProductionYears.mockResolvedValue(mockYearsData);
+
+    // Mock hasMetadata
+    mockHasMetadata.mockResolvedValue(true);
   });
 
   describe("Basic rendering", () => {

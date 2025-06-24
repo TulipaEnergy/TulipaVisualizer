@@ -14,7 +14,11 @@ import {
   getProductionPriceDurationSeries,
   ProductionPriceDurationSeriesRow,
 } from "../../services/productionPriceQuery";
-import { getAssetsCarriers, getYears } from "../../services/metadata";
+import {
+  getAssetsCarriers,
+  getYears,
+  hasMetadata,
+} from "../../services/metadata";
 import useVisualizationStore from "../../store/visualizationStore";
 import { Resolution } from "../../types/resolution";
 
@@ -25,7 +29,8 @@ interface ProductionPricesDurationSeriesProps {
 const ProductionPricesDurationSeries: React.FC<
   ProductionPricesDurationSeriesProps
 > = ({ graphId }) => {
-  const { getGraphDatabase, updateGraph } = useVisualizationStore();
+  const { getGraphDatabase, updateGraph, mustGetGraph } =
+    useVisualizationStore();
   const [loadingData, setLoadingData] = useState(true);
   const [errorData, setErrorData] = useState<string | null>(null);
   const [chartOptions, setChartOptions] = useState<any>(null);
@@ -37,6 +42,7 @@ const ProductionPricesDurationSeries: React.FC<
   const [availableCarriers, setAvailableCarriers] = useState<string[]>([]);
 
   const dbPath = getGraphDatabase(graphId);
+  const { lastApplyTimestamp } = mustGetGraph(graphId);
 
   useEffect(() => {
     updateGraph(graphId, { title: "Assets Production Price Duration Series" });
@@ -87,21 +93,22 @@ const ProductionPricesDurationSeries: React.FC<
       try {
         setLoadingData(true);
         if (year === null) return;
+
+        const graph = mustGetGraph(graphId);
         var data: ProductionPriceDurationSeriesRow[] =
           await getProductionPriceDurationSeries(
             dbPath,
             resolution,
             year,
             carrier,
+            graph.filtersByCategory,
+            graph.breakdownNodes,
           );
 
         const expandedData: ProductionPriceDurationSeriesRow[] = [];
 
         for (const row of data) {
           const { global_start, global_end, y_axis, ...rest } = row;
-          const duration = global_end - global_start;
-
-          if (duration == 0) continue;
 
           for (let t = global_start; t < global_end; t++) {
             expandedData.push({
@@ -113,6 +120,27 @@ const ProductionPricesDurationSeries: React.FC<
           }
         }
         data = expandedData;
+
+        // Without breakdown, sum up the y_axis values of all assets
+        if (
+          !(await hasMetadata(graph.graphDBFilePath!)) ||
+          graph.breakdownNodes.length === 0
+        ) {
+          const grouped = new Map<string, ProductionPriceDurationSeriesRow>();
+
+          for (const row of data) {
+            const key = `${row.milestone_year}_${row.global_start}_${row.global_end}`;
+
+            if (!grouped.has(key)) {
+              grouped.set(key, { ...row, asset: `${carrier}` });
+            } else {
+              // Sum y_axis values
+              const existing = grouped.get(key)!;
+              existing.y_axis += row.y_axis;
+            }
+            data = Array.from(grouped.values());
+          }
+        }
         let times: number[];
 
         if (checked) {
@@ -134,7 +162,7 @@ const ProductionPricesDurationSeries: React.FC<
         data.forEach((d) => {
           const start = Number(d.global_start);
           const value = d.y_axis;
-          const carrier = d.carrier;
+          const carrier = d.asset;
           if (!byCarrier.has(carrier)) byCarrier.set(carrier, new Map());
           byCarrier.get(carrier)!.set(start, value);
         });
@@ -219,7 +247,7 @@ const ProductionPricesDurationSeries: React.FC<
     };
 
     fetchData();
-  }, [dbPath, resolution, year, checked, carrier]);
+  }, [dbPath, resolution, year, checked, carrier, lastApplyTimestamp]);
 
   if (loadingData && year !== null) {
     return (

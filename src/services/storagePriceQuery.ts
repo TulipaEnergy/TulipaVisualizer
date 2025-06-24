@@ -1,5 +1,6 @@
 import { genericApacheIPC } from "../gateway/db";
 import { Resolution, resolutionToTable } from "../types/resolution";
+import { hasMetadata } from "./metadata";
 
 export async function getStoragePriceDurationSeries(
   dbPath: string,
@@ -7,6 +8,8 @@ export async function getStoragePriceDurationSeries(
   year: number,
   storageType: string,
   carrier: string,
+  filters: Record<number, number[]>,
+  grouper: number[],
 ): Promise<StoragePriceDurationSeriesRow[]> {
   if (!(resolution in resolutionToTable)) {
     throw new Error(
@@ -14,6 +17,7 @@ export async function getStoragePriceDurationSeries(
     );
   }
 
+  const enableMetadata: boolean = await hasMetadata(dbPath);
   return genericApacheIPC<StoragePriceDurationSeriesRow>(
     "get_storage_price_resolution",
     {
@@ -22,12 +26,15 @@ export async function getStoragePriceDurationSeries(
       resolution: resolutionToTable[resolution],
       storageType: storageType,
       carrier: carrier,
+      filters: filters,
+      grouper: grouper,
+      enableMetadata: enableMetadata,
     },
   );
 }
 
 export type StoragePriceDurationSeriesRow = {
-  carrier: string;
+  asset: string;
   milestone_year: number;
   global_start: number;
   global_end: number;

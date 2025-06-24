@@ -193,7 +193,10 @@ describe("TransportationPrices Component", () => {
 
     // Check that carrier select input is enabled
     await waitFor(() => {
-      const carrierInput = screen.getByDisplayValue("Carrier_A"); // Should show first carrier from mock data
+      const carrierInputs = screen.getAllByDisplayValue("all"); // Default value is "all"
+      const carrierInput = carrierInputs.find(
+        (input) => input.getAttribute("placeholder") === "Select carrier",
+      );
       expect(carrierInput).not.toBeDisabled();
     });
   });
@@ -231,7 +234,7 @@ describe("TransportationPrices Component", () => {
       ).toHaveBeenCalledWith(
         "/mock/database.duckdb",
         2023, // first year
-        "Carrier_A", // first carrier
+        "all", // default carrier is "all"
         Resolution.Hours,
         "min", // default column type
       );
@@ -269,7 +272,7 @@ describe("TransportationPrices Component", () => {
       ).toHaveBeenCalledWith(
         "/mock/database.duckdb",
         2023, // first year from mock data
-        "Carrier_A", // first carrier from mock data
+        "all", // default carrier is "all"
         Resolution.Days, // default resolution
         "min",
       );
@@ -307,7 +310,7 @@ describe("TransportationPrices Component", () => {
       ).toHaveBeenCalledWith(
         "/mock/database.duckdb",
         2023, // first year from mock data
-        "Carrier_A", // first carrier from mock data
+        "all", // default carrier is "all"
         Resolution.Days, // default resolution
         "min",
       );
@@ -606,29 +609,6 @@ describe("TransportationPrices Component", () => {
     });
 
     // Should not call the transportation price service when year is null
-    expect(
-      transportPriceQuery.getTransportationPriceDurationSeries,
-    ).not.toHaveBeenCalled();
-  });
-
-  it("does not fetch data when carrier is null", async () => {
-    vi.mocked(metadataQuery.getYears).mockResolvedValue(mockYearsData);
-    vi.mocked(transportPriceQuery.getTransportationCarriers).mockResolvedValue(
-      [],
-    );
-    vi.mocked(
-      transportPriceQuery.getTransportationPriceDurationSeries,
-    ).mockResolvedValue([]);
-
-    renderWithProviders(<TransportationPrices graphId="test-graph" />, {
-      initialStoreState: mockStoreWithDatabase,
-    });
-
-    await waitFor(() => {
-      expect(screen.getByText("No chart data available.")).toBeInTheDocument();
-    });
-
-    // Should not call the transportation price service when carrier is null
     expect(
       transportPriceQuery.getTransportationPriceDurationSeries,
     ).not.toHaveBeenCalled();
