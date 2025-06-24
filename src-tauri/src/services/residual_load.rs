@@ -34,6 +34,8 @@ pub fn get_supply(
             &resolution.to_string(),
             &filters,
             &grouper,
+            "ac.asset".to_string(),
+            "bf.from_asset".to_string()
         )
       } else {
         // With filters without breakdown
@@ -44,6 +46,7 @@ pub fn get_supply(
             "sum",
             &resolution.to_string(),
             &filters,
+            "ac.asset".to_string()
         );
     } 
   } else {
@@ -139,11 +142,3 @@ const SUPPLY_SQL_WITH_FILTERS_AND_BREAKDOWN: &str = "
       bf.time_block_end,
       bf.rep_period{breakdown_group_by}
   ) AS supply_flows";
-
-const SUPPLY_YEARS_SQL: &str = "
-    SELECT DISTINCT f.year
-    FROM var_flow AS f
-    JOIN asset AS a ON f.to_asset = a.asset
-    WHERE a.type = 'consumer'
-    ORDER BY f.year
-";

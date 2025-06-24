@@ -9,9 +9,13 @@ import {
   FlowSystemCostPerYear,
   AssetSystemCostPerYear,
   getUniqueCarriers,
-  getUniqueYears,
+  getGroupedAssetCostsByYear,
+  GroupedAssetSystemCostPerYear,
 } from "../../services/systemCosts";
-import useVisualizationStore from "../../store/visualizationStore";
+import { getYears, hasMetadata } from "../../services/metadata";
+import useVisualizationStore, {
+  GraphConfig,
+} from "../../store/visualizationStore";
 
 interface SystemCostsProps {
   graphId: string;
@@ -23,8 +27,8 @@ const SystemCosts: React.FC<SystemCostsProps> = ({ graphId }) => {
   const [loadingData, setLoadingData] = useState<boolean>(true);
   const [errorData, setErrorData] = useState<string | null>(null);
   const [chartOptions, setChartOptions] = useState<EChartsOption | null>(null);
-  const { getGraphDatabase, updateGraph } = useVisualizationStore();
-  const dbFilePath = getGraphDatabase(graphId);
+  const { updateGraph, mustGetGraph } = useVisualizationStore();
+  const { graphDBFilePath, lastApplyTimestamp } = mustGetGraph(graphId);
 
   useEffect(() => {
     updateGraph(graphId, { title: "Asset & Flow Operation Costs" });
@@ -36,15 +40,11 @@ const SystemCosts: React.FC<SystemCostsProps> = ({ graphId }) => {
       setLoadingData(true);
       setErrorData(null);
 
-      // DB File should always be provided - see assertion in GraphCard
-      if (!dbFilePath) {
-        setErrorData("No database selected");
-        setLoadingData(false);
-        return;
-      }
-
       try {
-        const [series, legendData, years] = await getSeries(dbFilePath);
+        // In case the graphDB changes, make sure to use the latest data since variables
+        // declared outside of hooks are only initialized once per render
+        const graph = mustGetGraph(graphId);
+        const [series, legendData, years] = await getSeries(graph);
 
         const option: EChartsOption = {
           title: {
@@ -160,7 +160,7 @@ const SystemCosts: React.FC<SystemCostsProps> = ({ graphId }) => {
         setLoadingData(false);
       }
     })();
-  }, [dbFilePath]); // Refreshes whenever you select a diff db file
+  }, [graphDBFilePath, lastApplyTimestamp]);
 
   if (loadingData) {
     return (
@@ -227,41 +227,21 @@ const SystemCosts: React.FC<SystemCostsProps> = ({ graphId }) => {
   );
 };
 
+// Returns echarts series, legend labels and years (for x axis value)
 async function getSeries(
-  dbFilePath: string,
+  graph: GraphConfig,
 ): Promise<[echarts.SeriesOption[], string[], number[]]> {
-  const assetData: AssetSystemCostPerYear[] =
-    await getAssetCostsByYear(dbFilePath);
+  const series: echarts.BarSeriesOption[] = [];
+  const legendData: string[] = [];
+  const years = (await getYears(graph.graphDBFilePath!)).map((t) => t.year);
 
-  const flowData: FlowSystemCostPerYear[] =
-    await getFlowCostsByYear(dbFilePath);
+  const flowData: FlowSystemCostPerYear[] = await getFlowCostsByYear(
+    graph.graphDBFilePath!,
+  );
 
-  const years = getUniqueYears(assetData, flowData);
   const uniqueCarriers = getUniqueCarriers(flowData);
 
-  const series: echarts.BarSeriesOption[] = [
-    {
-      name: "Asset - Fixed",
-      type: "bar",
-      data: years.map((year) => {
-        const yearData = assetData.find((d) => d.year === year);
-        return yearData ? yearData.asset_fixed_costs : 0;
-      }),
-      stack: "Asset Costs",
-    },
-    {
-      name: "Asset - Unit On",
-      type: "bar",
-      data: years.map((year) => {
-        const yearData = assetData.find((d) => d.year === year);
-        return yearData ? yearData.unit_on_costs : 0;
-      }),
-      stack: "Asset Costs",
-    },
-  ];
-
-  const legendData: string[] = ["Asset - Fixed", "Asset - Unit On"];
-
+  // Flow costs remain the same regardless of any asset metadata setting
   uniqueCarriers.forEach((carrier) => {
     let foundData = false;
     series.push({
@@ -302,7 +282,102 @@ async function getSeries(
     }
   });
 
-  return [series, legendData, years];
+  if (
+    !(await hasMetadata(graph.graphDBFilePath!)) ||
+    graph.breakdownNodes.length === 0
+  ) {
+    // With no breakdown, just put all assets in one bucket
+    const assetData: AssetSystemCostPerYear[] =
+      await getAssetCostsByYear(graph);
+
+    series.push(
+      {
+        name: "Asset - Fixed",
+        type: "bar",
+        data: years.map((year) => {
+          const yearData = assetData.find((d) => d.year === year);
+          if (yearData && yearData.asset_fixed_costs !== 0) {
+            legendData.push("Asset - Fixed");
+            return yearData.asset_fixed_costs;
+          }
+          return 0;
+        }),
+        stack: "Asset Costs",
+      },
+      {
+        name: "Asset - Unit On",
+        type: "bar",
+        data: years.map((year) => {
+          const yearData = assetData.find((d) => d.year === year);
+          if (yearData && yearData.unit_on_costs !== 0) {
+            legendData.push("Asset - Unit On");
+            return yearData.unit_on_costs;
+          }
+          return 0;
+        }),
+        stack: "Asset Costs",
+      },
+    );
+  } else {
+    // With breakdown
+    // for each group g
+    //  have "Asset - Fixed - G" and "Asset - Unit On - G" in the same Asset Costs stack
+
+    const assetData: GroupedAssetSystemCostPerYear[] =
+      await getGroupedAssetCostsByYear(graph);
+
+    // Get unique asset groups from the data
+    const uniqueAssetGroups = [
+      ...new Set(assetData.map((d) => d.asset_group)),
+    ].sort(); // Ensure groups are sorted for consistent legend order
+
+    uniqueAssetGroups.forEach((assetGroup) => {
+      // Asset Fixed Costs for this group
+      series.push({
+        name: `Asset - Fixed - ${assetGroup}`,
+        type: "bar",
+        data: years.map((year) => {
+          const yearData = assetData.find(
+            (d) => d.year === year && d.asset_group === assetGroup,
+          );
+          if (yearData && yearData.asset_fixed_costs !== 0) {
+            legendData.push(`Asset - Fixed - ${assetGroup}`);
+            return yearData.asset_fixed_costs;
+          }
+          return 0;
+        }),
+        stack: "Asset Costs",
+      });
+
+      // Asset Unit On Costs for this group
+      series.push({
+        name: `Asset - Unit On - ${assetGroup}`,
+        type: "bar",
+        data: years.map((year) => {
+          const yearData = assetData.find(
+            (d) => d.year === year && d.asset_group === assetGroup,
+          );
+          if (yearData && yearData.unit_on_costs !== 0) {
+            legendData.push(`Asset - Unit On - ${assetGroup}`);
+            return yearData.unit_on_costs;
+          }
+          return 0;
+        }),
+        stack: "Asset Costs",
+      });
+    });
+  }
+
+  return [
+    series.sort((a, b) => {
+      const nameA = a.name as string;
+      const nameB = b.name as string;
+
+      return nameA.localeCompare(nameB);
+    }),
+    legendData.sort(),
+    years,
+  ];
 }
 
 export default SystemCosts;

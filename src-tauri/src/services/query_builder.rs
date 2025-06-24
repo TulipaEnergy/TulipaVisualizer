@@ -102,6 +102,7 @@ pub fn build_resolution_query_both(
 /// * `agg` - Aggregation method (e.g., "avg", "sum").
 /// * `resolution` - Resolution period length (e.g., 24 for daily).
 /// * `filters_by_category` - Map where each key is a root category ID and the value is a list of leaf or internal node category IDs.
+/// * `asset_identifier_column_filtering` - String representing the table.column to use for matching asset by their ids for filterin function
 ///
 /// # Returns
 ///
@@ -113,9 +114,10 @@ pub fn build_resolution_query_with_filters(
     agg: &str,
     resolution: &str,
     filters_by_category: &HashMap<i32, Vec<i32>>,
+    asset_identifier_column_filtering: String
 ) -> String {
     let group_cols_sql = group_cols.join(", ");
-    let filter_conditions = build_filter_conditions(filters_by_category);
+    let filter_conditions = build_filter_conditions(filters_by_category, asset_identifier_column_filtering);
 
     // Build individual column comparisons for WHERE clauses
     let group_cols_comparisons = group_cols.to_vec()
@@ -142,11 +144,12 @@ pub fn build_resolution_query_with_filters(
 /// # Arguments
 ///
 /// * `filters_by_category` - Map where each key is a root category ID and the value is a list of leaf or internal node category IDs.
+/// * `asset_identifier_column` - String representing the table.column to use for matching asset by their ids
 ///
 /// # Returns
 ///
-/// A string of SQL `AND` filter conditions. IMPORTANT: The returned SQL condition is valid when selecting from a table "ac" which has at least the "asset" column.
-pub fn build_filter_conditions(filters_by_category: &HashMap<i32, Vec<i32>>) -> String {
+/// A string of SQL `AND` filter conditions.
+pub fn build_filter_conditions(filters_by_category: &HashMap<i32, Vec<i32>>, asset_identifier_column: String) -> String {
     if filters_by_category.is_empty() {
         return String::new();
     }
@@ -176,12 +179,13 @@ pub fn build_filter_conditions(filters_by_category: &HashMap<i32, Vec<i32>>) -> 
                 {desc_cte}
                 SELECT 1
                 FROM asset_category ac{0}
-                WHERE ac{0}.asset = ac.asset
+                WHERE ac{0}.asset = {asset_column}
                   AND ac{0}.root_id = {0}
                   AND ac{0}.leaf_id IN (SELECT id FROM sub{0})
             )",
             root_id,
-            desc_cte = desc_cte.replace("\n", " ")
+            desc_cte = desc_cte.replace("\n", " "),
+            asset_column = asset_identifier_column
         );
 
         conditions.push(condition);
@@ -206,6 +210,8 @@ pub fn build_filter_conditions(filters_by_category: &HashMap<i32, Vec<i32>>) -> 
 /// * `resolution` - Resolution period length (e.g., 24 for daily).
 /// * `filters_by_category` - Map where each key is a root category ID and the value is a list of leaf or internal node category IDs.
 /// * `grouper` - List of breakdown node IDs to group by.
+/// * `asset_identifier_column_filtering` - String representing the table.column to use for matching asset by their ids for filtering function
+/// * `asset_identifier_column_breakdown` - String representing the table.column to use for matching asset by their ids for breakdown function
 ///
 /// # Returns
 ///
@@ -218,6 +224,8 @@ pub fn build_resolution_query_with_filters_and_breakdown(
     resolution: &str,
     filters_by_category: &HashMap<i32, Vec<i32>>,
     grouper: &[i32],
+    asset_identifier_column_filtering: String,
+    asset_identifier_column_breakdown: String,
 ) -> String {
     // For breakdown, we group by the breakdown categories, not individual assets
     let breakdown_refs: Vec<&str> = breakdown_cols.iter().map(String::as_str).collect();
@@ -230,10 +238,10 @@ pub fn build_resolution_query_with_filters_and_breakdown(
         .collect::<Vec<_>>()
         .join(" AND ");
     
-    let filter_conditions = build_filter_conditions(filters_by_category);
+    let filter_conditions = build_filter_conditions(filters_by_category, asset_identifier_column_filtering);
     let breakdown_joins = build_breakdown_joins(grouper);
     let breakdown_selects = build_breakdown_selects(grouper);
-    let breakdown_case_conditions = build_breakdown_case_conditions(grouper);
+    let breakdown_case_conditions = build_breakdown_case_conditions(grouper, asset_identifier_column_breakdown);
     let breakdown_group_by = build_breakdown_group_by(grouper);
     
     let combine_sql = REP_PERIOD_RESOLUTION_SQL.to_string()
@@ -265,9 +273,18 @@ pub fn build_breakdown_columns(grouper: &[i32]) -> Vec<String> {
 
 /// Builds CASE conditions for breakdown categorization
 /// This creates the logic to categorize assets into breakdown groups or 'Other'
-pub fn build_breakdown_case_conditions(grouper: &[i32]) -> String {
+/// 
+/// # Arguments
+///
+/// * `grouper` - List of breakdown node IDs to group by.
+/// * `asset_identifier_column` - String representing the table.column to use for matching asset by their ids for filtering function
+///
+/// # Returns
+///
+/// A `String` representing the SQL query the condition to match an asset to the furthest ancestor, if possible
+pub fn build_breakdown_case_conditions(grouper: &[i32], asset_identifier_column: String) -> String {
     if grouper.is_empty() {
-        return "bf.from_asset".to_string();
+        return format!("WHEN 1 THEN {asset_identifier_column} ");
     }
 
     let mut conditions = Vec::new();
@@ -282,11 +299,12 @@ pub fn build_breakdown_case_conditions(grouper: &[i32]) -> String {
                     JOIN descendants_{0} d ON c.parent_id = d.id
                 )
                 SELECT 1 FROM asset_category ac_{0}
-                WHERE ac_{0}.asset = bf.from_asset
+                WHERE ac_{0}.asset = {1}
                   AND ac_{0}.leaf_id IN (SELECT id FROM descendants_{0})
                 LIMIT 1
             ) THEN c{0}.name",
-            node_id
+            node_id,
+            asset_identifier_column
         );
         conditions.push(condition);
     }

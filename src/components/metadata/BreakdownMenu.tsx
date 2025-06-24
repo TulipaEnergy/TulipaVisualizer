@@ -20,7 +20,7 @@ const FilteringScrollMenu: React.FC<BreakdownProps> = ({ graphId }) => {
   const [data, setData] = useState<MetaTreeRootsByCategoryName>({});
   const [metadataTree, setMetadataTree] = useState<string | null>(null);
   const [selectorState, setSelectorState] = useState<SelectedBreakdownKeys>({});
-  const { updateGraph } = useVisualizationStore();
+  const { updateGraph, getGraphDatabase } = useVisualizationStore();
 
   useEffect(() => {
     (async () => {
@@ -31,7 +31,7 @@ const FilteringScrollMenu: React.FC<BreakdownProps> = ({ graphId }) => {
   useEffect(() => {
     setSelectorState({});
     updateGraph(graphId, { breakdownNodes: [] });
-  }, [metadataTree]);
+  }, [metadataTree, getGraphDatabase(graphId)]);
 
   const handleSelectionChange = (value: string | null) => {
     if (value) {
