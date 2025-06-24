@@ -55,7 +55,7 @@ The frontend code is organized in the `src/` directory with clear separation of 
 
 - **components/**: React components organized by functionality
 
-  - ****tests**/**: Component test files
+  - \***\*tests**/\*\*: Component test files
   - **database-viewer/**: Database exploration interface components
   - **kpis/**: Chart and visualization components
   - **metadata/**: Data filtering and selection components
