@@ -2,9 +2,15 @@ import { screen, waitFor, act } from "@testing-library/react";
 import { vi } from "vitest";
 import { describe, it, expect, beforeEach } from "vitest";
 import EnergyFlow from "../GeoImportsExports";
-import useVisualizationStore from "../../../store/visualizationStore";
+import useVisualizationStore, {
+  GraphConfig,
+} from "../../../store/visualizationStore";
 import { renderWithProviders, createMockStoreState } from "../../../test/utils";
 import * as energyFlowService from "../../../services/energyFlowQuery";
+import {
+  CountryEnergyFlow,
+  EnergyFlowOptions,
+} from "../../../types/GeoEnergyFlow";
 
 // Mock the store
 vi.mock("../../../store/visualizationStore");
@@ -12,7 +18,7 @@ vi.mock("../../../store/visualizationStore");
 // Mock the energy flow service
 vi.mock("../../../services/energyFlowQuery", () => ({
   getEnergyFlowData: vi.fn(),
-  getAvailableYears: vi.fn(),
+  getAvailableYearsFlows: vi.fn(),
   getGeoJSONName: vi.fn((name) => name), // Simple pass-through for testing
 }));
 
@@ -28,53 +34,62 @@ vi.mock("echarts", () => ({
   registerMap: vi.fn(),
 }));
 
+vi.mock("../../../services/metadata", () => ({
+  hasMetadata: vi.fn((_) => Promise.resolve(true)),
+}));
+
 describe("EnergyFlow Component", () => {
-  const mockMustGetGraph = vi.fn();
+  const mockMustGetGraph =
+    vi.fn<(id: string) => GraphConfig<EnergyFlowOptions>>();
   const mockUpdateGraph = vi.fn();
   const testGraphId = "test-graph-123";
+  const dbFilePath = "/path/to/test.duckdb";
 
   // Mock graph configuration
-  const mockGraph = {
+  const mockGraph: GraphConfig<EnergyFlowOptions> = {
     id: testGraphId,
     type: "geo-imports-exports" as const,
     title: "Test Geo Chart",
     error: null,
     isLoading: false,
+    filtersByCategory: {},
+    breakdownNodes: [],
     options: {
       year: 2020,
-      categoryLevel: 1,
+      level: 1,
     },
-    graphDBFilePath: "/path/to/test.duckdb",
+    graphDBFilePath: dbFilePath,
+    lastApplyTimestamp: Date.now(),
   };
 
   // Mock energy flow data
-  const mockEnergyData = [
+  const mockEnergyData: CountryEnergyFlow[] = [
     {
-      countryId: "DE",
-      countryName: "Germany",
-      totalImports: 100.5,
-      totalExports: 150.2,
+      id: 1,
+      group: "Germany",
+      totalImport: 100.5,
+      totalExport: 150.2,
       importBreakdown: [
-        { partnerName: "France", amount: 60.3, percentage: 60.0 },
-        { partnerName: "Poland", amount: 40.2, percentage: 40.0 },
+        { partnerId: 2, partnerName: "France", amount: 60.3 },
+        { partnerId: 3, partnerName: "Poland", amount: 40.2 },
       ],
       exportBreakdown: [
-        { partnerName: "Netherlands", amount: 80.1, percentage: 53.3 },
-        { partnerName: "Austria", amount: 70.1, percentage: 46.7 },
+        { partnerId: 4, partnerName: "Netherlands", amount: 80.1 },
+        { partnerId: 5, partnerName: "Austria", amount: 70.1 },
       ],
     },
     {
-      countryId: "FR",
-      countryName: "France",
-      totalImports: 80.3,
-      totalExports: 120.7,
+      id: 2,
+      group: "France",
+      totalImport: 80.3,
+      totalExport: 120.7,
       importBreakdown: [
-        { partnerName: "Spain", amount: 50.1, percentage: 62.4 },
-        { partnerName: "Italy", amount: 30.2, percentage: 37.6 },
+        { partnerId: 6, partnerName: "Spain", amount: 50.1 },
+        { partnerId: 7, partnerName: "Italy", amount: 30.2 },
       ],
       exportBreakdown: [
-        { partnerName: "Germany", amount: 60.3, percentage: 50.0 },
-        { partnerName: "Belgium", amount: 60.4, percentage: 50.0 },
+        { partnerId: 8, partnerName: "Germany", amount: 60.3 },
+        { partnerId: 9, partnerName: "Belgium", amount: 60.4 },
       ],
     },
   ];
@@ -128,7 +143,7 @@ describe("EnergyFlow Component", () => {
     (energyFlowService.getEnergyFlowData as any).mockResolvedValue(
       mockEnergyData,
     );
-    (energyFlowService.getAvailableYears as any).mockResolvedValue([
+    (energyFlowService.getAvailableYearsFlows as any).mockResolvedValue([
       2019, 2020, 2021, 2022,
     ]);
 
@@ -148,6 +163,11 @@ describe("EnergyFlow Component", () => {
         return Promise.reject(new Error("Unknown URL"));
       }),
     }));
+
+    // // Mock hasMetaData
+    // vi.mock("../../../services/metadata", () => ({
+    //   hasMetadata: vi.fn().mockResolvedValue(true), //always return true by default
+    // }))
   });
 
   describe("Basic rendering", () => {
@@ -215,12 +235,12 @@ describe("EnergyFlow Component", () => {
 
     it("calculates net flow correctly for different scenarios", async () => {
       // Mock data where imports > exports
-      const mockImportHeavyData = [
+      const mockImportHeavyData: CountryEnergyFlow[] = [
         {
-          countryId: "DE",
-          countryName: "Germany",
-          totalImports: 200.0,
-          totalExports: 100.0,
+          id: 1,
+          group: "Germany",
+          totalImport: 200.0,
+          totalExport: 100.0,
           importBreakdown: [],
           exportBreakdown: [],
         },
@@ -241,12 +261,12 @@ describe("EnergyFlow Component", () => {
     });
 
     it("handles zero values in calculations", async () => {
-      const mockZeroData = [
+      const mockZeroData: CountryEnergyFlow[] = [
         {
-          countryId: "DE",
-          countryName: "Germany",
-          totalImports: 0,
-          totalExports: 0,
+          id: 1,
+          group: "Germany",
+          totalImport: 0,
+          totalExport: 0,
           importBreakdown: [],
           exportBreakdown: [],
         },
@@ -286,12 +306,12 @@ describe("EnergyFlow Component", () => {
 
   describe("Display formatting", () => {
     it("formats energy values with 1 decimal place", async () => {
-      const mockDecimalData = [
+      const mockDecimalData: CountryEnergyFlow[] = [
         {
-          countryId: "DE",
-          countryName: "Germany",
-          totalImports: 123.456,
-          totalExports: 234.789,
+          id: 1,
+          group: "Germany",
+          totalImport: 123.456,
+          totalExport: 234.789,
           importBreakdown: [],
           exportBreakdown: [],
         },
@@ -345,7 +365,7 @@ describe("EnergyFlow Component", () => {
       // Mock loading state
       const loadingGraph = {
         ...mockGraph,
-        options: { year: 2020, categoryLevel: 1 },
+        options: { year: 2020, level: 1 },
       };
       mockMustGetGraph.mockReturnValue(loadingGraph);
 
@@ -361,8 +381,9 @@ describe("EnergyFlow Component", () => {
         renderWithProviders(<EnergyFlow graphId={testGraphId} />);
       });
 
-      // Component might not show loading immediately, check for basic structure
-      expect(screen.getByText("Total Imports")).toBeInTheDocument();
+      expect(
+        screen.getByText("Loading energy flow data..."),
+      ).toBeInTheDocument();
     });
   });
 
@@ -413,7 +434,7 @@ describe("EnergyFlow Component", () => {
     it("handles provincial level selection", async () => {
       const provincialGraph = {
         ...mockGraph,
-        options: { year: 2020, categoryLevel: 0 },
+        options: { year: 2020, level: 0 },
       };
       mockMustGetGraph.mockReturnValue(provincialGraph);
 
@@ -447,7 +468,7 @@ describe("EnergyFlow Component", () => {
     });
 
     it("displays error when years loading fails", async () => {
-      (energyFlowService.getAvailableYears as any).mockRejectedValue(
+      (energyFlowService.getAvailableYearsFlows as any).mockRejectedValue(
         new Error("Years loading failed"),
       );
 
@@ -606,7 +627,7 @@ describe("EnergyFlow Component", () => {
     });
 
     it("sorts years correctly", async () => {
-      (energyFlowService.getAvailableYears as any).mockResolvedValue([
+      (energyFlowService.getAvailableYearsFlows as any).mockResolvedValue([
         2022, 2019, 2021, 2020,
       ]);
 
@@ -615,7 +636,7 @@ describe("EnergyFlow Component", () => {
       });
 
       // Years should be available in sorted order for selection
-      expect(energyFlowService.getAvailableYears).toHaveBeenCalled();
+      expect(energyFlowService.getAvailableYearsFlows).toHaveBeenCalled();
     });
 
     it("handles breakdown data correctly", async () => {
@@ -659,9 +680,9 @@ describe("EnergyFlow Component", () => {
       );
 
       // Change year in graph options
-      const updatedGraph = {
+      const updatedGraph: GraphConfig<EnergyFlowOptions> = {
         ...mockGraph,
-        options: { year: 2021, categoryLevel: 1 },
+        options: { year: 2021, level: 1 },
       };
       mockMustGetGraph.mockReturnValue(updatedGraph);
 
@@ -669,11 +690,24 @@ describe("EnergyFlow Component", () => {
         rerender(<EnergyFlow graphId={testGraphId} />);
       });
 
+      // Should call service with old year
+      expect(energyFlowService.getEnergyFlowData).toHaveBeenNthCalledWith(
+        1,
+        dbFilePath,
+        {
+          level: 1,
+          year: 2020,
+        }, //options
+      );
+
       // Should call service with new year
-      expect(energyFlowService.getEnergyFlowData).toHaveBeenCalledWith(
-        "/path/to/test.duckdb",
-        1, // categoryLevel
-        2021, // year
+      expect(energyFlowService.getEnergyFlowData).toHaveBeenNthCalledWith(
+        2,
+        dbFilePath,
+        {
+          level: 1,
+          year: 2021,
+        }, //options
       );
     });
   });
