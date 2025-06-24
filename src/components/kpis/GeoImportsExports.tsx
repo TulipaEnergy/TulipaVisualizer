@@ -365,9 +365,6 @@ const EnergyFlow: React.FC<EnergyFlowProps> = ({ graphId }) => {
   const netFlow = totalExport - totalImport;
   const isRegionalView = (graph.options?.level ?? 1) === 0;
 
-  console.log("hasmetadataBool: ", hasMetadataBool);
-  console.log("hasmetadata: ", hasMetadata(dbFilePath));
-
   return (
     <Stack
       style={{

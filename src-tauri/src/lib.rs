@@ -27,7 +27,8 @@ pub fn run() {
             system_cost::get_fixed_flow_cost,
             system_cost::get_variable_flow_cost,
             system_cost::get_unit_on_cost,
-            transport_price::get_transportation_carriers,])
+            transport_price::get_transportation_carriers,
+            transport_price::get_transportation_price_resolution,])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
