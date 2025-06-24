@@ -27,7 +27,9 @@ pub fn run() {
             transport_price::get_transportation_carriers,
             production_price::get_production_price_resolution,
             storage_price::get_storage_price_resolution,
-            residual_load::get_supply])
+            residual_load::get_supply,
+            documentation::read_documentation_file,
+            documentation::get_available_documentation_files])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

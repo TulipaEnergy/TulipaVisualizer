@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { MantineProvider } from "@mantine/core";
 import "@testing-library/jest-dom";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import DocumentationModal from "../../DocumentationModal";
+import DocumentationModal from "../DocumentationModal";
 
 // Mock Tauri API
 vi.mock("@tauri-apps/api/core", () => ({
