@@ -30,7 +30,7 @@ export interface ProductionPriceOptions {
   year?: number;
 }
 
-export interface GraphConfig {
+export interface GraphConfig<T extends ChartOptions = ChartOptions> {
   id: string;
   type: ChartType;
   title: string;
@@ -38,7 +38,7 @@ export interface GraphConfig {
   isLoading: boolean;
   filtersByCategory: { [key: number]: number[] };
   breakdownNodes: number[];
-  options: ChartOptions | null;
+  options: T | null;
   graphDBFilePath: string | null; // For when each graph has its own DB file
   lastApplyTimestamp: number;
 }
