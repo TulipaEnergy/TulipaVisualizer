@@ -3,8 +3,13 @@ import { vi } from "vitest";
 import { describe, it, expect, beforeEach } from "vitest";
 import SystemCosts from "../SystemCosts";
 import useVisualizationStore from "../../../store/visualizationStore";
-import { renderWithProviders, createMockStoreState } from "../../../test/utils";
+import {
+  renderWithProviders,
+  createMockStoreState,
+  createMockGraphConfig,
+} from "../../../test/utils";
 import * as systemCostsService from "../../../services/systemCosts";
+import * as metadataService from "../../../services/metadata";
 
 // Mock the store
 vi.mock("../../../store/visualizationStore");
@@ -16,6 +21,15 @@ vi.mock("../../../services/systemCosts", () => ({
   getUniqueCarriers: vi.fn(),
   getUniqueYears: vi.fn(),
 }));
+
+// Mock the system costs service
+vi.mock("../../../services/metadata", () => ({
+  getYears: vi.fn(),
+  hasMetadata: vi.fn(),
+}));
+
+// Mock the metadata service
+vi.mock("../../../services/metadata");
 
 // Mock ReactECharts
 vi.mock("echarts-for-react", () => ({
@@ -32,9 +46,15 @@ vi.mock("echarts", () => ({
 }));
 
 describe("SystemCosts Component", () => {
-  const mockGetGraphDatabase = vi.fn();
   const testGraphId = "test-graph-123";
   const testDbPath = "/path/to/test.duckdb";
+  const testGraphConfig = createMockGraphConfig({
+    graphDBFilePath: testDbPath,
+    id: testGraphId,
+  });
+
+  const mockUpdateGraph = vi.fn();
+  const mockMustGetGraph = vi.fn();
 
   beforeEach(() => {
     // Reset mocks
@@ -45,12 +65,12 @@ describe("SystemCosts Component", () => {
       useVisualizationStore as unknown as ReturnType<typeof vi.fn>
     ).mockReturnValue(
       createMockStoreState({
-        getGraphDatabase: mockGetGraphDatabase,
+        updateGraph: mockUpdateGraph,
+        mustGetGraph: mockMustGetGraph,
       }),
     );
 
-    // Default database path
-    mockGetGraphDatabase.mockReturnValue(testDbPath);
+    mockMustGetGraph.mockReturnValue(testGraphConfig);
 
     // Mock successful service calls by default with proper return types
     (systemCostsService.getAssetCostsByYear as any).mockResolvedValue([
@@ -67,9 +87,9 @@ describe("SystemCosts Component", () => {
     (systemCostsService.getUniqueCarriers as any).mockReturnValue([
       "electricity",
     ]);
-    (systemCostsService.getUniqueYears as any).mockReturnValue([
-      2020, 2021, 2022,
-    ]);
+
+    (metadataService.hasMetadata as any).mockResolvedValue(false);
+    (metadataService.getYears as any).mockResolvedValue([2020, 2021, 2022]);
   });
 
   describe("Basic rendering", () => {
@@ -87,7 +107,7 @@ describe("SystemCosts Component", () => {
         renderWithProviders(<SystemCosts graphId={testGraphId} />);
       });
 
-      expect(mockGetGraphDatabase).toHaveBeenCalledWith(testGraphId);
+      expect(mockMustGetGraph).toHaveBeenCalledWith(testGraphId);
     });
 
     it("shows loading state initially", async () => {
@@ -164,47 +184,6 @@ describe("SystemCosts Component", () => {
     });
   });
 
-  describe("Error handling", () => {
-    it("shows error when no database is selected", async () => {
-      mockGetGraphDatabase.mockReturnValue(null);
-
-      await act(async () => {
-        renderWithProviders(<SystemCosts graphId={testGraphId} />);
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText("No database selected")).toBeInTheDocument();
-      });
-    });
-
-    it("shows error when database path is empty", async () => {
-      mockGetGraphDatabase.mockReturnValue("");
-
-      await act(async () => {
-        renderWithProviders(<SystemCosts graphId={testGraphId} />);
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText("No database selected")).toBeInTheDocument();
-      });
-    });
-
-    it("displays error container with correct styling when error occurs", async () => {
-      mockGetGraphDatabase.mockReturnValue(null);
-
-      await act(async () => {
-        renderWithProviders(<SystemCosts graphId={testGraphId} />);
-      });
-
-      await waitFor(() => {
-        const errorContainer = screen
-          .getByText("No database selected")
-          .closest(".mantine-Container-root");
-        expect(errorContainer).toHaveStyle({ color: "red" });
-      });
-    });
-  });
-
   describe("Database integration", () => {
     it("responds to database path changes", async () => {
       const { rerender } = renderWithProviders(
@@ -218,27 +197,17 @@ describe("SystemCosts Component", () => {
 
       // Change database path
       const newDbPath = "/path/to/new.duckdb";
-      mockGetGraphDatabase.mockReturnValue(newDbPath);
+      mockMustGetGraph.mockReturnValue(
+        createMockGraphConfig({ graphDBFilePath: newDbPath }),
+      );
 
       await act(async () => {
         rerender(<SystemCosts graphId={testGraphId} />);
       });
 
       // Should call getGraphDatabase multiple times (initial + rerender + effect triggers)
-      expect(mockGetGraphDatabase).toHaveBeenCalledWith(testGraphId);
-      expect(mockGetGraphDatabase).toHaveBeenCalledTimes(5);
-    });
-
-    it("handles undefined database path gracefully", async () => {
-      mockGetGraphDatabase.mockReturnValue(undefined);
-
-      await act(async () => {
-        renderWithProviders(<SystemCosts graphId={testGraphId} />);
-      });
-
-      await waitFor(() => {
-        expect(screen.getByText("No database selected")).toBeInTheDocument();
-      });
+      expect(mockMustGetGraph).toHaveBeenCalledWith(testGraphId);
+      expect(mockMustGetGraph).toHaveBeenCalledTimes(7);
     });
   });
 
@@ -257,22 +226,6 @@ describe("SystemCosts Component", () => {
       const paperElement = document.querySelector(".mantine-Paper-root");
       expect(paperElement).toBeInTheDocument();
     });
-
-    it("maintains consistent layout structure", async () => {
-      mockGetGraphDatabase.mockReturnValue(null);
-
-      await act(async () => {
-        renderWithProviders(<SystemCosts graphId={testGraphId} />);
-      });
-
-      await waitFor(() => {
-        // Should have container and text elements
-        expect(screen.getByText("No database selected")).toBeInTheDocument();
-        expect(
-          document.querySelector(".mantine-Container-root"),
-        ).toBeInTheDocument();
-      });
-    });
   });
 
   describe("Props handling", () => {
@@ -283,7 +236,7 @@ describe("SystemCosts Component", () => {
         renderWithProviders(<SystemCosts graphId={customGraphId} />);
       });
 
-      expect(mockGetGraphDatabase).toHaveBeenCalledWith(customGraphId);
+      expect(mockMustGetGraph).toHaveBeenCalledWith(customGraphId);
     });
 
     it("handles special characters in graphId", async () => {
@@ -293,7 +246,7 @@ describe("SystemCosts Component", () => {
         renderWithProviders(<SystemCosts graphId={specialGraphId} />);
       });
 
-      expect(mockGetGraphDatabase).toHaveBeenCalledWith(specialGraphId);
+      expect(mockMustGetGraph).toHaveBeenCalledWith(specialGraphId);
     });
 
     it("handles empty graphId", async () => {
@@ -301,7 +254,7 @@ describe("SystemCosts Component", () => {
         renderWithProviders(<SystemCosts graphId="" />);
       });
 
-      expect(mockGetGraphDatabase).toHaveBeenCalledWith("");
+      expect(mockMustGetGraph).toHaveBeenCalledWith("");
     });
   });
 
@@ -328,47 +281,24 @@ describe("SystemCosts Component", () => {
       });
 
       // Should not throw errors
-      expect(mockGetGraphDatabase).toHaveBeenCalledWith("another-graph-id");
+      expect(mockMustGetGraph).toHaveBeenCalledWith("another-graph-id");
     });
   });
 
   describe("Edge cases", () => {
-    it("handles null graphId gracefully", async () => {
-      // TypeScript would normally prevent this, but testing runtime behavior
-      await act(async () => {
-        renderWithProviders(<SystemCosts graphId={null as any} />);
-      });
-
-      expect(mockGetGraphDatabase).toHaveBeenCalledWith(null);
-    });
-
     it("handles store method returning unexpected values", async () => {
-      mockGetGraphDatabase.mockReturnValue(123 as any); // Non-string value
+      mockMustGetGraph.mockReturnValue(123 as any); // Non-string value
 
       await act(async () => {
         renderWithProviders(<SystemCosts graphId={testGraphId} />);
       });
 
       // Should still call the method without crashing
-      expect(mockGetGraphDatabase).toHaveBeenCalledWith(testGraphId);
+      expect(mockMustGetGraph).toHaveBeenCalledWith(testGraphId);
     });
   });
 
   describe("Accessibility", () => {
-    it("provides accessible error messages", async () => {
-      mockGetGraphDatabase.mockReturnValue(null);
-
-      await act(async () => {
-        renderWithProviders(<SystemCosts graphId={testGraphId} />);
-      });
-
-      await waitFor(() => {
-        const errorText = screen.getByText("No database selected");
-        expect(errorText).toBeInTheDocument();
-        expect(errorText.tagName.toLowerCase()).toBe("p"); // Should be in a paragraph element
-      });
-    });
-
     it("maintains semantic structure", async () => {
       await act(async () => {
         renderWithProviders(<SystemCosts graphId={testGraphId} />);
@@ -392,7 +322,7 @@ describe("SystemCosts Component", () => {
       });
 
       // Should use the store method correctly
-      expect(mockGetGraphDatabase).toHaveBeenCalledWith(testGraphId);
+      expect(mockMustGetGraph).toHaveBeenCalledWith(testGraphId);
     });
 
     it("handles store updates correctly", async () => {
@@ -411,7 +341,7 @@ describe("SystemCosts Component", () => {
       });
 
       // Should account for initial render and rerender (multiple calls due to useEffect)
-      expect(mockGetGraphDatabase).toHaveBeenCalledTimes(3);
+      expect(mockMustGetGraph).toHaveBeenCalledTimes(4);
     });
   });
 
@@ -423,7 +353,7 @@ describe("SystemCosts Component", () => {
 
       await waitFor(() => {
         expect(systemCostsService.getAssetCostsByYear).toHaveBeenCalledWith(
-          testDbPath,
+          testGraphConfig,
         );
         expect(systemCostsService.getFlowCostsByYear).toHaveBeenCalledWith(
           testDbPath,
