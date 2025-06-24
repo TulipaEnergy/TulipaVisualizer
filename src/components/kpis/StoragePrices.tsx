@@ -18,13 +18,15 @@ import {
 import { getAssetsCarriers, getYears } from "../../services/metadata";
 import useVisualizationStore from "../../store/visualizationStore";
 import { Resolution } from "../../types/resolution";
+import { hasMetadata } from "../../services/metadata";
 
 interface StoragePricesProps {
   graphId: string;
 }
 
 const StoragePrices: React.FC<StoragePricesProps> = ({ graphId }) => {
-  const { getGraphDatabase, updateGraph } = useVisualizationStore();
+  const { getGraphDatabase, updateGraph, mustGetGraph } =
+    useVisualizationStore();
   const [loadingData, setLoadingData] = useState<boolean>(true);
   const [errorData, setErrorData] = useState<string | null>(null);
   const [chartOptions, setChartOptions] = useState<any>(null);
@@ -37,6 +39,7 @@ const StoragePrices: React.FC<StoragePricesProps> = ({ graphId }) => {
   const [availableCarriers, setAvailableCarriers] = useState<string[]>([]);
 
   const dbPath = getGraphDatabase(graphId);
+  const { lastApplyTimestamp } = mustGetGraph(graphId);
 
   useEffect(() => {
     updateGraph(graphId, { title: "Assets Storage Price Duration Series" });
@@ -81,6 +84,8 @@ const StoragePrices: React.FC<StoragePricesProps> = ({ graphId }) => {
       }
 
       try {
+        if (year === null) return;
+        const graph = mustGetGraph(graphId);
         let data: StoragePriceDurationSeriesRow[] =
           await getStoragePriceDurationSeries(
             dbPath,
@@ -88,6 +93,8 @@ const StoragePrices: React.FC<StoragePricesProps> = ({ graphId }) => {
             year!,
             storageType,
             carrier,
+            graph.filtersByCategory,
+            graph.breakdownNodes,
           );
 
         const expandedData: StoragePriceDurationSeriesRow[] = [];
@@ -108,6 +115,27 @@ const StoragePrices: React.FC<StoragePricesProps> = ({ graphId }) => {
           }
         }
         data = expandedData;
+
+        // Without breakdown, sum up the y_axis values of all assets
+        if (
+          !(await hasMetadata(graph.graphDBFilePath!)) ||
+          graph.breakdownNodes.length === 0
+        ) {
+          const grouped = new Map<string, StoragePriceDurationSeriesRow>();
+
+          for (const row of data) {
+            const key = `${row.milestone_year}_${row.global_start}_${row.global_end}`;
+
+            if (!grouped.has(key)) {
+              grouped.set(key, { ...row, asset: `${carrier}` });
+            } else {
+              // Sum y_axis values
+              const existing = grouped.get(key)!;
+              existing.y_axis += row.y_axis;
+            }
+            data = Array.from(grouped.values());
+          }
+        }
         let times: number[];
 
         if (checked) {
@@ -129,7 +157,7 @@ const StoragePrices: React.FC<StoragePricesProps> = ({ graphId }) => {
         data.forEach((d) => {
           const start = Number(d.global_start);
           const value = d.y_axis;
-          const carrier = d.carrier;
+          const carrier = d.asset;
           if (!byCarrier.has(carrier)) byCarrier.set(carrier, new Map());
           byCarrier.get(carrier)!.set(start, value);
         });
@@ -213,7 +241,15 @@ const StoragePrices: React.FC<StoragePricesProps> = ({ graphId }) => {
     };
 
     fetchDataAndConfigureChart();
-  }, [dbPath, resolution, year, checked, storageType, carrier]); // Refreshes whenever you select a diff db file
+  }, [
+    dbPath,
+    resolution,
+    year,
+    checked,
+    storageType,
+    carrier,
+    lastApplyTimestamp,
+  ]); // Refreshes whenever you select a diff db file
 
   if (loadingData && year !== null) {
     return (

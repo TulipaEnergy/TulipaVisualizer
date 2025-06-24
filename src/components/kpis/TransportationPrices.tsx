@@ -34,7 +34,7 @@ const TransportationPricesDurationSeries: React.FC<
   const [resolution, setResolution] = useState<Resolution>(Resolution.Days);
   const [year, setYear] = useState<number | null>(null);
   const [availableYears, setAvailableYears] = useState<number[]>([]);
-  const [carrier, setCarrier] = useState<string | null>(null);
+  const [carrier, setCarrier] = useState<string>("all");
   const [availableCarriers, setAvailableCarriers] = useState<string[]>([]);
   const [checked, setChecked] = useState<boolean>(false);
   const [columnType, setColumnType] = useState<string>("min");
@@ -315,10 +315,13 @@ const TransportationPricesDurationSeries: React.FC<
             }
             setCarrier(val);
           }}
-          data={availableCarriers.map((c) => ({
-            value: c,
-            label: c,
-          }))}
+          data={[
+            { value: "all", label: "all" },
+            ...availableCarriers.sort().map((c) => ({
+              value: c,
+              label: c,
+            })),
+          ]}
           size="xs"
           style={{ maxWidth: 160 }}
           placeholder="Select carrier"

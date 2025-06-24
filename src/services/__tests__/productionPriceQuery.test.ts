@@ -44,14 +44,14 @@ describe("Production Price Query Service", () => {
     it("should fetch production price data for yearly resolution", async () => {
       const mockData: ProductionPriceDurationSeriesRow[] = [
         {
-          carrier: "electricity",
+          asset: "electricity",
           milestone_year: 2023,
           global_start: 0,
           global_end: 8760,
           y_axis: 50.5,
         },
         {
-          carrier: "gas",
+          asset: "gas",
           milestone_year: 2023,
           global_start: 0,
           global_end: 8760,
@@ -66,6 +66,8 @@ describe("Production Price Query Service", () => {
         Resolution.Years,
         mockYear,
         mockCarrier,
+        {},
+        [],
       );
 
       expect(genericApacheIPC).toHaveBeenCalledWith(
@@ -75,6 +77,9 @@ describe("Production Price Query Service", () => {
           resolution: "years_table",
           year: mockYear,
           carrier: mockCarrier,
+          filters: {},
+          grouper: [],
+          enableMetadata: false,
         },
       );
       expect(result).toEqual(mockData);
@@ -83,14 +88,14 @@ describe("Production Price Query Service", () => {
     it("should fetch production price data for hourly resolution", async () => {
       const mockData: ProductionPriceDurationSeriesRow[] = [
         {
-          carrier: "gas",
+          asset: "gas",
           milestone_year: 2023,
           global_start: 0,
           global_end: 1,
           y_axis: 52.1,
         },
         {
-          carrier: "gas",
+          asset: "gas",
           milestone_year: 2023,
           global_start: 1,
           global_end: 2,
@@ -105,6 +110,8 @@ describe("Production Price Query Service", () => {
         Resolution.Hours,
         mockYear,
         mockCarrier,
+        {},
+        [],
       );
 
       expect(genericApacheIPC).toHaveBeenCalledWith(
@@ -114,6 +121,9 @@ describe("Production Price Query Service", () => {
           year: mockYear,
           resolution: "hours_table",
           carrier: mockCarrier,
+          filters: {},
+          grouper: [],
+          enableMetadata: false,
         },
       );
       expect(result).toEqual(mockData);
@@ -122,7 +132,7 @@ describe("Production Price Query Service", () => {
     it("should fetch production price data for daily resolution", async () => {
       const mockData: ProductionPriceDurationSeriesRow[] = [
         {
-          carrier: "electricity",
+          asset: "electricity",
           milestone_year: 2023,
           global_start: 0,
           global_end: 24,
@@ -137,6 +147,8 @@ describe("Production Price Query Service", () => {
         Resolution.Days,
         mockYear,
         mockCarrier,
+        {},
+        [],
       );
 
       expect(genericApacheIPC).toHaveBeenCalledWith(
@@ -146,6 +158,9 @@ describe("Production Price Query Service", () => {
           year: mockYear,
           resolution: "days_table",
           carrier: mockCarrier,
+          filters: {},
+          grouper: [],
+          enableMetadata: false,
         },
       );
       expect(result).toEqual(mockData);
@@ -154,7 +169,7 @@ describe("Production Price Query Service", () => {
     it("should fetch production price data for weekly resolution", async () => {
       const mockData: ProductionPriceDurationSeriesRow[] = [
         {
-          carrier: "hydrogen",
+          asset: "hydrogen",
           milestone_year: 2023,
           global_start: 0,
           global_end: 168,
@@ -169,6 +184,8 @@ describe("Production Price Query Service", () => {
         Resolution.Weeks,
         mockYear,
         mockCarrier,
+        {},
+        [],
       );
 
       expect(genericApacheIPC).toHaveBeenCalledWith(
@@ -178,6 +195,9 @@ describe("Production Price Query Service", () => {
           year: mockYear,
           resolution: "weeks_table",
           carrier: mockCarrier,
+          filters: {},
+          grouper: [],
+          enableMetadata: false,
         },
       );
       expect(result).toEqual(mockData);
@@ -186,7 +206,7 @@ describe("Production Price Query Service", () => {
     it("should fetch production price data for monthly resolution", async () => {
       const mockData: ProductionPriceDurationSeriesRow[] = [
         {
-          carrier: "hydrogen",
+          asset: "hydrogen",
           milestone_year: 2023,
           global_start: 0,
           global_end: 744,
@@ -201,6 +221,8 @@ describe("Production Price Query Service", () => {
         Resolution.Months,
         mockYear,
         "all",
+        {},
+        [],
       );
 
       expect(genericApacheIPC).toHaveBeenCalledWith(
@@ -210,6 +232,9 @@ describe("Production Price Query Service", () => {
           year: mockYear,
           resolution: "months_table",
           carrier: "all",
+          filters: {},
+          grouper: [],
+          enableMetadata: false,
         },
       );
       expect(result).toEqual(mockData);
@@ -224,6 +249,8 @@ describe("Production Price Query Service", () => {
           invalidResolution,
           mockYear,
           mockCarrier,
+          {},
+          [],
         ),
       ).rejects.toThrow(
         "Invalid resolution specified. Use 'hours', 'days', 'weeks', 'months' or 'years'.",
@@ -242,6 +269,8 @@ describe("Production Price Query Service", () => {
         Resolution.Hours,
         mockYear,
         mockCarrier,
+        {},
+        [],
       );
 
       expect(result).toEqual([]);
@@ -250,14 +279,14 @@ describe("Production Price Query Service", () => {
     it("should handle production price data with zero values", async () => {
       const mockDataWithZeros: ProductionPriceDurationSeriesRow[] = [
         {
-          carrier: "wind",
+          asset: "wind",
           milestone_year: 2023,
           global_start: 0,
           global_end: 1,
           y_axis: 0,
         },
         {
-          carrier: "gas",
+          asset: "gas",
           milestone_year: 2023,
           global_start: 1,
           global_end: 2,
@@ -272,6 +301,8 @@ describe("Production Price Query Service", () => {
         Resolution.Hours,
         mockYear,
         mockCarrier,
+        {},
+        [],
       );
 
       expect(result).toEqual(mockDataWithZeros);
@@ -280,7 +311,7 @@ describe("Production Price Query Service", () => {
     it("should handle production price data with negative values", async () => {
       const mockDataWithNegatives: ProductionPriceDurationSeriesRow[] = [
         {
-          carrier: "wind",
+          asset: "wind",
           milestone_year: 2023,
           global_start: 0,
           global_end: 1,
@@ -295,6 +326,8 @@ describe("Production Price Query Service", () => {
         Resolution.Hours,
         mockYear,
         mockCarrier,
+        {},
+        [],
       );
 
       expect(result).toEqual(mockDataWithNegatives);
@@ -310,6 +343,8 @@ describe("Production Price Query Service", () => {
           Resolution.Hours,
           mockYear,
           mockCarrier,
+          {},
+          [],
         ),
       ).rejects.toThrow("Database connection failed");
 
@@ -320,6 +355,9 @@ describe("Production Price Query Service", () => {
           year: mockYear,
           resolution: "hours_table",
           carrier: mockCarrier,
+          filters: {},
+          grouper: [],
+          enableMetadata: false,
         },
       );
     });
@@ -334,14 +372,16 @@ describe("Production Price Query Service", () => {
           Resolution.Years,
           1999,
           mockCarrier,
+          {},
+          [],
         ),
       ).rejects.toThrow("Year not found in database");
     });
 
-    it("should handle carriers with special characters", async () => {
+    it("should handle assets with special characters", async () => {
       const mockData: ProductionPriceDurationSeriesRow[] = [
         {
-          carrier: "wind@2",
+          asset: "wind@2",
           milestone_year: 2023,
           global_start: 0,
           global_end: 1,
@@ -356,6 +396,8 @@ describe("Production Price Query Service", () => {
         Resolution.Hours,
         mockYear,
         "wind@2",
+        {},
+        [],
       );
 
       expect(result).toEqual(mockData);
@@ -369,7 +411,7 @@ describe("Production Price Query Service", () => {
       // Mock production price data
       const mockPriceData: ProductionPriceDurationSeriesRow[] = [
         {
-          carrier: "wind",
+          asset: "wind",
           milestone_year: 2023,
           global_start: 0,
           global_end: 8760,
@@ -386,6 +428,8 @@ describe("Production Price Query Service", () => {
         Resolution.Years,
         latestYear,
         "wind",
+        {},
+        [],
       );
 
       expect(latestYear).toBe(2023);
@@ -405,6 +449,8 @@ describe("Production Price Query Service", () => {
         Resolution.Hours,
         2023,
         "wind",
+        {},
+        [],
       );
 
       expect(priceData).toEqual([]);
@@ -417,7 +463,7 @@ describe("Production Price Query Service", () => {
 
       const mockHourlyData: ProductionPriceDurationSeriesRow[] = [
         {
-          carrier: "wind",
+          asset: "wind",
           milestone_year: 2023,
           global_start: 0,
           global_end: 1,
@@ -427,7 +473,7 @@ describe("Production Price Query Service", () => {
 
       const mockYearlyData: ProductionPriceDurationSeriesRow[] = [
         {
-          carrier: "wind",
+          asset: "wind",
           milestone_year: 2023,
           global_start: 0,
           global_end: 8760,
@@ -445,12 +491,16 @@ describe("Production Price Query Service", () => {
         Resolution.Hours,
         testYear,
         mockCarrier,
+        {},
+        [],
       );
       const yearlyData = await getProductionPriceDurationSeries(
         mockDbPath,
         Resolution.Years,
         testYear,
         mockCarrier,
+        {},
+        [],
       );
 
       expect(hourlyData).toEqual(mockHourlyData);
@@ -465,6 +515,9 @@ describe("Production Price Query Service", () => {
           year: testYear,
           resolution: "hours_table",
           carrier: mockCarrier,
+          filters: {},
+          grouper: [],
+          enableMetadata: false,
         },
       );
       expect(genericApacheIPC).toHaveBeenNthCalledWith(
@@ -475,6 +528,9 @@ describe("Production Price Query Service", () => {
           resolution: "years_table",
           year: testYear,
           carrier: mockCarrier,
+          filters: {},
+          grouper: [],
+          enableMetadata: false,
         },
       );
     });

@@ -67,6 +67,7 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
     (async () => {
       if (!graph.graphDBFilePath) {
         setEnableMetadata("Hide");
+        updateGraph(graphId, { breakdownNodes: [], filtersByCategory: {} });
         return;
       }
 
@@ -78,11 +79,13 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
       ];
       if (!chartsWithMetaFeatures.includes(graph.type as string)) {
         setEnableMetadata("Hide");
+        updateGraph(graphId, { breakdownNodes: [], filtersByCategory: {} });
         return;
       }
 
       if (!(await hasMetadata(graph.graphDBFilePath))) {
         setEnableMetadata("Disable");
+        updateGraph(graphId, { breakdownNodes: [], filtersByCategory: {} });
         return;
       }
 

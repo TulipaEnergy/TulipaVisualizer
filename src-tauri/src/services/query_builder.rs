@@ -114,7 +114,48 @@ pub fn build_resolution_query_with_filters(
     agg: &str,
     resolution: &str,
     filters_by_category: &HashMap<i32, Vec<i32>>,
-    asset_identifier_column_filtering: String
+    asset_identifier_column_filtering: String,
+    clustered: bool
+) -> String {
+    let group_cols_sql = group_cols.join(", ");
+    let filter_conditions = build_filter_conditions(filters_by_category, asset_identifier_column_filtering);
+
+    // Build individual column comparisons for WHERE clauses
+    let group_cols_comparisons = group_cols.to_vec()
+        .iter()
+        .map(|col| format!("d.{} = f.{}", col, col))
+        .collect::<Vec<_>>()
+        .join(" AND ");
+    
+    let combine_sql: String;
+    if clustered {
+        combine_sql = "WITH ".to_string()
+            + CLUSTURED_YEAR_RESOLUTIONS_SQL
+            + &LAST_PART_SQL.replace("{final}", "final_clustered");
+    } else {
+        combine_sql = REP_PERIOD_RESOLUTION_SQL.to_string()
+            + &LAST_PART_SQL.replace("{final}", "final_rep_periods");
+    }
+
+    combine_sql
+        .replace("{group_cols}", &group_cols_sql)
+        .replace("{group_cols_comparisons}", &group_cols_comparisons)
+        .replace("{value_col}", value_col)
+        .replace("{source_table}", source_table)
+        .replace("{agg}", agg)
+        .replace("{period_length}", resolution)
+        .replace("{filter_conditions}", &filter_conditions)
+}
+
+pub fn build_resolution_query_with_filters_both(
+    source_table: &str,
+    source_table_1: &str,
+    value_col: &str,
+    group_cols: &[&str],
+    agg: &str,
+    resolution: &str,
+    filters_by_category: &HashMap<i32, Vec<i32>>,
+    asset_identifier_column_filtering: String,
 ) -> String {
     let group_cols_sql = group_cols.join(", ");
     let filter_conditions = build_filter_conditions(filters_by_category, asset_identifier_column_filtering);
@@ -127,13 +168,16 @@ pub fn build_resolution_query_with_filters(
         .join(" AND ");
     
     let combine_sql = REP_PERIOD_RESOLUTION_SQL.to_string()
-            + &LAST_PART_SQL.replace("{final}", "final_rep_periods");
+        + &CLUSTURED_YEAR_RESOLUTIONS_SQL.replace("{source_table}", "{source_table_1}")
+        + BOTH_RESOLUTIONS_SQL
+        + &LAST_PART_SQL.replace("{final}", "final");
 
     combine_sql
         .replace("{group_cols}", &group_cols_sql)
         .replace("{group_cols_comparisons}", &group_cols_comparisons)
         .replace("{value_col}", value_col)
         .replace("{source_table}", source_table)
+        .replace("{source_table_1}", source_table_1)
         .replace("{agg}", agg)
         .replace("{period_length}", resolution)
         .replace("{filter_conditions}", &filter_conditions)
@@ -226,6 +270,61 @@ pub fn build_resolution_query_with_filters_and_breakdown(
     grouper: &[i32],
     asset_identifier_column_filtering: String,
     asset_identifier_column_breakdown: String,
+    clustered: bool
+) -> String {
+    // For breakdown, we group by the breakdown categories, not individual assets
+    let breakdown_refs: Vec<&str> = breakdown_cols.iter().map(String::as_str).collect();
+    let group_cols_sql = breakdown_refs.join(", ");
+
+    // Build individual column comparisons for WHERE clauses
+    let group_cols_comparisons = breakdown_refs.to_vec()
+        .iter()
+        .map(|col| format!("d.{} = f.{}", col, col))
+        .collect::<Vec<_>>()
+        .join(" AND ");
+    
+    let filter_conditions = build_filter_conditions(filters_by_category, asset_identifier_column_filtering);
+    let breakdown_joins = build_breakdown_joins(grouper);
+    let breakdown_selects = build_breakdown_selects(grouper);
+    let breakdown_case_conditions = build_breakdown_case_conditions(grouper, asset_identifier_column_breakdown);
+    let breakdown_group_by = build_breakdown_group_by(grouper);
+    
+    let combine_sql: String;
+     if clustered {
+        combine_sql = "WITH ".to_string()
+            + CLUSTURED_YEAR_RESOLUTIONS_SQL
+            + &LAST_PART_SQL.replace("{final}", "final_clustered");
+    } else {
+        combine_sql = REP_PERIOD_RESOLUTION_SQL.to_string()
+            + &LAST_PART_SQL.replace("{final}", "final_rep_periods");
+    }
+
+    combine_sql
+        .replace("{group_cols}", &group_cols_sql)
+        .replace("{group_cols_comparisons}", &group_cols_comparisons)
+        .replace("{value_col}", value_col)
+        .replace("{source_table}", source_table)
+        .replace("{agg}", agg)
+        .replace("{period_length}", resolution)
+        .replace("{filter_conditions}", &filter_conditions)
+        .replace("{breakdown_joins}", &breakdown_joins)
+        .replace("{breakdown_selects}", &breakdown_selects)
+        .replace("{breakdown_case_conditions}", &breakdown_case_conditions)
+        .replace("{breakdown_group_by}", &breakdown_group_by)
+}
+
+
+pub fn build_resolution_query_with_filters_and_breakdown_both(
+    source_table: &str,
+    source_table_1: &str,
+    value_col: &str,
+    breakdown_cols: &[String],
+    agg: &str,
+    resolution: &str,
+    filters_by_category: &HashMap<i32, Vec<i32>>,
+    grouper: &[i32],
+    asset_identifier_column_filtering: String,
+    asset_identifier_column_breakdown: String,
 ) -> String {
     // For breakdown, we group by the breakdown categories, not individual assets
     let breakdown_refs: Vec<&str> = breakdown_cols.iter().map(String::as_str).collect();
@@ -245,13 +344,16 @@ pub fn build_resolution_query_with_filters_and_breakdown(
     let breakdown_group_by = build_breakdown_group_by(grouper);
     
     let combine_sql = REP_PERIOD_RESOLUTION_SQL.to_string()
-            + &LAST_PART_SQL.replace("{final}", "final_rep_periods");
+        + &CLUSTURED_YEAR_RESOLUTIONS_SQL.replace("{source_table}", "{source_table_1}")
+        + BOTH_RESOLUTIONS_SQL
+        + &LAST_PART_SQL.replace("{final}", "final");
 
     combine_sql
         .replace("{group_cols}", &group_cols_sql)
         .replace("{group_cols_comparisons}", &group_cols_comparisons)
         .replace("{value_col}", value_col)
         .replace("{source_table}", source_table)
+        .replace("{source_table_1}", source_table_1)
         .replace("{agg}", agg)
         .replace("{period_length}", resolution)
         .replace("{filter_conditions}", &filter_conditions)
@@ -518,29 +620,9 @@ static CLUSTURED_YEAR_RESOLUTIONS_SQL: &str = "
 const BOTH_RESOLUTIONS_SQL: &str = "
 /* Combines the clustered and non-clustered data into a single table.*/
 final AS (
-  SELECT
-    final_clustered.{group_cols},
-    final_clustered.milestone_year,
-    final_rep_periods.period,
-    final_rep_periods.start_hour,
-    final_rep_periods.end_hour,
-    (final_rep_periods.y_axis + final_clustered.y_axis) AS y_axis
-    FROM final_rep_periods
-  JOIN final_clustered ON final_rep_periods.{group_cols} = final_clustered.{group_cols}
-    AND final_rep_periods.milestone_year = final_clustered.milestone_year
-    AND final_rep_periods.period = final_clustered.period
-  
-  UNION ALL
   SELECT * FROM final_rep_periods
-  WHERE {group_cols} NOT IN (
-    SELECT {group_cols} FROM final_clustered
-  )
   UNION ALL
   SELECT * FROM final_clustered
-  WHERE {group_cols} NOT IN (
-    SELECT {group_cols} FROM final_rep_periods
-  )
-
   ),
 ";
 
