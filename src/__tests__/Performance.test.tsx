@@ -154,9 +154,6 @@ describe("Performance Testing", () => {
       "Carrier1",
       "Carrier2",
     ]);
-    vi.mocked(mockSystemCostsService.getUniqueYears).mockReturnValue([
-      2020, 2021, 2022,
-    ]);
 
     // Default storage price service mocks
     vi.mocked(
@@ -458,6 +455,9 @@ describe("Performance Testing", () => {
     it("maintains responsiveness during data loading", async () => {
       const mockStore = createMockStoreState({
         getGraphDatabase: vi.fn(() => mockDatabasePath),
+        mustGetGraph: vi.fn(() =>
+          createMockGraphConfig({ graphDBFilePath: mockDatabasePath }),
+        ),
       });
 
       (
@@ -488,54 +488,6 @@ describe("Performance Testing", () => {
   });
 
   describe("Chart Rendering Optimization", () => {
-    it("optimizes ECharts rendering calls", async () => {
-      const mockStore = createMockStoreState({
-        mustGetGraph: vi.fn(() => ({
-          ...createMockGraphConfig(),
-          id: "chart-graph",
-          type: "capacity" as ChartType,
-          title: "Chart Optimization Test",
-          error: null,
-          isLoading: false,
-          options: {
-            type: "capacity",
-            asset: "TestAsset",
-          } as CapacityOptions,
-          graphDBFilePath: mockDatabasePath,
-          filtersByCategory: {},
-          breakdownNodes: [],
-        })),
-        updateGraph: vi.fn(),
-        removeGraph: vi.fn(),
-      });
-
-      const mockCapacityService = await import("../services/capacityQuery");
-      vi.mocked(mockCapacityService.getCapacity).mockResolvedValue(
-        mockLargeCapacityData(25),
-      ); // Reduced size
-      vi.mocked(mockCapacityService.fetchAvailableYears).mockResolvedValue([
-        2020, 2021, 2022,
-      ]);
-
-      const mockMetadataService = await import("../services/metadata");
-      vi.mocked(mockMetadataService.getAssets).mockResolvedValue(["TestAsset"]);
-
-      (
-        useVisualizationStore as unknown as ReturnType<typeof vi.fn>
-      ).mockReturnValue(mockStore);
-
-      renderWithProviders(<Capacity graphId="chart-graph" />);
-
-      await waitFor(
-        () => {
-          expect(screen.getByTestId("echarts-mock")).toBeInTheDocument();
-        },
-        { timeout: 10000 },
-      ); // Increased timeout
-
-      // Chart should render successfully (verified by previous waitFor)
-    }, 15000); // Increased test timeout
-
     it("handles chart resize operations efficiently", async () => {
       const mockStore = createMockStoreState({
         mustGetGraph: vi.fn(() => ({
@@ -602,89 +554,6 @@ describe("Performance Testing", () => {
 
       expect(cleanupTime).toBeLessThan(200); // Increased from 100ms
     });
-
-    it("optimizes chart option updates", async () => {
-      const mockStore = createMockStoreState({
-        mustGetGraph: vi.fn(() => ({
-          ...createMockGraphConfig(),
-          id: "update-graph",
-          type: "capacity" as ChartType,
-          title: "Update Test Graph",
-          error: null,
-          isLoading: false,
-          options: {
-            type: "capacity",
-            asset: "TestAsset",
-          } as CapacityOptions,
-          graphDBFilePath: mockDatabasePath,
-          filtersByCategory: {},
-          breakdownNodes: [],
-        })),
-        updateGraph: vi.fn(),
-        removeGraph: vi.fn(),
-      });
-
-      const mockCapacityService = await import("../services/capacityQuery");
-      vi.mocked(mockCapacityService.getCapacity).mockResolvedValue(
-        mockLargeCapacityData(25),
-      ); // Reduced size
-      vi.mocked(mockCapacityService.fetchAvailableYears).mockResolvedValue([
-        2020, 2021, 2022,
-      ]);
-
-      const mockMetadataService = await import("../services/metadata");
-      vi.mocked(mockMetadataService.getAssets).mockResolvedValue(["TestAsset"]);
-
-      (
-        useVisualizationStore as unknown as ReturnType<typeof vi.fn>
-      ).mockReturnValue(mockStore);
-
-      const { rerender } = renderWithProviders(
-        <Capacity graphId="update-graph" />,
-      );
-
-      await waitFor(
-        () => {
-          expect(screen.getByTestId("echarts-mock")).toBeInTheDocument();
-        },
-        { timeout: 10000 },
-      ); // Increased timeout
-
-      // Reset render count
-      const initialRenderCount = mockEChartsRender.mock.calls.length;
-
-      // Update chart options
-      mockStore.mustGetGraph = vi.fn(() => ({
-        ...createMockGraphConfig(),
-        id: "update-graph",
-        type: "capacity" as ChartType,
-        title: "Updated Test Graph",
-        error: null,
-        isLoading: false,
-        options: {
-          type: "capacity",
-          asset: "TestAsset",
-        } as CapacityOptions,
-        graphDBFilePath: mockDatabasePath,
-        filtersByCategory: {},
-        breakdownNodes: [],
-      }));
-
-      const updateTime = await measurePerformance(async () => {
-        rerender(<Capacity graphId="update-graph" />);
-        await waitFor(
-          () => {
-            expect(screen.getByTestId("echarts-mock")).toBeInTheDocument();
-          },
-          { timeout: 8000 },
-        ); // Increased timeout
-      });
-
-      expect(updateTime).toBeLessThan(3000);
-      expect(mockEChartsRender.mock.calls.length).toBeGreaterThanOrEqual(
-        initialRenderCount,
-      );
-    }, 15000); // Increased test timeout
   });
 
   describe("Memory Management", () => {

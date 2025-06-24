@@ -2,11 +2,32 @@ use duckdb::arrow::{array::RecordBatch, datatypes::Schema};
 use tauri::ipc::Response;
 use crate::duckdb_conn::{run_query_rb, serialize_recordbatch};
 use crate::services::metadata::check_column_in_table;
+use crate::services::query_builder::{build_filter_conditions,
+build_breakdown_joins,
+build_breakdown_case_conditions};
+use std::collections::HashMap;
 
 #[tauri::command]
-pub fn get_fixed_asset_cost(db_path: String) -> Result<Response, String> {
+pub fn get_fixed_asset_cost(
+    db_path: String,
+    filters: HashMap<i32, Vec<i32>>,
+    grouper: Vec<i32>,
+    enable_metadata: bool
+) -> Result<Response, String> {
     println!("querying system costs (fixed asset)");
-    let res: (Vec<RecordBatch>, Schema) = run_query_rb(db_path, format!("{DISCOUNT_FACTOR_ASSETS_CTE}{FIXED_ASSET_COST_SQL}"), [].to_vec())?;
+
+    let mut sql =  FIXED_ASSET_COST_SQL.to_string()
+                .replace("{discount_factor_assets_cte}", &DISCOUNT_FACTOR_ASSETS_CTE)
+                .replace("{breakdown_joins}", &build_breakdown_joins(&grouper))
+                .replace("{breakdown_case_conditions}",  &build_breakdown_case_conditions(&grouper, "a.asset".to_string()));
+    
+    if enable_metadata {
+        sql = sql.replace("{filtered_assets}", &format!("SELECT * FROM asset AS a WHERE 1 {}", build_filter_conditions(&filters, "a.asset".to_string())));   
+    } else {
+        sql = sql.replace("{filtered_assets}", &"SELECT * FROM asset");
+    };
+    
+    let res: (Vec<RecordBatch>, Schema) = run_query_rb(db_path, sql, [].to_vec())?;
     println!("done!");
 
     return serialize_recordbatch(res.0, res.1);
@@ -29,15 +50,31 @@ pub fn get_variable_flow_cost(db_path: String) -> Result<Response, String> {
 }
 
 #[tauri::command]
-pub fn get_unit_on_cost(db_path: String) -> Result<Response, String> {
-    let query = if check_column_in_table(db_path.clone(), "var_units_on", "solution")? {
-        format!("{DISCOUNT_FACTOR_ASSETS_CTE}{UNIT_ON_COST_SQL}")
+pub fn get_unit_on_cost(
+    db_path: String, 
+    filters: HashMap<i32, Vec<i32>>,
+    grouper: Vec<i32>,
+    enable_metadata: bool
+) -> Result<Response, String> {
+    println!("querying system costs (unit on)");
+    let sql = if check_column_in_table(db_path.clone(), "var_units_on", "solution") ? {
+        let intermediary_sql = UNIT_ON_COST_SQL.to_string()
+                .replace("{discount_factor_assets_cte}", &DISCOUNT_FACTOR_ASSETS_CTE)
+                .replace("{breakdown_joins}", &build_breakdown_joins(&grouper))
+                .replace("{breakdown_case_conditions}",  &build_breakdown_case_conditions(&grouper, "a.asset".to_string()));
+        if enable_metadata {
+            intermediary_sql.replace("{filtered_assets}", &format!("SELECT * FROM asset AS a WHERE 1 {}", build_filter_conditions(&filters, "a.asset".to_string())))
+        } else {
+            intermediary_sql.replace("{filtered_assets}", &"SELECT * FROM asset")
+        }
     } else {
-        println!("querying system costs (unit on), but var_units_on doesn't have solution");
+        println!("var_units_on doesn't have solution, falling to 0");
         UNIT_ON_COST_SQL_FALLBACK.to_string()
     };
 
-    let res: (Vec<RecordBatch>, Schema) = run_query_rb(db_path, query, [].to_vec())?;
+
+    let res: (Vec<RecordBatch>, Schema) = run_query_rb(db_path, sql, [].to_vec())?;
+    println!("done!");
 
     return serialize_recordbatch(res.0, res.1);
 }
@@ -220,10 +257,13 @@ DiscountFactorPerYearAndAsset AS (
 ";
 
 const UNIT_ON_COST_SQL: &str = "
--- using DISCOUNT_FACTOR_ASSETS_CTE
+{discount_factor_assets_cte}
 SELECT
     yd.year AS milestone_year,
-    a.asset,
+    CASE 
+        {breakdown_case_conditions}
+        ELSE 'Other'
+    END AS asset,
     SUM(
         df.discount_factor
         * COALESCE(am.units_on_cost, 0) 
@@ -241,19 +281,23 @@ JOIN
 JOIN
     asset_milestone AS am ON yd.year = am.milestone_year
 JOIN
-    asset AS a ON am.asset = a.asset
+    ({filtered_assets}) AS a ON am.asset = a.asset
 JOIN
     var_units_on AS vuo ON a.asset = vuo.asset 
                          AND rpm.rep_period = vuo.rep_period
                          AND rpm.year = vuo.year
 JOIN
     DiscountFactorPerYearAndAsset AS df ON yd.year = df.milestone_year AND a.asset = df.asset
+{breakdown_joins}
 WHERE
     yd.is_milestone = TRUE
     AND a.unit_commitment = TRUE
 GROUP BY
     yd.year,
-    a.asset;
+    CASE 
+        {breakdown_case_conditions}
+        ELSE 'Other'
+    END;
 ";
 
 const UNIT_ON_COST_SQL_FALLBACK: &str = "
@@ -272,10 +316,13 @@ GROUP BY
 ";
 
 const FIXED_ASSET_COST_SQL: &str = "
--- using DISCOUNT_FACTOR_ASSETS_CTE
+{discount_factor_assets_cte}
 SELECT
     yd.year AS milestone_year,
-    a.asset,
+    CASE 
+        {breakdown_case_conditions}
+        ELSE 'Other'
+    END AS asset,
     SUM(
         df.discount_factor * a.capacity * ac.fixed_cost * ab.initial_units
         +
@@ -291,18 +338,21 @@ FROM
 JOIN
     asset_both AS ab ON ab.milestone_year = yd.year
 JOIN
-    asset AS a ON ab.asset = a.asset
+    ({filtered_assets}) AS a ON ab.asset = a.asset
 JOIN
     asset_commission AS ac ON a.asset = ac.asset
 JOIN
     DiscountFactorPerYearAndAsset AS df ON yd.year = df.milestone_year AND a.asset = df.asset
+{breakdown_joins}
 WHERE
     yd.is_milestone = TRUE
     AND yd.year BETWEEN ab.commission_year AND (ab.commission_year + a.technical_lifetime)
 GROUP BY
     yd.year,
-    a.asset
+    CASE 
+        {breakdown_case_conditions}
+        ELSE 'Other'
+    END
 ORDER BY
-    a.asset,
     yd.year;
 ";

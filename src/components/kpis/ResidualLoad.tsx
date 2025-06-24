@@ -28,7 +28,7 @@ const SupplyStackedBarSeries: React.FC<SupplyStackedBarSeriesProps> = ({
     useVisualizationStore();
 
   // grab the whole graph config, including filtersByCategory
-  const graph = mustGetGraph(graphId);
+  const { lastApplyTimestamp } = mustGetGraph(graphId);
   const dbPath = getGraphDatabase(graphId);
 
   // States for dropdowns and data
@@ -69,6 +69,9 @@ const SupplyStackedBarSeries: React.FC<SupplyStackedBarSeriesProps> = ({
       setError(null);
 
       try {
+        // In case the graphDB changes, make sure to use the latest data since variables
+        // declared outside of hooks are only initialized once per render
+        const graph = mustGetGraph(graphId);
         const supplyData = await getSupply(
           dbPath,
           resolution,
@@ -162,7 +165,7 @@ const SupplyStackedBarSeries: React.FC<SupplyStackedBarSeriesProps> = ({
       }
     })();
     // re-run when filters change as well
-  }, [dbPath, year, resolution, graph.lastApplyTimestamp]);
+  }, [dbPath, year, resolution, lastApplyTimestamp]);
 
   if (error) {
     return (
