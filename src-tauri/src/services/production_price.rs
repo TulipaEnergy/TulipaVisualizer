@@ -215,13 +215,29 @@ pub fn get_production_price_resolution(
         END
     ";
 
-    const EMPTY_SQL: &str = "
+const EMPTY_SQL: &str = "
                 SELECT 
-                    '' AS asset,
+                CASE 
+                {breakdown_case_conditions}
+                ELSE 'Other'
+                END AS asset,
                     0 AS year,
                     0 AS rep_period,
                     0 AS time_block_start,
                     0 AS time_block_end,
                     0 AS dual_value
-                FROM cons_capacity_outgoing_simple_method
+                FROM cons_capacity_outgoing_simple_method AS simple
+                JOIN ({filtered_assets}) AS a ON simple.asset = a.asset
+                {breakdown_joins}
+                GROUP BY
+                simple.year,
+                simple.rep_period,
+                simple.time_block_start,
+                simple.time_block_end,
+                dual_value
+                {breakdown_group_by},
+                CASE 
+                {breakdown_case_conditions}
+                ELSE 'Other'
+                END
                 ";
