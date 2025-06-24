@@ -15,9 +15,9 @@
 
 ### Technology Stack
 
-- **Rust 2021**: Systems programming language for performance and safety
-- **Tauri 2.x**: Cross-platform desktop framework with IPC
-- **DuckDB 1.2.2**: Embedded analytical database engine
+- **Rust**: Systems programming language for performance and safety
+- **Tauri**: Cross-platform desktop framework with IPC
+- **DuckDB**: Embedded analytical database engine
 - **Apache Arrow**: Columnar data format for efficient serialization
 - **Once Cell**: Lazy static initialization for connection pooling
 
@@ -31,629 +31,140 @@
 
 ### Request Flow
 
-```
-Frontend IPC Call → Tauri Command → Service Layer → Database Query → Apache Arrow Serialization → Response
-```
+The application follows a structured request flow: Frontend IPC calls are received by Tauri commands, which delegate to the service layer for business logic processing. The service layer executes database queries and returns data serialized in Apache Arrow format for efficient transfer back to the frontend.
 
 ## Development Setup
 
 ### Prerequisites
 
-```bash
-# Install Rust toolchain
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-rustup update
-
-# Platform-specific dependencies
-# Linux: sudo apt install libwebkit2gtk-4.1-dev build-essential curl wget file libssl-dev
-# macOS: xcode-select --install
-# Windows: Microsoft C++ Build Tools
-```
+The development environment requires the Rust toolchain with the latest stable version. Platform-specific dependencies include WebKit development libraries on Linux, Xcode command line tools on macOS, and Microsoft C++ Build Tools on Windows.
 
 ### Development Commands
 
-```bash
-# Build and test
-cargo build                 # Development build
-cargo build --release       # Production build
-cargo test                  # Run tests
-cargo clippy                # Linting
-cargo fmt                   # Code formatting
-cargo doc --open            # Generate documentation
+Standard Rust development commands are used for building, testing, and maintaining code quality. The project integrates with Tauri for full-stack development and application bundling. Code formatting, linting, and documentation generation follow Rust ecosystem conventions.
 
-# Tauri integration
-npm run tauri dev            # Full-stack development
-npm run tauri build          # Application bundle
-```
+For documentation generation, use the configured npm scripts: `npm run docs:rust` to generate documentation without dependencies and including private items, `npm run docs:rust:copy` to copy generated docs to the docs directory, or `npm run docs:rust:build` to generate and copy documentation in one command.
 
 ### IDE Setup
 
-- **VS Code**: Rust Analyzer extension
-- **CLion**: Rust plugin
-- **Vim/Neovim**: rust.vim or coc-rust-analyzer
+Recommended development environments include VS Code with Rust Analyzer, CLion with the Rust plugin, or Vim/Neovim with appropriate Rust language server integration.
 
 ## Project Structure
 
-```
-src-tauri/src/
-├── lib.rs                  # Command registration and exports
-├── main.rs                 # Binary entry point
-├── duckdb_conn.rs         # Database connection management
-└── services/              # Domain service modules
-    ├── mod.rs             # Service module exports
-    ├── capacity.rs        # Asset capacity analysis
-    ├── system_cost.rs     # Economic cost calculations
-    ├── production_price.rs # Production pricing analysis
-    ├── storage_price.rs   # Storage system pricing
-    ├── transport_price.rs # Transportation cost analysis
-    ├── residual_load.rs   # Renewable energy supply analysis
-    ├── import_export.rs   # Geographic energy flow analysis
-    ├── metadata.rs        # Database schema operations
-    ├── query.rs           # Direct SQL execution
-    └── query_builder.rs   # SQL construction utilities
-```
+The backend code is organized in the `src-tauri/src/` directory with the following structure:
+
+- **lib.rs**: Contains command registration and module exports for Tauri integration
+- **main.rs**: Binary entry point for the application
+- **duckdb_conn.rs**: Manages database connection pooling and lifecycle
+- **services/**: Domain-specific service modules organized by functionality
+  - **mod.rs**: Service module exports and common utilities
+  - **capacity.rs**: Asset capacity analysis operations
+  - **system_cost.rs**: Economic cost calculation services
+  - **production_price.rs**: Production pricing analysis
+  - **storage_price.rs**: Storage system pricing calculations
+  - **transport_price.rs**: Transportation cost analysis
+  - **residual_load.rs**: Renewable energy supply analysis
+  - **import_export.rs**: Geographic energy flow analysis
+  - **metadata.rs**: Database schema and metadata operations
+  - **query.rs**: Direct SQL execution utilities
+  - **query_builder.rs**: Dynamic SQL construction helpers
 
 ### Naming Conventions
 
-- **Files**: snake_case (`system_cost.rs`)
-- **Functions**: snake_case (`get_capacity`)
-- **Types**: PascalCase (`GraphConfig`)
-- **Constants**: SCREAMING_SNAKE_CASE (`CAPACITY_SQL`)
+The codebase follows Rust naming conventions: snake_case for files and functions, PascalCase for types and structs, and SCREAMING_SNAKE_CASE for constants.
 
 ## Service Layer Patterns
 
 ### Tauri Command Pattern
 
-```rust
-use tauri::ipc::Response;
-use duckdb::{ types::Value, arrow::{array::RecordBatch, datatypes::Schema} };
+Each service function is exposed as a Tauri command with consistent parameter validation, error handling, and response formatting. Commands accept database path and domain-specific parameters, validate inputs, execute database queries, and return Apache Arrow serialized data or detailed error messages.
 
-/// Calculates asset capacity evolution over time.
-///
-/// # Parameters
-/// * `db_path` - Database file path (validated for .duckdb extension)
-/// * `asset_name` - Asset identifier for analysis
-///
-/// # Returns
-/// * `Ok(Response)` - Apache Arrow serialized capacity data
-/// * `Err(String)` - Error message with context
-#[tauri::command]
-pub fn get_capacity(
-    db_path: String,
-    asset_name: String,
-) -> Result<Response, String> {
-    // Input validation
-    if asset_name.trim().is_empty() {
-        return Err("Asset name cannot be empty".to_string());
-    }
-
-    // Database query execution
-    let res: (Vec<RecordBatch>, Schema) = run_query_rb(
-        db_path,
-        CAPACITY_SQL.to_string(),
-        vec![Value::from(asset_name)]
-    )?;
-
-    // Apache Arrow serialization
-    serialize_recordbatch(res.0, res.1)
-}
-```
+The pattern includes comprehensive input validation to prevent empty or invalid parameters, database connection management through the connection pool, query execution with parameterized statements to prevent SQL injection, and standardized error handling with contextual messages.
 
 ### Error Handling Pattern
 
-```rust
-use std::fmt;
+The application implements a custom error type hierarchy for different categories of failures including database errors, validation errors, and query execution errors. Each error type provides detailed context and implements standard Rust error traits for consistent handling across the application.
 
-/// Custom error type for service operations
-#[derive(Debug)]
-pub enum ServiceError {
-    DatabaseError(String),
-    ValidationError(String),
-    QueryError(String),
-}
-
-impl fmt::Display for ServiceError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            ServiceError::DatabaseError(msg) => write!(f, "Database error: {}", msg),
-            ServiceError::ValidationError(msg) => write!(f, "Validation error: {}", msg),
-            ServiceError::QueryError(msg) => write!(f, "Query error: {}", msg),
-        }
-    }
-}
-
-impl From<ServiceError> for String {
-    fn from(error: ServiceError) -> String {
-        error.to_string()
-    }
-}
-
-/// Enhanced error handling with context
-pub fn handle_query_error(error: duckdb::Error, context: &str) -> String {
-    match error {
-        duckdb::Error::SqliteFailure(code, msg) => {
-            format!("{}: SQLite error {}: {}", context, code, msg.unwrap_or_default())
-        }
-        duckdb::Error::InvalidColumnName(name) => {
-            format!("{}: Column '{}' not found", context, name)
-        }
-        _ => format!("{}: {}", context, error),
-    }
-}
-```
+Error handling includes graceful degradation strategies, detailed error messages with context, and proper error propagation through the Result type system. Database-specific errors are mapped to application-level error types with additional context.
 
 ## Database Integration
 
 ### Connection Management
 
-```rust
-use duckdb::{Connection, Result as DuckResult};
-use once_cell::sync::Lazy;
-use std::collections::HashMap;
-use std::sync::Mutex;
+The application uses a thread-safe connection pool with path-based caching to efficiently manage DuckDB connections. The connection handler maintains a map of database paths to active connections, ensuring optimal resource utilization and preventing connection leaks.
 
-/// Thread-safe connection pool with path-based caching
-static CONN_HANDLER: Lazy<Mutex<ConnectionHandler>> =
-    Lazy::new(|| Mutex::new(ConnectionHandler::new()));
-
-struct ConnectionHandler {
-    connections: HashMap<String, Connection>,
-}
-
-impl ConnectionHandler {
-    fn new() -> Self {
-        Self {
-            connections: HashMap::new(),
-        }
-    }
-
-    /// Gets or creates database connection with validation
-    fn get_connection(&mut self, db_path: &str) -> DuckResult<&Connection> {
-        // Validate file extension
-        if !db_path.ends_with(".duckdb") {
-            return Err(duckdb::Error::InvalidPath(
-                "Database path must end with .duckdb".into()
-            ));
-        }
-
-        // Get existing or create new connection
-        if !self.connections.contains_key(db_path) {
-            let conn = Connection::open(db_path)?;
-            self.connections.insert(db_path.to_string(), conn);
-        }
-
-        Ok(self.connections.get(db_path).unwrap())
-    }
-}
-```
+Connection management includes validation of database file paths, lazy initialization of connections when first accessed, thread-safe access through mutex protection, and automatic cleanup of unused connections.
 
 ### Query Execution Patterns
 
-```rust
-/// Execute query returning Apache Arrow RecordBatch for efficient data transfer
-pub fn run_query_rb(
-    db_path: String,
-    query: String,
-    params: Vec<Value>,
-) -> Result<(Vec<RecordBatch>, Schema), String> {
-    let mut conn_handler = CONN_HANDLER.lock()
-        .map_err(|e| format!("Failed to acquire connection lock: {}", e))?;
+Two primary query execution patterns are implemented: Apache Arrow-based execution for efficient data transfer to the frontend, and custom row mapping for complex data structures that require specific processing.
 
-    let conn = conn_handler.get_connection(&db_path)
-        .map_err(|e| format!("Database connection failed: {}", e))?;
-
-    // Prepare statement with parameters
-    let mut stmt = conn.prepare(&query)
-        .map_err(|e| format!("Query preparation failed: {}", e))?;
-
-    // Execute with Apache Arrow result
-    let arrow_result = stmt.query_arrow(params.as_slice())
-        .map_err(|e| format!("Query execution failed: {}", e))?;
-
-    Ok((arrow_result.0, arrow_result.1))
-}
-
-/// Execute query with custom row mapping for complex data structures
-pub fn run_query_row<F, T>(
-    db_path: String,
-    query: String,
-    params: Vec<Value>,
-    row_mapper: F,
-) -> Result<Vec<T>, String>
-where
-    F: Fn(&duckdb::Row) -> DuckResult<T>,
-{
-    let mut conn_handler = CONN_HANDLER.lock()
-        .map_err(|e| format!("Failed to acquire connection lock: {}", e))?;
-
-    let conn = conn_handler.get_connection(&db_path)
-        .map_err(|e| format!("Database connection failed: {}", e))?;
-
-    let mut stmt = conn.prepare(&query)
-        .map_err(|e| format!("Query preparation failed: {}", e))?;
-
-    let rows = stmt.query_map(params.as_slice(), row_mapper)
-        .map_err(|e| format!("Query execution failed: {}", e))?;
-
-    rows.collect::<DuckResult<Vec<T>>>()
-        .map_err(|e| format!("Row mapping failed: {}", e))
-}
-```
+The Arrow-based pattern executes parameterized queries and returns results as RecordBatch objects with associated schema information, optimizing data transfer through columnar format serialization. The row mapping pattern allows for custom data transformations during query execution, enabling complex business logic processing at the database layer.
 
 ### Schema Compatibility Handling
 
-```rust
-/// Checks if a specific column exists in a table for graceful degradation
-pub fn check_column_in_table(
-    db_path: String,
-    table_name: &str,
-    column_name: &str,
-) -> Result<bool, String> {
-    let query = "SELECT COUNT(*) FROM pragma_table_info(?) WHERE name = ?";
-    let params = vec![Value::from(table_name), Value::from(column_name)];
+The system includes utilities for checking database schema compatibility and handling version differences gracefully. This includes functions to verify column existence, add missing columns for backward compatibility, and handle schema evolution without breaking existing installations.
 
-    let row_mapper = |row: &duckdb::Row| {
-        let count: i64 = row.get(0)?;
-        Ok(count > 0)
-    };
-
-    let results = run_query_row(db_path, query.to_string(), params, row_mapper)?;
-    Ok(results.into_iter().next().unwrap_or(false))
-}
-
-/// Conditionally adds missing columns for backward compatibility
-pub fn ensure_schema_compatibility(db_path: String) -> Result<(), String> {
-    if !check_column_in_table(db_path.clone(), "var_assets_investment", "solution")? {
-        execute_batch(
-            db_path.clone(),
-            "ALTER TABLE var_assets_investment ADD COLUMN solution DOUBLE".to_string()
-        )?;
-    }
-    Ok(())
-}
-```
+Schema handling ensures smooth upgrades by detecting missing database features and applying necessary migrations automatically while maintaining data integrity.
 
 ## IPC Communication
 
 ### Apache Arrow Serialization
 
-```rust
-use arrow_ipc::writer::StreamWriter;
-use tauri::ipc::Response;
+Data serialization for frontend communication uses Apache Arrow's efficient columnar format. The serialization process converts query results into Arrow RecordBatch objects, creates an Arrow stream writer, and produces binary data optimized for fast deserialization on the frontend.
 
-/// Serializes Apache Arrow data for efficient frontend transfer
-pub fn serialize_recordbatch(
-    batches: Vec<RecordBatch>,
-    schema: Schema,
-) -> Result<Response, String> {
-    let mut buffer = Vec::new();
-
-    {
-        let mut writer = StreamWriter::try_new(&mut buffer, &schema)
-            .map_err(|e| format!("Failed to create Arrow writer: {}", e))?;
-
-        for batch in batches {
-            writer.write(&batch)
-                .map_err(|e| format!("Failed to write batch: {}", e))?;
-        }
-
-        writer.finish()
-            .map_err(|e| format!("Failed to finalize Arrow stream: {}", e))?;
-    }
-
-    Ok(Response::new(buffer))
-}
-```
+This approach minimizes data transfer overhead and enables efficient processing of large datasets in the frontend visualization components.
 
 ### Command Registration
 
-```rust
-// lib.rs
-use tauri::Builder;
+All service functions are registered as Tauri commands in the main application builder. The registration process includes metadata operations, capacity analysis functions, cost analysis services, price analysis utilities, flow analysis tools, and direct query execution capabilities.
 
-#[cfg_attr(mobile, tauri::mobile_entry_point)]
-pub fn run() {
-    Builder::default()
-        .plugin(tauri_plugin_fs::init())
-        .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![
-            // Metadata operations
-            services::metadata::get_assets,
-            services::metadata::get_tables,
-
-            // Capacity analysis
-            services::capacity::get_capacity,
-            services::capacity::get_available_years,
-
-            // Cost analysis
-            services::system_cost::get_fixed_asset_cost,
-            services::system_cost::get_unit_on_cost,
-            services::system_cost::get_fixed_flow_cost,
-            services::system_cost::get_variable_flow_cost,
-
-            // Price analysis
-            services::production_price::get_production_price_resolution,
-            services::storage_price::get_storage_price_resolution,
-            services::transport_price::get_transportation_price_resolution,
-            services::transport_price::get_transportation_carriers,
-
-            // Flow analysis
-            services::residual_load::get_supply,
-            services::import_export::get_import,
-            services::import_export::get_export,
-
-            // Direct queries
-            services::query::run_serialize_query_on_db,
-        ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
-}
-```
+Command registration ensures type-safe communication between frontend and backend with automatic parameter validation and response serialization.
 
 ## Testing Patterns
 
 ### Unit Testing with Mock Data
 
-```rust
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use duckdb::{Connection, Result as DuckResult};
-    use tempfile::NamedTempFile;
+Unit tests are implemented using temporary DuckDB databases with controlled test data. Test databases are created programmatically with known schemas and data sets, enabling predictable and repeatable test execution.
 
-    fn create_test_database() -> DuckResult<NamedTempFile> {
-        let temp_file = NamedTempFile::new().unwrap();
-        let conn = Connection::open(temp_file.path())?;
-
-        // Create test schema
-        conn.execute_batch(
-            "CREATE TABLE asset (asset VARCHAR, capacity DOUBLE);
-             INSERT INTO asset VALUES ('wind_onshore', 100.0), ('solar_pv', 50.0);"
-        )?;
-
-        Ok(temp_file)
-    }
-
-    #[test]
-    fn test_get_assets_success() {
-        let temp_db = create_test_database().unwrap();
-        let db_path = temp_db.path().to_str().unwrap().to_string() + ".duckdb";
-
-        // Copy test file to .duckdb extension
-        std::fs::copy(temp_db.path(), &db_path).unwrap();
-
-        let result = get_assets(db_path);
-        assert!(result.is_ok());
-
-        // Cleanup
-        std::fs::remove_file(db_path).ok();
-    }
-
-    #[test]
-    fn test_invalid_database_path() {
-        let result = get_assets("invalid_file.txt".to_string());
-        assert!(result.is_err());
-        assert!(result.unwrap_err().contains("Database path must end with .duckdb"));
-    }
-}
-```
+Testing patterns include creation of temporary test databases, insertion of known test data, execution of service functions with test parameters, validation of expected results, and cleanup of temporary resources.
 
 ### Integration Testing
 
-```rust
-#[cfg(test)]
-mod integration_tests {
-    use super::*;
-    use std::path::PathBuf;
+Integration tests verify the interaction between multiple services using shared test databases. These tests ensure that services work correctly together and maintain consistency across the application.
 
-    fn get_test_db_path() -> String {
-        let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        path.push("tests/fixtures/test_energy_model.duckdb");
-        path.to_str().unwrap().to_string()
-    }
-
-    #[test]
-    fn test_capacity_analysis_workflow() {
-        let db_path = get_test_db_path();
-
-        // Test asset discovery
-        let assets_result = get_assets(db_path.clone()).unwrap();
-        // Verify assets are returned
-
-        // Test capacity analysis for first asset
-        // let capacity_result = get_capacity(db_path, first_asset).unwrap();
-        // Verify capacity data structure
-    }
-
-    #[test]
-    fn test_cross_service_consistency() {
-        let db_path = get_test_db_path();
-
-        // Test that all services work with same database
-        let _assets = get_assets(db_path.clone()).unwrap();
-        let _tables = get_tables(db_path.clone()).unwrap();
-        // Verify no conflicts or state issues
-    }
-}
-```
+Integration testing covers cross-service workflows, database state consistency, error handling across service boundaries, and performance characteristics under realistic conditions.
 
 ## Performance Guidelines
 
 ### Query Optimization
 
-```rust
-/// Optimized query patterns for large datasets
-impl QueryOptimization {
-    /// Use prepared statements for repeated queries
-    fn use_prepared_statements() {
-        // ✅ Good: Reuse prepared statement
-        let mut stmt = conn.prepare(CAPACITY_SQL)?;
-        for asset in assets {
-            let result = stmt.query_arrow(&[Value::from(asset)])?;
-        }
+Performance optimization focuses on efficient query patterns including the use of prepared statements for repeated queries, appropriate column selection to minimize data transfer, and proper indexing strategies for common query patterns.
 
-        // ❌ Bad: Prepare query each time
-        for asset in assets {
-            let query = format!("SELECT * FROM asset WHERE name = '{}'", asset);
-            let result = conn.execute(&query)?;
-        }
-    }
-
-    /// Limit data transfer with appropriate SELECT clauses
-    fn optimize_data_selection() {
-        // ✅ Good: Select only needed columns
-        const OPTIMIZED_QUERY: &str = "
-            SELECT year, investment, final_capacity
-            FROM capacity_analysis
-            WHERE asset = $1";
-
-        // ❌ Bad: Select all columns
-        const INEFFICIENT_QUERY: &str = "SELECT * FROM capacity_analysis WHERE asset = $1";
-    }
-}
-```
+Query optimization includes parameterized statement reuse, selective data retrieval, batch processing for large datasets, and connection pooling to reduce overhead.
 
 ### Memory Management
 
-```rust
-/// Efficient batch processing for large datasets
-pub fn process_large_dataset(
-    db_path: String,
-    batch_size: usize,
-) -> Result<Vec<RecordBatch>, String> {
-    let mut results = Vec::new();
-    let mut offset = 0;
+Memory management strategies include efficient batch processing for large datasets, connection pool cleanup for long-running applications, and proper resource disposal to prevent memory leaks.
 
-    loop {
-        let query = format!(
-            "SELECT * FROM large_table LIMIT {} OFFSET {}",
-            batch_size, offset
-        );
-
-        let (mut batches, _schema) = run_query_rb(
-            db_path.clone(),
-            query,
-            vec![]
-        )?;
-
-        if batches.is_empty() {
-            break;
-        }
-
-        results.append(&mut batches);
-        offset += batch_size;
-    }
-
-    Ok(results)
-}
-
-/// Connection pool cleanup for long-running applications
-pub fn cleanup_connections() {
-    if let Ok(mut handler) = CONN_HANDLER.lock() {
-        handler.connections.clear();
-    }
-}
-```
+The application implements streaming data processing for large results, automatic cleanup of database connections, and efficient memory allocation patterns to maintain optimal performance.
 
 ### Error Recovery
 
-```rust
-/// Robust error handling with retry logic
-pub fn execute_with_retry<T, F>(
-    operation: F,
-    max_retries: usize,
-) -> Result<T, String>
-where
-    F: Fn() -> Result<T, String>,
-{
-    let mut last_error = None;
+Robust error handling includes retry logic for transient failures, graceful degradation when optional features are unavailable, and comprehensive logging for debugging and monitoring.
 
-    for attempt in 0..=max_retries {
-        match operation() {
-            Ok(result) => return Ok(result),
-            Err(error) => {
-                last_error = Some(error.clone());
-
-                if attempt < max_retries {
-                    std::thread::sleep(std::time::Duration::from_millis(100 * (attempt + 1) as u64));
-                    continue;
-                }
-            }
-        }
-    }
-
-    Err(last_error.unwrap_or_else(|| "Operation failed".to_string()))
-}
-```
+Error recovery mechanisms ensure application stability under various failure conditions while providing detailed diagnostic information for troubleshooting.
 
 ## Common Patterns
 
 ### Dynamic SQL Construction
 
-```rust
-pub mod query_builder {
-    /// Builds time resolution queries with proper SQL injection prevention
-    pub fn build_resolution_query(
-        table_name: &str,
-        value_column: &str,
-        group_columns: &[&str],
-        aggregate_function: &str,
-        resolution_hours: &str,
-        is_period_based: bool,
-    ) -> String {
-        let time_columns = if is_period_based {
-            "period_block_start, period_block_end"
-        } else {
-            "time_block_start, time_block_end"
-        };
+The application includes utilities for building SQL queries dynamically while preventing SQL injection vulnerabilities. Query builders construct safe parameterized queries for various analysis patterns including time resolution queries, aggregation functions, and filtering conditions.
 
-        format!(
-            "SELECT {},
-                    {}({}::DOUBLE) as y_axis,
-                    FLOOR({}/{}) * {} as period
-             FROM ({})
-             WHERE year = $1
-             GROUP BY {}, period
-             ORDER BY period",
-            group_columns.join(", "),
-            aggregate_function,
-            value_column,
-            time_columns.split(',').next().unwrap().trim(),
-            resolution_hours,
-            resolution_hours,
-            table_name,
-            group_columns.join(", ")
-        )
-    }
-}
-```
+Dynamic query construction enables flexible data analysis while maintaining security and performance characteristics.
 
 ### Configuration Management
 
-```rust
-/// Application configuration with environment variable support
-#[derive(Debug)]
-pub struct Config {
-    pub max_connections: usize,
-    pub query_timeout: u64,
-    pub log_level: String,
-}
+Application configuration supports environment variable overrides for deployment flexibility. Configuration includes database connection limits, query timeouts, logging levels, and other operational parameters.
 
-impl Config {
-    pub fn from_env() -> Self {
-        Self {
-            max_connections: std::env::var("MAX_CONNECTIONS")
-                .unwrap_or_else(|_| "10".to_string())
-                .parse()
-                .unwrap_or(10),
-            query_timeout: std::env::var("QUERY_TIMEOUT")
-                .unwrap_or_else(|_| "30".to_string())
-                .parse()
-                .unwrap_or(30),
-            log_level: std::env::var("LOG_LEVEL")
-                .unwrap_or_else(|_| "info".to_string()),
-        }
-    }
-}
-```
+Configuration management enables easy deployment across different environments while maintaining secure defaults and operational flexibility.

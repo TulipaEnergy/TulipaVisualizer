@@ -15,7 +15,7 @@
 
 ### Technology Stack
 
-- **React 18**: Functional components with hooks pattern
+- **React**: Functional components with hooks pattern
 - **TypeScript**: Strict typing with comprehensive coverage
 - **Vite**: Build tool and development server
 - **Mantine UI**: Component library with theming
@@ -33,459 +33,132 @@
 
 ### Data Flow Architecture
 
-```
-User Input → Component → Store Action → Service → IPC Gateway → Rust Backend
-     ↑                                                                ↓
-UI Update ← Component Update ← Store Update ← Service Response ← Database Query
-```
+The application follows a unidirectional data flow pattern where user input triggers component events, which dispatch store actions. These actions invoke service methods that communicate with the backend through the IPC gateway. Database queries are executed in the Rust backend, with responses flowing back through the service layer to update the store, which triggers component re-renders and UI updates.
 
 ## Development Setup
 
 ### Prerequisites
 
-- **Node.js**: 18+ LTS
-- **npm**: 9+
-- **Rust**: 1.70+ (for full-stack development)
-- **VS Code**: Recommended IDE
+The development environment requires Node.js LTS version 18 or higher, npm version 9 or later, and Rust 1.70+ for full-stack development. VS Code is the recommended IDE for optimal development experience.
 
 ### Quick Start
 
-```bash
-# Clone and install
-git clone <repository-url>
-cd energy-visualizer
-npm install
-
-# Development commands
-npm run dev          # Frontend only
-npm run tauri dev    # Full application
-npm run build        # Production build
-npm run test         # Run test suite
-```
+Development workflow includes standard npm commands for dependency installation, development server startup, production builds, and test execution. The project supports both frontend-only development and full application development with Tauri integration.
 
 ### Recommended VS Code Extensions
 
-```json
-{
-  "recommendations": [
-    "ms-vscode.vscode-typescript-next",
-    "esbenp.prettier-vscode",
-    "tauri-apps.tauri-vscode",
-    "vitest.explorer"
-  ]
-}
-```
+Essential extensions include TypeScript language support, Prettier for code formatting, Tauri-specific tooling, and Vitest explorer for test management. These extensions provide comprehensive development support with IntelliSense, debugging, and testing capabilities.
 
 ## Project Structure
 
-```
-src/
-├── components/              # React components
-│   ├── __tests__/          # Component tests
-│   ├── database-viewer/    # Database exploration
-│   ├── kpis/               # Chart components
-│   ├── metadata/           # Filtering components
-│   ├── DatabaseList.tsx    # File management
-│   ├── DatabaseSelector.tsx# Database picker
-│   ├── GraphCard.tsx       # Main chart container
-│   └── Toolbar.tsx         # App header
-├── gateway/                # IPC communication
-│   ├── db.ts              # Database operations
-│   └── io.ts              # File system access
-├── hooks/                  # Custom React hooks
-├── services/               # Business logic layer
-├── store/                  # Zustand state management
-├── types/                  # TypeScript definitions
-└── test/                   # Test utilities
-```
+The frontend code is organized in the `src/` directory with clear separation of concerns:
+
+- **components/**: React components organized by functionality
+
+  - ****tests**/**: Component test files
+  - **database-viewer/**: Database exploration interface components
+  - **kpis/**: Chart and visualization components
+  - **metadata/**: Data filtering and selection components
+  - **DatabaseList.tsx**: File management interface
+  - **DatabaseSelector.tsx**: Database selection component
+  - **GraphCard.tsx**: Main chart container component
+  - **Toolbar.tsx**: Application header and navigation
+
+- **gateway/**: IPC communication layer
+
+  - **db.ts**: Database operation abstractions
+  - **io.ts**: File system access utilities
+
+- **hooks/**: Custom React hooks for reusable logic
+- **services/**: Business logic and data processing layer
+- **store/**: Zustand state management implementation
+- **types/**: TypeScript type definitions and interfaces
+- **test/**: Testing utilities and helper functions
 
 ### File Naming Conventions
 
-- **Components**: PascalCase (`GraphCard.tsx`)
-- **Hooks**: camelCase with "use" prefix (`useResizeHandle.ts`)
-- **Services**: camelCase (`capacityQuery.ts`)
-- **Tests**: Component name + `.test.tsx`
+The project follows consistent naming conventions: PascalCase for React components, camelCase with "use" prefix for custom hooks, camelCase for service modules, and component name plus test suffix for test files.
 
 ## Component Patterns
 
 ### Component Interface Pattern
 
-```typescript
-interface ComponentProps {
-  /** Required prop with clear documentation */
-  graphId: string;
-  /** Optional prop with default */
-  isLoading?: boolean;
-  /** Event handler */
-  onDataChange?: (data: DataType) => void;
-}
-
-const Component: React.FC<ComponentProps> = ({
-  graphId,
-  isLoading = false,
-  onDataChange,
-}) => {
-  // Component implementation
-};
-```
+Components are designed with explicit TypeScript interfaces that document required and optional properties, including clear descriptions and type definitions. Props include required data parameters, optional configuration with sensible defaults, and event handler functions for user interactions.
 
 ### Container vs Presentation Components
 
-**Container Components** (e.g., `GraphCard.tsx`):
-
-- Manage state and data fetching
-- Handle business logic
-- Connect to stores and services
-
-**Presentation Components** (e.g., chart components):
-
-- Pure UI rendering
-- Minimal internal state
-- Receive data via props
+The architecture distinguishes between container components that manage state and data fetching, handle business logic, and connect to stores and services, versus presentation components that focus on pure UI rendering, maintain minimal internal state, and receive all data through props.
 
 ### Error Handling Pattern
 
-```typescript
-const Component: React.FC<Props> = ({ graphId }) => {
-  const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<DataType | null>(null);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const result = await serviceCall(graphId);
-        setData(result);
-        setError(null);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error');
-        console.error('Component error:', err);
-      }
-    };
-
-    fetchData();
-  }, [graphId]);
-
-  if (error) {
-    return <Text c="red">{error}</Text>;
-  }
-
-  return data ? <DataVisualization data={data} /> : <Loader />;
-};
-```
+Components implement comprehensive error handling with local error state management, structured try-catch blocks around async operations, user-friendly error display, and detailed error logging for debugging. Error boundaries provide fallback UI for unexpected failures while maintaining application stability.
 
 ## State Management
 
 ### Zustand Store Pattern
 
-The application uses a single Zustand store (`visualizationStore.ts`) with typed interfaces:
-
-```typescript
-export interface VisualizationState {
-  // Database management
-  databases: string[];
-  isLoading: boolean;
-  error: string | null;
-
-  // Graph management
-  graphs: GraphConfig[];
-
-  // Actions
-  addDatabase: (filePath: string) => void;
-  removeDatabase: (dbId: string) => void;
-  addGraph: (type: ChartType) => void;
-  updateGraph: (id: string, updates: Partial<GraphConfig>) => void;
-}
-```
+The application uses a single Zustand store with typed interfaces that define the complete application state structure. The store manages database connections, graph configurations, loading states, and error conditions through well-defined action methods that ensure immutable state updates.
 
 ### Store Usage in Components
 
-```typescript
-const Component: React.FC = () => {
-  const { databases, addDatabase, isLoading } = useVisualizationStore();
-
-  const handleUpload = async () => {
-    try {
-      const path = await uploadDatabaseFile();
-      if (path) addDatabase(path);
-    } catch (error) {
-      console.error('Upload failed:', error);
-    }
-  };
-
-  return (
-    <Button onClick={handleUpload} disabled={isLoading}>
-      Upload Database
-    </Button>
-  );
-};
-```
+Components access store state through selectors that prevent unnecessary re-renders by selecting only required state slices. Actions are called directly from event handlers with proper error handling and loading state management. The pattern ensures efficient updates and optimal performance.
 
 ### State Updates
 
-- **Immutable Updates**: Zustand handles immutability internally
-- **Batch Updates**: Related state changes in single action
-- **Error States**: Centralized error handling through store
+State management follows immutability principles with Zustand handling internal immutability, batched updates for related state changes, and centralized error handling through the store. This approach provides predictable state transitions and simplified debugging.
 
 ## Service Layer
 
 ### Service Organization
 
-Services are organized by domain and handle business logic:
-
-```typescript
-// services/capacityQuery.ts
-export async function getCapacity(
-  dbPath: string,
-  assetName: string,
-): Promise<CapacityData[]> {
-  return genericApacheIPC<CapacityData>("get_capacity", {
-    dbPath,
-    assetName,
-  });
-}
-```
+Services are organized by domain functionality and encapsulate business logic for specific features. Each service module provides typed functions that handle data transformation, API communication, and error handling while maintaining clear separation from UI concerns.
 
 ### IPC Communication Pattern
 
-```typescript
-// gateway/db.ts
-export async function genericApacheIPC<T>(
-  cmd: string,
-  args?: InvokeArgs,
-): Promise<T[]> {
-  try {
-    const table = await apacheIPC(cmd, args);
-    return table.toArray() as Array<T>;
-  } catch (error) {
-    console.error(`Error calling ${cmd}:`, error);
-    throw error;
-  }
-}
-```
+The IPC layer provides a standardized interface for backend communication using Apache Arrow serialization for efficient data transfer. The pattern includes generic functions for different data types, consistent error handling across all IPC calls, and automatic data deserialization.
 
 ### Service Integration in Components
 
-```typescript
-const ChartComponent: React.FC<{ graphId: string }> = ({ graphId }) => {
-  const [data, setData] = useState<ChartData[]>([]);
-  const graph = useVisualizationStore(state => state.mustGetGraph(graphId));
-
-  useEffect(() => {
-    if (!graph.graphDBFilePath) return;
-
-    const loadData = async () => {
-      try {
-        const result = await getChartData(graph.graphDBFilePath, graph.options);
-        setData(result);
-      } catch (error) {
-        console.error('Data loading failed:', error);
-      }
-    };
-
-    loadData();
-  }, [graph.graphDBFilePath, graph.options, graph.lastApplyTimestamp]);
-
-  return <EChartsReact option={createChartOptions(data)} />;
-};
-```
+Components integrate with services through async operations in useEffect hooks, proper dependency management for re-fetching when parameters change, loading and error state management, and cleanup of pending requests when components unmount.
 
 ## Testing Strategy
 
 ### Test Structure
 
-```typescript
-describe('ComponentName', () => {
-  beforeEach(() => {
-    vi.resetAllMocks();
-  });
-
-  it('renders correctly with required props', () => {
-    renderWithProviders(<ComponentName graphId="test" />);
-    expect(screen.getByTestId('component')).toBeInTheDocument();
-  });
-
-  it('handles user interactions correctly', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<ComponentName graphId="test" />);
-
-    await user.click(screen.getByRole('button'));
-    expect(screen.getByText('Expected Result')).toBeInTheDocument();
-  });
-});
-```
+Tests are organized with clear describe blocks for component groupings, beforeEach setup for mock resets, individual test cases for specific functionality, and comprehensive assertions for expected behavior. The structure ensures maintainable and reliable test coverage.
 
 ### Mock Patterns
 
-```typescript
-// Mock Tauri IPC
-vi.mock("@tauri-apps/api/core", () => ({
-  invoke: vi.fn(() => Promise.resolve(mockData)),
-}));
-
-// Mock service functions
-vi.mock("../services/capacityQuery", () => ({
-  getCapacity: vi.fn(() => Promise.resolve(mockCapacityData)),
-}));
-```
+The testing strategy includes mocking of Tauri IPC calls for isolated testing, service function mocks for controlled data scenarios, and external dependency mocks to prevent test flakiness. Mocks provide predictable test environments while maintaining realistic behavior patterns.
 
 ### Component Testing Utilities
 
-```typescript
-// test/utils.tsx
-export function renderWithProviders(
-  ui: React.ReactElement,
-  options?: {
-    initialStoreState?: Partial<VisualizationState>;
-  }
-) {
-  const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <MantineProvider theme={theme}>
-      {children}
-    </MantineProvider>
-  );
-
-  return render(ui, { wrapper: Wrapper, ...options });
-}
-```
+Custom testing utilities provide rendering with necessary providers, store state initialization for specific test scenarios, and helper functions for common testing patterns. These utilities ensure consistent test setup and reduce boilerplate code across test files.
 
 ## Performance Guidelines
 
 ### Component Optimization
 
-```typescript
-// Use React.memo for expensive pure components
-const ExpensiveChart = React.memo<ChartProps>(({ data, options }) => {
-  const chartOptions = useMemo(() =>
-    createChartOptions(data, options), [data, options]
-  );
-
-  return <EChartsReact option={chartOptions} />;
-});
-
-// Use useCallback for event handlers
-const Component: React.FC = () => {
-  const handleClick = useCallback((id: string) => {
-    updateGraph(id, { isSelected: true });
-  }, [updateGraph]);
-
-  return <Button onClick={() => handleClick('graph-1')} />;
-};
-```
+Performance optimization includes React.memo for expensive pure components to prevent unnecessary re-renders, useMemo for expensive calculations that depend on specific inputs, useCallback for event handlers to maintain referential stability, and proper dependency arrays to control when effects and memoized values update.
 
 ### Data Fetching Optimization
 
-```typescript
-// Prevent unnecessary re-fetches
-useEffect(() => {
-  if (!shouldFetchData) return;
-
-  const controller = new AbortController();
-
-  fetchData(params, controller.signal)
-    .then(setData)
-    .catch((err) => {
-      if (err.name !== "AbortError") {
-        setError(err.message);
-      }
-    });
-
-  return () => controller.abort();
-}, [shouldFetchData, params]);
-```
+Data fetching includes request deduplication to prevent duplicate API calls, abort controllers to cancel pending requests when components unmount, proper loading states to improve user experience, and error boundaries to handle network failures gracefully.
 
 ### Memory Management
 
-- **Clean up subscriptions** in useEffect cleanup
-- **Abort pending requests** when component unmounts
-- **Use appropriate dependencies** in useEffect/useMemo
-- **Avoid creating objects** in render methods
+Memory management practices include cleanup of subscriptions and event listeners in useEffect cleanup functions, aborting pending requests when components unmount, using appropriate dependencies in useEffect and useMemo to prevent memory leaks, and avoiding object creation in render methods to reduce garbage collection pressure.
 
 ### Bundle Optimization
 
-- **Dynamic imports** for large chart libraries
-- **Code splitting** by route when applicable
-- **Tree shaking** enabled in Vite configuration
-- **Proper externals** configuration for Tauri
+Bundle optimization strategies include dynamic imports for large libraries that aren't immediately needed, code splitting by route when the application grows, tree shaking configuration in Vite to eliminate dead code, and proper externals configuration for Tauri to reduce bundle size.
 
 ## Common Patterns
 
 ### Data Loading with Error Handling
 
-```typescript
-const useAsyncData = <T>(
-  fetchFn: () => Promise<T>,
-  dependencies: unknown[],
-) => {
-  const [data, setData] = useState<T | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let mounted = true;
-    setLoading(true);
-    setError(null);
-
-    fetchFn()
-      .then((result) => {
-        if (mounted) {
-          setData(result);
-          setError(null);
-        }
-      })
-      .catch((err) => {
-        if (mounted) {
-          setError(err.message);
-          setData(null);
-        }
-      })
-      .finally(() => {
-        if (mounted) setLoading(false);
-      });
-
-    return () => {
-      mounted = false;
-    };
-  }, dependencies);
-
-  return { data, loading, error };
-};
-```
+A custom hook pattern provides standardized data loading with integrated error handling, loading states, and cleanup logic. The pattern manages async operations with proper error boundaries, loading indicators, and memory cleanup when components unmount.
 
 ### Form State Management
 
-```typescript
-const useFormState = <T>(initialState: T) => {
-  const [values, setValues] = useState<T>(initialState);
-  const [errors, setErrors] = useState<Partial<Record<keyof T, string>>>({});
-
-  const updateField = useCallback((field: keyof T, value: T[keyof T]) => {
-    setValues((prev) => ({ ...prev, [field]: value }));
-    setErrors((prev) => ({ ...prev, [field]: undefined }));
-  }, []);
-
-  const validate = useCallback(
-    (
-      validators: Partial<
-        Record<keyof T, (value: T[keyof T]) => string | undefined>
-      >,
-    ) => {
-      const newErrors: Partial<Record<keyof T, string>> = {};
-      let isValid = true;
-
-      Object.entries(validators).forEach(([field, validator]) => {
-        const error = validator(values[field as keyof T]);
-        if (error) {
-          newErrors[field as keyof T] = error;
-          isValid = false;
-        }
-      });
-
-      setErrors(newErrors);
-      return isValid;
-    },
-    [values],
-  );
-
-  return { values, errors, updateField, validate };
-};
-```
+Form state management includes a reusable hook that handles form values, validation errors, field updates, and validation logic. The pattern provides type-safe form handling with built-in error management and validation capabilities that can be customized for specific form requirements.
