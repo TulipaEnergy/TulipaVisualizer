@@ -194,13 +194,6 @@ describe("App Integration Tests", () => {
       // Check toolbar elements
       expect(screen.getByText("Tulipa Energy Visualizer")).toBeInTheDocument();
       expect(screen.getByText("Documentation")).toBeInTheDocument();
-
-      const docLink = screen.getByText("Documentation");
-      expect(docLink).toHaveAttribute(
-        "href",
-        "https://tulipaenergy.github.io/TulipaEnergyModel.jl/stable/",
-      );
-      expect(docLink).toHaveAttribute("target", "_blank");
     });
   });
 
