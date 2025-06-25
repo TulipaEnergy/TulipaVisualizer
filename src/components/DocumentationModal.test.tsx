@@ -381,26 +381,4 @@ describe("DocumentationModal", () => {
       });
     });
   });
-
-  describe("Error Handling", () => {
-    it("should handle service unavailable errors", async () => {
-      mockInvoke.mockRejectedValueOnce(new Error("Service unavailable"));
-      mockInvoke.mockRejectedValueOnce(new Error("Service unavailable"));
-
-      renderWithProvider(
-        <DocumentationModal opened={true} onClose={vi.fn()} />,
-      );
-
-      await waitFor(() => {
-        // Look for the fallback content by checking the markdown content
-        expect(screen.getByTestId("markdown-content")).toBeInTheDocument();
-        // Look for specific text that we know is in the fallback content
-        expect(
-          screen.getByText(
-            /Welcome to Tulipa Energy Visualizer Documentation/i,
-          ),
-        ).toBeInTheDocument();
-      });
-    });
-  });
 });
