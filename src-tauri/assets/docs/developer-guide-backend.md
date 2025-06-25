@@ -8,7 +8,7 @@
 4. [Service Layer Patterns](#service-layer-patterns)
 5. [Database Integration](#database-integration)
 6. [IPC Communication](#ipc-communication)
-7. [Testing Patterns](#testing-patterns)
+7. [Testing](#testing)
 8. [Performance Guidelines](#performance-guidelines)
 
 ## Architecture Overview
@@ -121,7 +121,30 @@ All service functions are registered as Tauri commands in the main application b
 
 Command registration ensures type-safe communication between frontend and backend with automatic parameter validation and response serialization.
 
-## Testing Patterns
+## Testing
+
+### Rust Testing Commands
+
+```bash
+cd src-tauri
+cargo test              # Run all Rust tests
+cargo test --coverage   # Run with LLVM coverage
+cargo clippy            # Lint Rust code
+```
+
+### Test Organization
+
+```rust
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_capacity_query() {
+        // Test implementation
+    }
+}
+```
 
 ### Unit Testing with Mock Data
 

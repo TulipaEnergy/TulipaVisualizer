@@ -121,17 +121,174 @@ Components integrate with services through async operations in useEffect hooks, 
 
 ## Testing Strategy
 
-### Test Structure
+### Essential Commands
 
-Tests are organized with clear describe blocks for component groupings, beforeEach setup for mock resets, individual test cases for specific functionality, and comprehensive assertions for expected behavior. The structure ensures maintainable and reliable test coverage.
+```bash
+npm run test:coverage      # Run front end tests with coverage report
+npm run test:coverage:ui     # Interactive coverage viewer
+npm run test:coverage:watch  # Coverage with watch mode
+npm run test:coverage:clean  # Clean coverage artifacts
+```
 
-### Mock Patterns
+### Testing Stack
 
-The testing strategy includes mocking of Tauri IPC calls for isolated testing, service function mocks for controlled data scenarios, and external dependency mocks to prevent test flakiness. Mocks provide predictable test environments while maintaining realistic behavior patterns.
+- **Vitest**: Fast, Vite-native test runner
+- **React Testing Library**: User-centric component testing
+- **Jest DOM**: Additional DOM assertion matchers
+- **User Event**: Realistic user interaction simulation
 
-### Component Testing Utilities
+### Configuration
 
-Custom testing utilities provide rendering with necessary providers, store state initialization for specific test scenarios, and helper functions for common testing patterns. These utilities ensure consistent test setup and reduce boilerplate code across test files.
+See `vitest.config.ts`
+
+### File Naming
+
+- **Components**: `ComponentName.test.tsx`
+- **Hooks**: `useHookName.test.ts`
+- **Services**: `serviceName.test.ts`
+- **Integration**: `feature.integration.test.tsx`
+
+### Basic Component Test
+
+```typescript
+import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import userEvent from '@testing-library/user-event';
+import ComponentName from '../ComponentName';
+
+describe('ComponentName', () => {
+  it('renders correctly with default props', () => {
+    render(<ComponentName />);
+    expect(screen.getByRole('button')).toBeInTheDocument();
+  });
+
+  it('handles user interactions', async () => {
+    const user = userEvent.setup();
+    render(<ComponentName />);
+
+    await user.click(screen.getByRole('button'));
+    expect(screen.getByText('Expected Result')).toBeInTheDocument();
+  });
+});
+```
+
+### Service Layer Testing
+
+```typescript
+import { vi } from "vitest";
+import { invoke } from "@tauri-apps/api/core";
+import { getCapacity } from "../capacityQuery";
+
+vi.mock("@tauri-apps/api/core");
+
+describe("capacityQuery", () => {
+  it("calls correct IPC command with parameters", async () => {
+    const mockResponse = [{ year: 2025, investment: 100 }];
+    vi.mocked(invoke).mockResolvedValue(mockResponse);
+
+    const result = await getCapacity("/path/to/db.duckdb", "wind_farm_1");
+
+    expect(invoke).toHaveBeenCalledWith("get_capacity", {
+      dbPath: "/path/to/db.duckdb",
+      assetName: "wind_farm_1",
+    });
+    expect(result).toEqual(mockResponse);
+  });
+});
+```
+
+### Store Testing
+
+```typescript
+import { renderHook, act } from "@testing-library/react";
+import useVisualizationStore from "../visualizationStore";
+
+describe("visualizationStore", () => {
+  it("adds database correctly", () => {
+    const { result } = renderHook(() => useVisualizationStore());
+
+    act(() => {
+      result.current.addDatabase("/path/to/test.duckdb");
+    });
+
+    expect(result.current.databases).toContain("/path/to/test.duckdb");
+  });
+});
+```
+
+### KPI Component Testing
+
+Each KPI component should test:
+
+- **Data Visualization**: Chart rendering with correct data
+- **User Interactions**: Filtering, selection, zoom functionality
+- **Error Handling**: Invalid data, network failures
+- **Loading States**: Spinner display during data fetch
+- **Data Transformation**: Correct processing of raw data
+
+```typescript
+describe('CapacityChart', () => {
+  it('renders chart with correct data structure', () => {
+    const chartData = [
+      { year: 2025, final_capacity: 100 },
+      { year: 2030, final_capacity: 150 }
+    ];
+
+    render(<CapacityChart data={chartData} />);
+
+    const chart = screen.getByTestId('chart-mock');
+    const chartOption = JSON.parse(chart.getAttribute('data-option')!);
+
+    expect(chartOption.series[0].data).toEqual([100, 150]);
+    expect(chartOption.xAxis.data).toEqual([2025, 2030]);
+  });
+});
+```
+
+### Tauri IPC Mocking
+
+```typescript
+// Global test setup (src/test/setup.ts)
+import { vi } from "vitest";
+
+vi.mock("@tauri-apps/api/core", () => ({
+  invoke: vi.fn(() => Promise.resolve([])),
+}));
+
+vi.mock("@tauri-apps/api/dialog", () => ({
+  open: vi.fn(() => Promise.resolve(null)),
+}));
+```
+
+### Chart Component Mocking
+
+```typescript
+vi.mock('echarts-for-react', () => ({
+  default: ({ option }: { option: any }) => (
+    <div data-testid="chart-mock" data-option={JSON.stringify(option)}>
+      Chart Rendered
+    </div>
+  )
+}));
+```
+
+### Store Mocking
+
+```typescript
+import useVisualizationStore from "../store/visualizationStore";
+
+vi.mock("../store/visualizationStore");
+
+const mockStore = {
+  databases: ["/path/to/test.duckdb"],
+  addDatabase: vi.fn(),
+  removeDatabase: vi.fn(),
+};
+
+beforeEach(() => {
+  vi.mocked(useVisualizationStore).mockReturnValue(mockStore);
+});
+```
 
 ## Performance Guidelines
 

@@ -90,7 +90,7 @@ npm run tauri build
 
 ## How it works
 
-Please refer to the [User guide](./src-tauri/assets/docs/user-guide.md)
+Please refer to the [User guide](./user-guide.md)
 
 ## Development Commands
 
@@ -118,7 +118,7 @@ Please refer to the [User guide](./src-tauri/assets/docs/user-guide.md)
 
 ## Contributing
 
-See [Developer guide](./src-tauri/assets/docs/developer-guide.md)
+See [Developer guide](./developer-guide.md)
 
 ## License
 
