@@ -73,7 +73,7 @@ const RESULT_INCOMPLETE_SQL: &str = "
         SELECT 
             ra_from.root_id AS from_id,
             ra_to.root_id AS to_id,
-            COALESCE(TRY(SUM(rpd.resolution * rpm.weight * (vf.time_block_end - vf.time_block_start + 1) * vf.solution)), 0) AS tot_flow
+            SUM(rpd.resolution * rpm.weight * (vf.time_block_end - vf.time_block_start + 1) * vf.solution) AS tot_flow
             FROM var_flow vf
             LEFT JOIN root_asset ra_from ON ra_from.asset = vf.from_asset
             LEFT JOIN root_asset ra_to ON ra_to.asset = vf.to_asset
