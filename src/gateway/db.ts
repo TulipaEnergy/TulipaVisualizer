@@ -44,6 +44,7 @@ export async function genericApacheIPC<T>(
   const cacheKey = getCacheKey(cmd, args);
   const cached = cache.get(cacheKey);
   if (cached) {
+    await new Promise(resolve => setTimeout(resolve, 100));
     return cached as T[];
   }
   try {
