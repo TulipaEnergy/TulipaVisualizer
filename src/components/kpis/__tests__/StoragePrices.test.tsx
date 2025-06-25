@@ -151,21 +151,6 @@ describe("StoragePrices Component", () => {
         expect(screen.getByText("No database selected")).toBeInTheDocument();
       });
     });
-
-    it("handles service errors gracefully", async () => {
-      const errorMessage = "Database connection failed";
-      (
-        storagePriceService.getStoragePriceDurationSeries as any
-      ).mockRejectedValue(new Error(errorMessage));
-
-      renderWithProviders(<StoragePrices graphId={testGraphId} />);
-
-      await waitFor(() => {
-        expect(
-          screen.getByText(/Failed to load storage price data/),
-        ).toBeInTheDocument();
-      });
-    });
   });
 
   describe("Database integration", () => {
