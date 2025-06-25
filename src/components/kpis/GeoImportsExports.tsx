@@ -9,19 +9,24 @@ import {
   Flex,
   Grid,
   Card,
+  Tooltip,
+  Alert,
 } from "@mantine/core";
 import * as echarts from "echarts";
-import useVisualizationStore from "../../store/visualizationStore";
+import useVisualizationStore, {
+  GraphConfig,
+} from "../../store/visualizationStore";
 import {
   getEnergyFlowData,
-  getAvailableYears,
-  getGeoJSONName,
+  getAvailableYearsFlows,
 } from "../../services/energyFlowQuery";
 import {
   EnergyFlowOptions,
   CountryEnergyFlow,
 } from "../../types/GeoEnergyFlow";
 import { readJSON } from "../../gateway/io";
+import { hasMetadata } from "../../services/metadata";
+import { IconInfoCircle } from "@tabler/icons-react";
 
 interface EnergyFlowProps {
   graphId: string;
@@ -30,7 +35,9 @@ interface EnergyFlowProps {
 const EnergyFlow: React.FC<EnergyFlowProps> = ({ graphId }) => {
   const { mustGetGraph, updateGraph } = useVisualizationStore();
 
-  const graph = mustGetGraph(graphId);
+  const graph: GraphConfig<EnergyFlowOptions> = mustGetGraph(
+    graphId,
+  ) as GraphConfig<EnergyFlowOptions>;
 
   const [availableYears, setAvailableYears] = useState<number[]>([]);
   const [energyData, setEnergyData] = useState<CountryEnergyFlow[]>([]);
@@ -38,11 +45,14 @@ const EnergyFlow: React.FC<EnergyFlowProps> = ({ graphId }) => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [worldMapLoaded, setWorldMapLoaded] = useState<boolean>(false);
   const [regionalMapLoaded, setRegionalMapLoaded] = useState<boolean>(false);
+  const [hasMetadataBool, setHasMetaDataBool] = useState<boolean>(false);
 
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstanceRef = useRef<echarts.ECharts | null>(null);
 
   const dbFilePath = graph.graphDBFilePath!;
+
+  const icon = <IconInfoCircle />;
 
   useEffect(() => {
     updateGraph(graphId, { title: "Geographical explorer" });
@@ -57,12 +67,14 @@ const EnergyFlow: React.FC<EnergyFlowProps> = ({ graphId }) => {
     setAvailableYears([]);
     // Reset state
     updateGraph(graphId, { options: null });
+    // Update hasMetaDataBool
+    (async () => setHasMetaDataBool(await hasMetadata(dbFilePath)))();
 
     // Load available years from database
     (async () => {
       try {
         setIsLoading(true);
-        const years = await getAvailableYears(dbFilePath);
+        const years = await getAvailableYearsFlows(dbFilePath);
         setAvailableYears(years);
       } catch (err) {
         setErrorData(`Could not load available years: ${err}`);
@@ -80,12 +92,14 @@ const EnergyFlow: React.FC<EnergyFlowProps> = ({ graphId }) => {
       setErrorData(null);
       setEnergyData([]);
 
-      const selectedYear = (graph.options as EnergyFlowOptions)?.year;
-      const categoryLevel =
-        (graph.options as EnergyFlowOptions)?.categoryLevel ?? 1; // Default to countries
+      if (!graph.options || !graph.options.year) {
+        return;
+      } else if (typeof graph.options!.level === "undefined") {
+        graph.options!.level = 1; // default country view
+      }
 
-      if (!selectedYear) {
-        setEnergyData([]);
+      if (!(await hasMetadata(dbFilePath))) {
+        // for added safety
         return;
       }
 
@@ -93,11 +107,7 @@ const EnergyFlow: React.FC<EnergyFlowProps> = ({ graphId }) => {
         setIsLoading(true);
 
         // Get energy flow data (simplified - no aggregation)
-        const flowData = await getEnergyFlowData(
-          dbFilePath,
-          categoryLevel,
-          selectedYear,
-        );
+        const flowData = await getEnergyFlowData(dbFilePath, graph.options!);
         setEnergyData(flowData);
       } catch (err) {
         console.error("Error fetching energy flow data:", err);
@@ -137,8 +147,7 @@ const EnergyFlow: React.FC<EnergyFlowProps> = ({ graphId }) => {
 
   // Initialize and update chart
   useEffect(() => {
-    const categoryLevel =
-      (graph.options as EnergyFlowOptions)?.categoryLevel ?? 1;
+    const categoryLevel = graph.options?.level ?? 1;
     const isRegionalView = categoryLevel === 0;
     const mapLoaded = isRegionalView ? regionalMapLoaded : worldMapLoaded;
 
@@ -157,8 +166,8 @@ const EnergyFlow: React.FC<EnergyFlowProps> = ({ graphId }) => {
 
     // Prepare map data for ECharts
     const chartMapData = energyData.map((item) => ({
-      name: getGeoJSONName(item.countryName), // Use mapped name for GeoJSON compatibility
-      value: item.totalExports - item.totalImports, // Net energy flow
+      name: item.group, // Use mapped name for GeoJSON compatibility
+      value: item.totalExport - item.totalImport, // Net energy flow
     }));
 
     // Calculate min/max for color scale
@@ -178,7 +187,7 @@ const EnergyFlow: React.FC<EnergyFlowProps> = ({ graphId }) => {
     const mapOption = {
       backgroundColor: "transparent",
       title: {
-        text: `Energy Flow - ${isRegionalView ? "EU Provinces" : "Country"} Level (${(graph.options as EnergyFlowOptions)?.year})`,
+        text: `Energy Flow - ${isRegionalView ? "EU Provinces" : "Country"} Level (${graph.options?.year})`,
         left: "center",
         top: 20,
         textStyle: {
@@ -197,19 +206,17 @@ const EnergyFlow: React.FC<EnergyFlowProps> = ({ graphId }) => {
         },
         formatter: function (params: any) {
           // Find the region by mapped name (GeoJSON name)
-          const region = energyData.find(
-            (c) => getGeoJSONName(c.countryName) === params.name,
-          );
+          const region = energyData.find((c) => c.group === params.name);
           if (!region) {
             return `<div style="padding: 8px;"><strong>${params.name}</strong><br/>No energy flow data</div>`;
           }
 
-          const netFlow = region.totalExports - region.totalImports;
+          const netFlow = region.totalExport - region.totalImport;
           return `
             <div style="padding: 8px;">
-              <div style="font-weight: bold; margin-bottom: 4px;">${region.countryName}</div>
-              <div style="margin-bottom: 2px;">Total Imports: ${region.totalImports.toFixed(1)} TWh</div>
-              <div style="margin-bottom: 2px;">Total Exports: ${region.totalExports.toFixed(1)} TWh</div>
+              <div style="font-weight: bold; margin-bottom: 4px;">${region.group}</div>
+              <div style="margin-bottom: 2px;">Total Imports: ${region.totalImport.toFixed(1)} TWh</div>
+              <div style="margin-bottom: 2px;">Total Exports: ${region.totalExport.toFixed(1)} TWh</div>
               <div style="margin-bottom: 4px; color: ${netFlow > 0 ? "green" : netFlow < 0 ? "red" : "gray"};">
                 Net Flow: ${netFlow > 0 ? "+" : ""}${netFlow.toFixed(1)} TWh
               </div>
@@ -260,6 +267,7 @@ const EnergyFlow: React.FC<EnergyFlowProps> = ({ graphId }) => {
           type: "map",
           map: mapName,
           roam: true,
+          selectedMode: false,
           zoom: zoomLevel,
           data: chartMapData,
           emphasis: {
@@ -339,35 +347,35 @@ const EnergyFlow: React.FC<EnergyFlowProps> = ({ graphId }) => {
       updateGraph(graph.id, {
         options: {
           ...graph.options,
-          categoryLevel: level,
+          level: level,
         } as EnergyFlowOptions,
       });
     }
   };
 
   // Calculate summary statistics
-  const totalImports = energyData.reduce(
-    (sum, region) => sum + region.totalImports,
+  const totalImport = energyData.reduce(
+    (sum, region) => sum + region.totalImport,
     0,
   );
-  const totalExports = energyData.reduce(
-    (sum, region) => sum + region.totalExports,
+  const totalExport = energyData.reduce(
+    (sum, region) => sum + region.totalExport,
     0,
   );
-  const netFlow = totalExports - totalImports;
-  const isRegionalView =
-    ((graph.options as EnergyFlowOptions)?.categoryLevel ?? 1) === 0;
+  const netFlow = totalExport - totalImport;
+  const isRegionalView = (graph.options?.level ?? 1) === 0;
 
   return (
-    <Stack>
+    <Stack
+      style={{
+        height: "100%",
+      }}
+    >
       <Group justify="space-between">
         <Group>
           <Select
             placeholder="Category Level"
-            value={
-              (graph.options as EnergyFlowOptions)?.categoryLevel?.toString() ||
-              "1"
-            }
+            value={graph.options?.level?.toString() || "1"}
             onChange={handleCategoryLevelChange}
             data={[
               { value: "0", label: "EU Provinces" },
@@ -379,9 +387,7 @@ const EnergyFlow: React.FC<EnergyFlowProps> = ({ graphId }) => {
 
           <Select
             placeholder="Select Year"
-            value={
-              (graph.options as EnergyFlowOptions)?.year?.toString() || null
-            }
+            value={graph.options?.year?.toString() || null}
             onChange={handleYearChange}
             data={availableYears.map((year) => ({
               value: year.toString(),
@@ -394,7 +400,30 @@ const EnergyFlow: React.FC<EnergyFlowProps> = ({ graphId }) => {
         </Group>
       </Group>
 
-      {errorData ? (
+      {!hasMetadataBool ? (
+        <Container
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            height: "100%",
+          }}
+        >
+          <Tooltip
+            label="Geographical features require a metadata-enriched DuckDB file. See User Guide for further details."
+            withArrow={true}
+          >
+            <Alert
+              variant="light"
+              color="yellow"
+              radius="xs"
+              title="Metadata features disabled"
+              icon={icon}
+              style={{ maxWidth: "fit-content", padding: "10px" }}
+            ></Alert>
+          </Tooltip>
+        </Container>
+      ) : errorData ? (
         <Container
           size="xl"
           h="100%"
@@ -411,7 +440,48 @@ const EnergyFlow: React.FC<EnergyFlowProps> = ({ graphId }) => {
         <Flex h="100%" justify="center" align="center" mih="500px">
           <Text c="dimmed">Loading energy flow data...</Text>
         </Flex>
-      ) : energyData.length > 0 ? (
+      ) : energyData.length <= 0 ? (
+        <Stack gap="md">
+          {/* Summary statistics - show zeros when no data */}
+          <Group>
+            <Paper p="xs" withBorder>
+              <Text size="xs" c="dimmed">
+                Total Imports
+              </Text>
+              <Text fw={500}>0.0 TWh</Text>
+            </Paper>
+            <Paper p="xs" withBorder>
+              <Text size="xs" c="dimmed">
+                Total Exports
+              </Text>
+              <Text fw={500}>0.0 TWh</Text>
+            </Paper>
+            <Paper p="xs" withBorder>
+              <Text size="xs" c="dimmed">
+                Net Flow
+              </Text>
+              <Text fw={500} c="gray">
+                0.0 TWh
+              </Text>
+            </Paper>
+          </Group>
+
+          {/* Detailed breakdown section - show even when empty */}
+          <Paper p="md" withBorder radius="md">
+            <Text size="lg" fw={600} mb="md">
+              Detailed Energy Flow Analysis -{" "}
+              {isRegionalView ? "EU Provinces" : "Country"} Level
+            </Text>
+            <Flex h="200px" justify="center" align="center">
+              <Text c="dimmed">
+                {availableYears.length === 0
+                  ? "No energy flow data available in this database"
+                  : "Please select a year to view energy flow data"}
+              </Text>
+            </Flex>
+          </Paper>
+        </Stack>
+      ) : (
         <Stack gap="md">
           {/* Summary statistics */}
           <Group>
@@ -419,13 +489,13 @@ const EnergyFlow: React.FC<EnergyFlowProps> = ({ graphId }) => {
               <Text size="xs" c="dimmed">
                 Total Imports
               </Text>
-              <Text fw={500}>{totalImports.toFixed(1)} TWh</Text>
+              <Text fw={500}>{totalImport.toFixed(1)} TWh</Text>
             </Paper>
             <Paper p="xs" withBorder>
               <Text size="xs" c="dimmed">
                 Total Exports
               </Text>
-              <Text fw={500}>{totalExports.toFixed(1)} TWh</Text>
+              <Text fw={500}>{totalExport.toFixed(1)} TWh</Text>
             </Paper>
             <Paper p="xs" withBorder>
               <Text size="xs" c="dimmed">
@@ -460,18 +530,15 @@ const EnergyFlow: React.FC<EnergyFlowProps> = ({ graphId }) => {
             </Text>
             <Grid>
               {energyData.map((region) => {
-                const regionNetFlow = region.totalExports - region.totalImports;
+                const regionNetFlow = region.totalExport - region.totalImport;
                 return (
-                  <Grid.Col
-                    key={region.countryId}
-                    span={{ base: 12, md: 6, lg: 4 }}
-                  >
+                  <Grid.Col key={region.id} span={{ base: 12, md: 6, lg: 4 }}>
                     <Card withBorder shadow="sm" p="md" radius="md">
                       <Stack gap="sm">
                         <Group justify="space-between" align="flex-start">
                           <div>
                             <Text fw={600} size="md">
-                              {region.countryName}
+                              {region.group}
                             </Text>
                             <Text size="sm" c="dimmed">
                               Net: {regionNetFlow > 0 ? "+" : ""}
@@ -508,7 +575,7 @@ const EnergyFlow: React.FC<EnergyFlowProps> = ({ graphId }) => {
                               Imports
                             </Text>
                             <Text fw={500} c="blue">
-                              {region.totalImports.toFixed(1)} TWh
+                              {region.totalImport.toFixed(1)} TWh
                             </Text>
                           </Paper>
                           <Paper
@@ -520,7 +587,7 @@ const EnergyFlow: React.FC<EnergyFlowProps> = ({ graphId }) => {
                               Exports
                             </Text>
                             <Text fw={500} c="red">
-                              {region.totalExports.toFixed(1)} TWh
+                              {region.totalExport.toFixed(1)} TWh
                             </Text>
                           </Paper>
                         </Group>
@@ -564,47 +631,6 @@ const EnergyFlow: React.FC<EnergyFlowProps> = ({ graphId }) => {
                 );
               })}
             </Grid>
-          </Paper>
-        </Stack>
-      ) : (
-        <Stack gap="md">
-          {/* Summary statistics - show zeros when no data */}
-          <Group>
-            <Paper p="xs" withBorder>
-              <Text size="xs" c="dimmed">
-                Total Imports
-              </Text>
-              <Text fw={500}>0.0 TWh</Text>
-            </Paper>
-            <Paper p="xs" withBorder>
-              <Text size="xs" c="dimmed">
-                Total Exports
-              </Text>
-              <Text fw={500}>0.0 TWh</Text>
-            </Paper>
-            <Paper p="xs" withBorder>
-              <Text size="xs" c="dimmed">
-                Net Flow
-              </Text>
-              <Text fw={500} c="gray">
-                0.0 TWh
-              </Text>
-            </Paper>
-          </Group>
-
-          {/* Detailed breakdown section - show even when empty */}
-          <Paper p="md" withBorder radius="md">
-            <Text size="lg" fw={600} mb="md">
-              Detailed Energy Flow Analysis -{" "}
-              {isRegionalView ? "EU Provinces" : "Country"} Level
-            </Text>
-            <Flex h="200px" justify="center" align="center">
-              <Text c="dimmed">
-                {availableYears.length === 0
-                  ? "No energy flow data available in this database"
-                  : "Please select a year to view energy flow data"}
-              </Text>
-            </Flex>
           </Paper>
         </Stack>
       )}

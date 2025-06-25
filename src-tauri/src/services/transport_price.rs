@@ -8,10 +8,15 @@ pub fn get_transportation_price_resolution(db_path: String, year: u32, carrier: 
 let dual = &format!("dual_{}_transport_flow_limit_simple_method", column_type);
     let pre_table_sql: String;
     let wrapped_sql: String;
+
     if check_column_in_table(db_path.clone(), "cons_transport_flow_limit_simple_method", dual)? {
+    let carrier_filter = if carrier == "all" {
+    ""
+} else {
+    &format!("WHERE f.carrier = '{}'", carrier)
+};
     pre_table_sql =  format!(
     "
-    WITH transportation_table AS (
         SELECT 
             f.carrier,
             tr.year,
@@ -21,8 +26,8 @@ let dual = &format!("dual_{}_transport_flow_limit_simple_method", column_type);
             dual_{}_transport_flow_limit_simple_method AS dual_value
         FROM cons_transport_flow_limit_simple_method AS tr
         JOIN flow AS f ON f.from_asset = tr.from_asset AND f.to_asset = tr.to_asset
-        WHERE f.carrier = '{}'
-    )", column_type, carrier);
+        {}
+    ", column_type, carrier_filter);
     let sql = build_resolution_query(
         "transportation_table",
         "dual_value",
@@ -33,7 +38,9 @@ let dual = &format!("dual_{}_transport_flow_limit_simple_method", column_type);
     ).trim_end_matches(';').trim_end().to_string();
     wrapped_sql = format!(
     "
+    WITH transportation_table AS (
     {}
+    )
     SELECT * FROM (
         {}
     ) AS subquery
@@ -46,13 +53,12 @@ let dual = &format!("dual_{}_transport_flow_limit_simple_method", column_type);
         wrapped_sql = format!("
     SELECT
     '{}' AS carrier,
-    {} AS milestone_year,
-    0 AS period,
-    0 AS start_hour,
-    0 AS end_hour,
+    ? AS milestone_year,
+    0 AS global_start,
+    0 AS global_end,
     0 AS y_axis
     FROM cons_transport_flow_limit_simple_method
-    WHERE year = ?", carrier, year);
+    ", carrier);
     }
     let res: (Vec<RecordBatch>, Schema) = run_query_rb(db_path, wrapped_sql, vec![Value::from(year)])?;
 

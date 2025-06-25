@@ -5,7 +5,7 @@ import { TreeNode } from "primereact/treenode";
 import { useState } from "react";
 import useVisualizationStore from "../../store/visualizationStore";
 import { MetaTreeRootsByCategoryName } from "../../types/metadata";
-import { getAllMetadata, mustGetKey } from "../../services/metadata";
+import { getAllMetadata } from "../../services/metadata";
 import { IconArrowsSplit } from "@tabler/icons-react";
 
 interface SelectedBreakdownKeys {
@@ -16,11 +16,11 @@ interface BreakdownProps {
   graphId: string;
 }
 
-const FilteringScrollMenu: React.FC<BreakdownProps> = ({ graphId }) => {
+const BreakdownMenu: React.FC<BreakdownProps> = ({ graphId }) => {
   const [data, setData] = useState<MetaTreeRootsByCategoryName>({});
   const [metadataTree, setMetadataTree] = useState<string | null>(null);
   const [selectorState, setSelectorState] = useState<SelectedBreakdownKeys>({});
-  const { updateGraph } = useVisualizationStore();
+  const { updateGraph, getGraphDatabase } = useVisualizationStore();
 
   useEffect(() => {
     (async () => {
@@ -31,7 +31,7 @@ const FilteringScrollMenu: React.FC<BreakdownProps> = ({ graphId }) => {
   useEffect(() => {
     setSelectorState({});
     updateGraph(graphId, { breakdownNodes: [] });
-  }, [metadataTree]);
+  }, [metadataTree, getGraphDatabase(graphId)]);
 
   const handleSelectionChange = (value: string | null) => {
     if (value) {
@@ -115,21 +115,6 @@ const FilteringScrollMenu: React.FC<BreakdownProps> = ({ graphId }) => {
                 return <Text size="xs">...</Text>;
               }
 
-              const selectedNodesSet = new Set<number>(
-                selectedNodesArray.map((node) => mustGetKey(node)),
-              );
-              const parentNodesSet = new Set<number>();
-
-              selectedNodesArray.forEach((node) => {
-                if (node.children) {
-                  node.children.forEach((child) => {
-                    if (selectedNodesSet.has(mustGetKey(child))) {
-                      parentNodesSet.add(mustGetKey(node));
-                    }
-                  });
-                }
-              });
-
               return (
                 <Group gap="xs" wrap="nowrap" style={{ paddingRight: "3rem" }}>
                   {selectedNodesArray.map((node) => {
@@ -141,9 +126,7 @@ const FilteringScrollMenu: React.FC<BreakdownProps> = ({ graphId }) => {
                         size="xs"
                         style={{ minWidth: "fit-content" }}
                       >
-                        {parentNodesSet.has(mustGetKey(node))
-                          ? node.label + "-other"
-                          : node.label}
+                        {node.label}
                       </Badge>
                     );
                   })}
@@ -157,4 +140,4 @@ const FilteringScrollMenu: React.FC<BreakdownProps> = ({ graphId }) => {
   );
 };
 
-export default FilteringScrollMenu;
+export default BreakdownMenu;

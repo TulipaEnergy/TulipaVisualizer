@@ -2,17 +2,29 @@
 
 ## Table of Contents
 
-- [About the Project](#about-the-project)
-- [Recommended IDE Setup](#recommended-ide-setup)
-- [Prerequisites](#prerequisites)
-- [Setup Instructions, Development and Build](#setup-instructions-development-and-build)
-- [How It Works](#how-it-works)
-- [Project Structure](#project-structure)
-- [Development Commands](#development-commands)
-- [Testing](#testing)
-- [Contributing](#contributing)
-- [License](#license)
-- [Code Analysis & Quality Metrics](#code-analysis--quality-metrics)
+- [GUI for Visualizing and Comparing Energy Scenarios - Tauri + React + Typescript](#gui-for-visualizing-and-comparing-energy-scenarios---tauri--react--typescript)
+  - [Table of Contents](#table-of-contents)
+  - [About the Project](#about-the-project)
+  - [Recommended IDE Setup](#recommended-ide-setup)
+  - [Prerequisites](#prerequisites)
+  - [Setup Instructions, Development and Build](#setup-instructions-development-and-build)
+  - [How it works](#how-it-works)
+  - [Project Structure](#project-structure)
+  - [Development Commands](#development-commands)
+    - [Basic Commands](#basic-commands)
+    - [Testing Commands](#testing-commands)
+    - [Code Quality](#code-quality)
+    - [Updating Data Files](#updating-data-files)
+  - [Testing](#testing)
+  - [Contributing](#contributing)
+  - [License](#license)
+  - [Code Analysis \& Quality Metrics](#code-analysis--quality-metrics)
+    - [Quick Start](#quick-start)
+    - [Analysis Tools Included](#analysis-tools-included)
+    - [Advanced Metrics Analysis](#advanced-metrics-analysis)
+      - [Metrics Thresholds](#metrics-thresholds)
+      - [Report Structure](#report-structure)
+    - [Troubleshooting](#troubleshooting)
 
 ## About the Project
 
@@ -126,6 +138,10 @@ src-tauri/
 ### Code Quality
 
 - `npx prettier . --write --end-of-line auto` - Format code using Prettier
+
+### Updating Data Files
+
+- `git pull lfs` - updates files like the `.json` map which are stored using `git LFS`
 
 ## Testing
 

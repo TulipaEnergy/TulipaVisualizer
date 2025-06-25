@@ -3,14 +3,18 @@ import {
   getAssetCostsByYear,
   getFlowCostsByYear,
   getUniqueCarriers,
-  getUniqueYears,
   type AssetSystemCostPerYear,
   type FlowSystemCostPerYear,
 } from "../systemCosts";
+import { createMockGraphConfig } from "../../test/utils";
 
 // Mock the gateway module
 vi.mock("../../gateway/db", () => ({
   genericApacheIPC: vi.fn(),
+}));
+
+vi.mock("./metadata", () => ({
+  hasMetadata: vi.fn().mockReturnValue(false),
 }));
 
 // Import mocked functions
@@ -23,6 +27,7 @@ describe("System Costs Service", () => {
 
   describe("getAssetCostsByYear", () => {
     const mockDbPath = "/path/to/test.duckdb";
+    const gc = createMockGraphConfig({ graphDBFilePath: mockDbPath });
 
     it("should aggregate asset costs by year successfully", async () => {
       const mockFixedAssetCosts = [
@@ -52,17 +57,23 @@ describe("System Costs Service", () => {
         .mockResolvedValueOnce(mockFixedAssetCosts)
         .mockResolvedValueOnce(mockUnitOnCosts);
 
-      const result = await getAssetCostsByYear(mockDbPath);
+      const result = await getAssetCostsByYear(gc);
 
       expect(genericApacheIPC).toHaveBeenNthCalledWith(
         1,
         "get_fixed_asset_cost",
         {
           dbPath: mockDbPath,
+          enableMetadata: false,
+          filters: {},
+          grouper: [],
         },
       );
       expect(genericApacheIPC).toHaveBeenNthCalledWith(2, "get_unit_on_cost", {
         dbPath: mockDbPath,
+        enableMetadata: false,
+        filters: {},
+        grouper: [],
       });
       expect(result).toEqual(expectedResult);
     });
@@ -75,7 +86,7 @@ describe("System Costs Service", () => {
         .mockResolvedValueOnce(mockEmptyFixedAssetCosts)
         .mockResolvedValueOnce(mockEmptyUnitOnCosts);
 
-      const result = await getAssetCostsByYear(mockDbPath);
+      const result = await getAssetCostsByYear(gc);
 
       expect(result).toEqual([]);
     });
@@ -97,7 +108,7 @@ describe("System Costs Service", () => {
         .mockResolvedValueOnce(mockFixedAssetCosts)
         .mockResolvedValueOnce(mockUnitOnCosts);
 
-      const result = await getAssetCostsByYear(mockDbPath);
+      const result = await getAssetCostsByYear(gc);
 
       expect(result).toEqual(expectedResult);
     });
@@ -119,7 +130,7 @@ describe("System Costs Service", () => {
         .mockResolvedValueOnce(mockFixedAssetCosts)
         .mockResolvedValueOnce(mockUnitOnCosts);
 
-      const result = await getAssetCostsByYear(mockDbPath);
+      const result = await getAssetCostsByYear(gc);
 
       expect(result).toEqual(expectedResult);
     });
@@ -145,7 +156,7 @@ describe("System Costs Service", () => {
         .mockResolvedValueOnce(mockFixedAssetCosts)
         .mockResolvedValueOnce(mockUnitOnCosts);
 
-      const result = await getAssetCostsByYear(mockDbPath);
+      const result = await getAssetCostsByYear(gc);
 
       // Check that years are sorted
       const years = result.map((item) => item.year);
@@ -156,12 +167,15 @@ describe("System Costs Service", () => {
       const mockError = new Error("Database connection failed");
       vi.mocked(genericApacheIPC).mockRejectedValueOnce(mockError);
 
-      await expect(getAssetCostsByYear(mockDbPath)).rejects.toThrow(
+      await expect(getAssetCostsByYear(gc)).rejects.toThrow(
         "Database connection failed",
       );
 
       expect(genericApacheIPC).toHaveBeenCalledWith("get_fixed_asset_cost", {
         dbPath: mockDbPath,
+        enableMetadata: false,
+        filters: {},
+        grouper: [],
       });
     });
 
@@ -175,7 +189,7 @@ describe("System Costs Service", () => {
         .mockResolvedValueOnce(mockFixedAssetCosts)
         .mockRejectedValueOnce(mockError);
 
-      await expect(getAssetCostsByYear(mockDbPath)).rejects.toThrow(
+      await expect(getAssetCostsByYear(gc)).rejects.toThrow(
         "Unit cost query failed",
       );
     });
@@ -445,127 +459,10 @@ describe("System Costs Service", () => {
     });
   });
 
-  describe("getUniqueYears", () => {
-    it("should extract unique years from asset and flow data", () => {
-      const mockAssetData: AssetSystemCostPerYear[] = [
-        { year: 2020, asset_fixed_costs: 1000, unit_on_costs: 100 },
-        { year: 2021, asset_fixed_costs: 1200, unit_on_costs: 120 },
-        { year: 2023, asset_fixed_costs: 1400, unit_on_costs: 140 },
-      ];
-
-      const mockFlowData: FlowSystemCostPerYear[] = [
-        {
-          year: 2020,
-          flow_fixed_costs_by_carrier: { electricity: 1000 },
-          flow_variable_costs_by_carrier: { electricity: 100 },
-        },
-        {
-          year: 2022,
-          flow_fixed_costs_by_carrier: { gas: 800 },
-          flow_variable_costs_by_carrier: { gas: 80 },
-        },
-      ];
-
-      const result = getUniqueYears(mockAssetData, mockFlowData);
-
-      expect(result).toEqual([2020, 2021, 2022, 2023]);
-    });
-
-    it("should handle empty asset and flow data", () => {
-      const mockEmptyAssetData: AssetSystemCostPerYear[] = [];
-      const mockEmptyFlowData: FlowSystemCostPerYear[] = [];
-
-      const result = getUniqueYears(mockEmptyAssetData, mockEmptyFlowData);
-
-      expect(result).toEqual([]);
-    });
-
-    it("should handle data with only asset costs", () => {
-      const mockAssetData: AssetSystemCostPerYear[] = [
-        { year: 2020, asset_fixed_costs: 1000, unit_on_costs: 100 },
-        { year: 2021, asset_fixed_costs: 1200, unit_on_costs: 120 },
-      ];
-
-      const mockEmptyFlowData: FlowSystemCostPerYear[] = [];
-
-      const result = getUniqueYears(mockAssetData, mockEmptyFlowData);
-
-      expect(result).toEqual([2020, 2021]);
-    });
-
-    it("should handle data with only flow costs", () => {
-      const mockEmptyAssetData: AssetSystemCostPerYear[] = [];
-
-      const mockFlowData: FlowSystemCostPerYear[] = [
-        {
-          year: 2022,
-          flow_fixed_costs_by_carrier: { electricity: 1000 },
-          flow_variable_costs_by_carrier: { electricity: 100 },
-        },
-        {
-          year: 2023,
-          flow_fixed_costs_by_carrier: { gas: 800 },
-          flow_variable_costs_by_carrier: { gas: 80 },
-        },
-      ];
-
-      const result = getUniqueYears(mockEmptyAssetData, mockFlowData);
-
-      expect(result).toEqual([2022, 2023]);
-    });
-
-    it("should sort years in ascending order", () => {
-      const mockAssetData: AssetSystemCostPerYear[] = [
-        { year: 2023, asset_fixed_costs: 1000, unit_on_costs: 100 },
-        { year: 2020, asset_fixed_costs: 1200, unit_on_costs: 120 },
-      ];
-
-      const mockFlowData: FlowSystemCostPerYear[] = [
-        {
-          year: 2021,
-          flow_fixed_costs_by_carrier: { electricity: 1000 },
-          flow_variable_costs_by_carrier: { electricity: 100 },
-        },
-        {
-          year: 2019,
-          flow_fixed_costs_by_carrier: { gas: 800 },
-          flow_variable_costs_by_carrier: { gas: 80 },
-        },
-      ];
-
-      const result = getUniqueYears(mockAssetData, mockFlowData);
-
-      expect(result).toEqual([2019, 2020, 2021, 2023]);
-    });
-
-    it("should handle duplicate years between asset and flow data", () => {
-      const mockAssetData: AssetSystemCostPerYear[] = [
-        { year: 2020, asset_fixed_costs: 1000, unit_on_costs: 100 },
-        { year: 2021, asset_fixed_costs: 1200, unit_on_costs: 120 },
-      ];
-
-      const mockFlowData: FlowSystemCostPerYear[] = [
-        {
-          year: 2020,
-          flow_fixed_costs_by_carrier: { electricity: 1000 },
-          flow_variable_costs_by_carrier: { electricity: 100 },
-        },
-        {
-          year: 2021,
-          flow_fixed_costs_by_carrier: { gas: 800 },
-          flow_variable_costs_by_carrier: { gas: 80 },
-        },
-      ];
-
-      const result = getUniqueYears(mockAssetData, mockFlowData);
-
-      expect(result).toEqual([2020, 2021]);
-    });
-  });
-
   describe("Integration scenarios", () => {
     it("should handle complete system cost workflow", async () => {
       const mockDbPath = "/path/to/test.duckdb";
+      const gc = createMockGraphConfig({ graphDBFilePath: mockDbPath });
 
       // Mock asset cost data
       const mockFixedAssetCosts = [
@@ -606,10 +503,9 @@ describe("System Costs Service", () => {
         .mockResolvedValueOnce(mockVariableFlowCosts);
 
       // Execute workflow
-      const assetCosts = await getAssetCostsByYear(mockDbPath);
+      const assetCosts = await getAssetCostsByYear(gc);
       const flowCosts = await getFlowCostsByYear(mockDbPath);
       const uniqueCarriers = getUniqueCarriers(flowCosts);
-      const uniqueYears = getUniqueYears(assetCosts, flowCosts);
 
       expect(assetCosts).toEqual([
         { year: 2020, asset_fixed_costs: 1000, unit_on_costs: 100 },
@@ -630,11 +526,11 @@ describe("System Costs Service", () => {
       ]);
 
       expect(uniqueCarriers).toEqual(["electricity", "gas"]);
-      expect(uniqueYears).toEqual([2020, 2021]);
     });
 
     it("should handle workflow with no cost data", async () => {
       const mockDbPath = "/path/to/empty.duckdb";
+      const gc = createMockGraphConfig({ graphDBFilePath: mockDbPath });
 
       vi.mocked(genericApacheIPC)
         .mockResolvedValueOnce([])
@@ -642,15 +538,13 @@ describe("System Costs Service", () => {
         .mockResolvedValueOnce([])
         .mockResolvedValueOnce([]);
 
-      const assetCosts = await getAssetCostsByYear(mockDbPath);
+      const assetCosts = await getAssetCostsByYear(gc);
       const flowCosts = await getFlowCostsByYear(mockDbPath);
       const uniqueCarriers = getUniqueCarriers(flowCosts);
-      const uniqueYears = getUniqueYears(assetCosts, flowCosts);
 
       expect(assetCosts).toEqual([]);
       expect(flowCosts).toEqual([]);
       expect(uniqueCarriers).toEqual([]);
-      expect(uniqueYears).toEqual([]);
     });
   });
 });

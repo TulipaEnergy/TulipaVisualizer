@@ -103,7 +103,8 @@ const FilterPerTree: React.FC<FilterPerTreeProps> = ({
   categoryName,
   categoryRoot,
 }) => {
-  const { updateFiltersForCategory } = useVisualizationStore();
+  const { updateFiltersForCategory, getGraphDatabase } =
+    useVisualizationStore();
   const currentTree = [categoryRoot];
   const categoryRootKey = mustGetKey(categoryRoot);
   const allCurrentCategoryNodes = getAllNodes(categoryRoot);
@@ -115,8 +116,9 @@ const FilterPerTree: React.FC<FilterPerTreeProps> = ({
   useEffect(() => {
     (async () => {
       updateFiltersForCategory(graphId, categoryRootKey, [categoryRootKey]);
+      setSelectorState(getAllSelected(currentTree));
     })();
-  }, []);
+  }, [getGraphDatabase(graphId)]);
 
   return (
     <TreeSelect
