@@ -54,7 +54,6 @@ Essential extensions include TypeScript language support, Prettier for code form
 The frontend code is organized in the `src/` directory with clear separation of concerns:
 
 - **components/**: React components organized by functionality
-
   - \***\*tests**/\*\*: Component test files
   - **database-viewer/**: Database exploration interface components
   - **kpis/**: Chart and visualization components
@@ -65,7 +64,6 @@ The frontend code is organized in the `src/` directory with clear separation of 
   - **Toolbar.tsx**: Application header and navigation
 
 - **gateway/**: IPC communication layer
-
   - **db.ts**: Database operation abstractions
   - **io.ts**: File system access utilities
 
