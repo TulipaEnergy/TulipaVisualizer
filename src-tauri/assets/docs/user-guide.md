@@ -1,5 +1,3 @@
-# Tulipa Energy visualizer - User documentation
-
 # Basics
 
 The application can either be directly downloaded in its expanded form from TODO, or as a compressed bundle from TODO. If you choose the latter, follow the setup instructions to install the app locally.
@@ -22,9 +20,9 @@ TODO
 
 ### Production prices
 
-Retrieves production price data given a specific year and a specific resolution. 
+Retrieves production price data given a specific year and a specific resolution.
 
-By default, the price is shown for all carriers, but a specific carrier may be chosen as well. 
+By default, the price is shown for all carriers, but a specific carrier may be chosen as well.
 
 Using the duration curve option, prices can be sorted by magnitude.
 
@@ -32,24 +30,24 @@ Using the duration curve option, prices can be sorted by magnitude.
 
 Retrieves storage price data given a specific year and a specific resolution for:
 
-- short-term storage (assets that store energy e.g. for a few hours like batteries),  
-- long-term storage (seasonal storage, modelled for the entire periods, rather for the time blocks of the periods),  
+- short-term storage (assets that store energy e.g. for a few hours like batteries),
+- long-term storage (seasonal storage, modelled for the entire periods, rather for the time blocks of the periods),
 - or both, combined.
 
-By default, the price is shown for all energy carriers (e.g. electricity, hydrogen), but a specific carrier may be chosen as well. 
+By default, the price is shown for all energy carriers (e.g. electricity, hydrogen), but a specific carrier may be chosen as well.
 
 Using the duration curve option, prices can be sorted by magnitude, yet retaining the relative duration of each block.
 
 ### Transportation prices
 
-Retrieves transportation price data given a specific year and a specific resolution. 
+Retrieves transportation price data given a specific year and a specific resolution.
 
 The price can be seen both for:
 
-- MIN: the case when you limit by 1 unit of the constraint for the minimal transportation price (e.g. min\_transportation \>= 5 goes to min\_transportation \>= 6),   
-- MAX: for when you relax by 1 unit the constraint for the maximal transportation price (e.g. max\_transportation \<=5 to max\_transportation \<=6). 
+- MIN: the case when you limit by 1 unit of the constraint for the minimal transportation price (e.g. min_transportation \>= 5 goes to min_transportation \>= 6),
+- MAX: for when you relax by 1 unit the constraint for the maximal transportation price (e.g. max_transportation \<=5 to max_transportation \<=6).
 
-By default, the price is shown for all carriers, but a specific carrier may be chosen as well. 
+By default, the price is shown for all carriers, but a specific carrier may be chosen as well.
 
 Using the duration curve option, prices can be sorted by magnitude.
 
