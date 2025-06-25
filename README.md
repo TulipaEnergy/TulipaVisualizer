@@ -4,32 +4,41 @@ A cross-platform desktop application for visualizing [Tulipa Energy Model](https
 
 ## Table of Contents
 
-- [Recommended IDE Setup](#recommended-ide-setup)
-- [Prerequisites](#prerequisites)
-- [Technology Stack](#technology-stack)
-- [Quick Start](#quick-start)
-  - [System Requirements](#system-requirements)
-  - [Installation](#installation)
-- [Development Setup](#development-setup)
-  - [Prerequisites](#prerequisites-1)
-  - [Setup Instructions](#setup-instructions)
-- [Development Commands](#development-commands)
-  - [Essential Commands](#essential-commands)
-- [Project Structure](#project-structure)
-- [Testing](#testing)
-  - [Testing Stack](#testing-stack)
-  - [Coverage Requirements](#coverage-requirements)
-  - [Test Commands](#test-commands)
-- [Documentation](#documentation)
-  - [📖 User Documentation](#-user-documentation)
-  - [🛠️ Developer Documentation](#️-developer-documentation)
-  - [🔧 Generated Documentation](#-generated-documentation)
-- [Code Quality](#code-quality)
-  - [Quality Standards](#quality-standards)
-  - [Quality Tools](#quality-tools)
-- [Support](#support)
-  - [Getting Help](#getting-help)
-- [License](#license)
+- [GUI for Visualizing and Comparing Energy Scenarios - Tauri + React + Typescript](#gui-for-visualizing-and-comparing-energy-scenarios---tauri--react--typescript)
+  - [Table of Contents](#table-of-contents)
+  - [About the Project](#about-the-project)
+  - [Recommended IDE Setup](#recommended-ide-setup)
+  - [Prerequisites](#prerequisites)
+  - [Setup Instructions, Development and Build](#setup-instructions-development-and-build)
+  - [How it works](#how-it-works)
+  - [Project Structure](#project-structure)
+  - [Development Commands](#development-commands)
+    - [Basic Commands](#basic-commands)
+    - [Testing Commands](#testing-commands)
+    - [Code Quality](#code-quality)
+    - [Updating Data Files](#updating-data-files)
+  - [Testing](#testing)
+  - [Contributing](#contributing)
+  - [License](#license)
+  - [Code Analysis \& Quality Metrics](#code-analysis--quality-metrics)
+    - [Quick Start](#quick-start)
+    - [Analysis Tools Included](#analysis-tools-included)
+    - [Advanced Metrics Analysis](#advanced-metrics-analysis)
+      - [Metrics Thresholds](#metrics-thresholds)
+      - [Report Structure](#report-structure)
+    - [Troubleshooting](#troubleshooting)
+
+## About the Project
+
+This is a cross-platform desktop application for visualizing output data of the [Tulipa Energy Model](https://tulipaenergy.github.io/TulipaEnergyModel.jl/dev/), stored in a `.duckdb` file. Users can simply upload a file, and the app automatically runs SQL queries and renders the results as interactive visualizations (bar charts, line charts, etc.).
+
+It is built using:
+
+- **Rust (Tauri backend)** – Handles file access, SQL execution, and secure communication with the frontend.
+- **React + TypeScript** – Provides a responsive and modern user interface.
+- **Apache ECharts** – Powers the data visualizations.
+
+---
 
 ## Recommended IDE Setup
 
@@ -116,27 +125,48 @@ npm run analyze:build      # Set up analysis tool and run analysis
 ## Project Structure
 
 ```
-├── docs/                           # Documentation
-│   ├── user-guide.md              # User documentation
-│   ├── developer-guide-frontend.md # Frontend development guide
-│   ├── developer-guide-backend.md  # Backend development guide
-│   ├── api-reference.md           # API documentation
-|   |── Testing.md                    # Testing documentation
-│   └── rustdoc/                   # Generated Rust documentation
-├── src/                           # Frontend React/TypeScript
-│   ├── components/                # UI components with tests
-│   │   ├── charts/               # Chart components
-│   │   ├── database/             # Database management
-│   │   └── kpis/                 # KPI visualization components
-│   ├── services/                 # API and service layers
-│   ├── store/                    # Zustand state management
-│   ├── hooks/                    # Custom React hooks
-│   └── test/                     # Test utilities
-├── src-tauri/                    # Backend Rust
-│   ├── src/services/             # Business logic modules
-│   ├── src/duckdb_conn.rs        # Database connection layer
-│   └── src/lib.rs                # Main application setup
+src/
+├── components/      # React components
+├── hooks/           # Custom React hooks
+├── store/           # Zustand state management
+├── services/        # API and database services
+├── test/            # Test setup and utilities
+├── data/            # Data utilities and mock data
+├── styles/          # Global styles
+└── assets/          # Static assets
+
+src-tauri/
+├── src/             # Rust backend code
+│   ├── main.rs      # Entry point
+│   └── lib.rs       # Core setup
+└── Cargo.toml       # Rust dependencies
 ```
+
+---
+
+## Development Commands
+
+### Basic Commands
+
+- `npm run dev` - Start the Vite development server
+- `npm run tauri dev` - Start the Tauri development server (frontend + backend)
+- `npm run build` - Build the frontend
+- `npm run preview` - Preview the built frontend
+- `npm run tauri build` - Build the Tauri application for distribution
+
+### Testing Commands
+
+- `npm test` - Run all tests once
+- `npm run test:watch` - Run tests in watch mode (automatically reruns on changes)
+- `npm run test:coverage` - Run tests with coverage reporting
+
+### Code Quality
+
+- `npx prettier . --write --end-of-line auto` - Format code using Prettier
+
+### Updating Data Files
+
+- `git pull lfs` - updates files like the `.json` map which are stored using `git LFS`
 
 ## Testing
 

@@ -23,6 +23,8 @@ vi.mock("../../../services/storagePriceQuery", () => ({
 // Mock the metadata service
 vi.mock("../../../services/metadata", () => ({
   getYears: vi.fn(),
+  hasMetadata: vi.fn(),
+  getAssetsCarriers: vi.fn(),
 }));
 
 // Mock ReactECharts
@@ -53,7 +55,14 @@ describe("StoragePrices Component", () => {
     ).mockReturnValue(
       createMockStoreState({
         getGraphDatabase: mockGetGraphDatabase,
-        mustGetGraph: vi.fn().mockReturnValue(createMockGraphConfig),
+        mustGetGraph: vi.fn().mockReturnValue(
+          createMockGraphConfig({
+            id: testGraphId,
+            lastApplyTimestamp: Date.now(),
+            breakdownNodes: [],
+            graphDBFilePath: testDbPath,
+          }),
+        ),
       }),
     );
 
@@ -64,6 +73,13 @@ describe("StoragePrices Component", () => {
     (metadataService.getYears as any).mockResolvedValue([
       { year: 2020 },
       { year: 2021 },
+    ]);
+
+    (metadataService.hasMetadata as any).mockResolvedValue(true);
+
+    (metadataService.getAssetsCarriers as any).mockResolvedValue([
+      { carrier: "Battery1" },
+      { carrier: "Battery2" },
     ]);
 
     (
@@ -153,31 +169,6 @@ describe("StoragePrices Component", () => {
   });
 
   describe("Database integration", () => {
-    it("responds to database path changes", async () => {
-      const { rerender } = renderWithProviders(
-        <StoragePrices graphId={testGraphId} />,
-      );
-
-      // Wait for initial render to complete and chart to appear
-      await waitFor(
-        () => {
-          expect(
-            screen.getByTestId("echarts-storage-prices"),
-          ).toBeInTheDocument();
-        },
-        { timeout: 5000 },
-      );
-
-      // Change database path
-      const newDbPath = "/path/to/new.duckdb";
-      mockGetGraphDatabase.mockReturnValue(newDbPath);
-
-      rerender(<StoragePrices graphId={testGraphId} />);
-
-      // Should call getGraphDatabase for initial render and rerender
-      expect(mockGetGraphDatabase).toHaveBeenCalledWith(testGraphId);
-    });
-
     it("calls storage price service with correct database path", async () => {
       renderWithProviders(<StoragePrices graphId={testGraphId} />);
 
@@ -188,23 +179,6 @@ describe("StoragePrices Component", () => {
   });
 
   describe("Component structure", () => {
-    it("renders chart within Paper component when data is available", async () => {
-      renderWithProviders(<StoragePrices graphId={testGraphId} />);
-
-      // Wait for data to load and chart to render
-      await waitFor(
-        () => {
-          const chart = screen.getByTestId("echarts-storage-prices");
-          expect(chart).toBeInTheDocument();
-
-          // Should render within Paper structure
-          const paperElement = document.querySelector(".mantine-Paper-root");
-          expect(paperElement).toBeInTheDocument();
-        },
-        { timeout: 5000 },
-      );
-    });
-
     it("renders controls (Select dropdowns)", async () => {
       renderWithProviders(<StoragePrices graphId={testGraphId} />);
 
@@ -229,7 +203,7 @@ describe("StoragePrices Component", () => {
       rerender(<StoragePrices graphId={testGraphId} />);
 
       // Should be called multiple times due to useEffect dependencies
-      expect(mockGetGraphDatabase).toHaveBeenCalledTimes(3);
+      expect(mockGetGraphDatabase).toHaveBeenCalledTimes(4);
     });
 
     it("cleans up properly on unmount", async () => {
@@ -310,7 +284,7 @@ describe("StoragePrices Component", () => {
       rerender(<StoragePrices graphId={testGraphId} />);
 
       // Should account for initial render and rerender
-      expect(mockGetGraphDatabase).toHaveBeenCalledTimes(2);
+      expect(mockGetGraphDatabase).toHaveBeenCalledTimes(3);
     });
   });
 

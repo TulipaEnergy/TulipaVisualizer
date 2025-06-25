@@ -72,7 +72,8 @@ pub fn get_supply(
             &filters,
             &grouper,
             "ac.asset".to_string(),
-            "bf.from_asset".to_string()
+            "bf.from_asset".to_string(),
+            false
         )
       } else {
         // With filters without breakdown
@@ -83,7 +84,8 @@ pub fn get_supply(
             "sum",
             &resolution.to_string(),
             &filters,
-            "ac.asset".to_string()
+            "ac.asset".to_string(),
+            false
         );
     } 
   } else {

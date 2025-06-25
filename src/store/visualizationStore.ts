@@ -53,13 +53,7 @@ export interface ProductionPriceOptions {
   year?: number;
 }
 
-/**
- * Individual graph configuration containing all state and options.
- * Manages visualization settings, filtering, database connections, and UI state
- * for each chart instance in the application's dynamic dashboard.
- */
-export interface GraphConfig {
-  /** Unique identifier for graph instance management */
+export interface GraphConfig<T extends ChartOptions = ChartOptions> {
   id: string;
   /** Chart type determining visualization component and data queries */
   type: ChartType;
@@ -73,11 +67,8 @@ export interface GraphConfig {
   filtersByCategory: { [key: number]: number[] };
   /** Node IDs for breakdown/drill-down analysis */
   breakdownNodes: number[];
-  /** Chart-specific configuration options (type-dependent) */
-  options: ChartOptions | null;
-  /** Per-graph database file path for multi-database support */
-  graphDBFilePath: string | null;
-  /** Timestamp for tracking when filters were last applied */
+  options: T | null;
+  graphDBFilePath: string | null; // For when each graph has its own DB file
   lastApplyTimestamp: number;
 }
 
