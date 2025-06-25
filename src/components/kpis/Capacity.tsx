@@ -369,8 +369,6 @@ const Capacity: React.FC<CapacityProps> = ({ graphId }) => {
 
   const graph = mustGetGraph(graphId);
 
-=======
->>>>>>> main
   const [errorData, setErrorData] = useState<string | null>(null);
   const [chartOptions, setChartOptions] = useState<any>(null);
 
