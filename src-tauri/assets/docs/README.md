@@ -1,6 +1,4 @@
-# Tulipa Energy Visualizer
-
-A cross-platform desktop application for visualizing [Tulipa Energy Model](https://tulipaenergy.github.io/TulipaEnergyModel.jl/dev/) optimization results from DuckDB files.
+# GUI for Visualizing and Comparing Energy Scenarios - Tauri + React + Typescript
 
 ## Table of Contents
 
@@ -47,6 +45,8 @@ We recommend using [Visual Studio Code](https://code.visualstudio.com/) with the
 - [Tauri Extension](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) — for debugging and building Tauri apps
 - [Rust Analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer) — for Rust language support
 
+---
+
 ## Prerequisites
 
 Before running or building the project, ensure the following are installed:
@@ -64,11 +64,25 @@ Generally, the commands are meant to be run using `git bash`.
 
 ```
 npm install
+```
 
-# Start development server
+2. **Start the development server**
+
+```
 npm run tauri dev
+```
 
-# Build for production
+This will:
+
+- Launch the React + TypeScript frontend
+
+- Start the Rust backend via Tauri
+
+- Open the application in a native window with hot reload support
+
+3. **Create a production-ready build of the application**
+
+```
 npm run tauri build
 ```
 
@@ -76,7 +90,7 @@ npm run tauri build
 
 ## How it works
 
-Please refer to the [User guide](./src-tauri/assets/docs/user-guide.md)
+Please refer to the [User guide](./user-guide.md)
 
 ## Development Commands
 
@@ -104,7 +118,7 @@ Please refer to the [User guide](./src-tauri/assets/docs/user-guide.md)
 
 ## Contributing
 
-See [Developer guide](./src-tauri/assets/docs/developer-guide.md)
+See [Developer guide](./developer-guide.md)
 
 ## License
 

@@ -60,3 +60,10 @@ export async function readJSON(path: string) {
   // Direct JSON parsing with error propagation for configuration files
   return JSON.parse(await readTextFile(resourcePath));
 }
+
+// provide relative path from 11c/src-tauri/tauri.conf.json -> assets/docs/user-guide.md
+export async function readString(path: string) {
+  const resourcePath = await resolveResource(path);
+  console.log(resourcePath);
+  return await readTextFile(resourcePath);
+}

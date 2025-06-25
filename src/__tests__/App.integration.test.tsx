@@ -177,6 +177,24 @@ describe("App Integration Tests", () => {
       // Should not show Add Graph button when no databases
       expect(screen.queryByText("Add Graph")).not.toBeInTheDocument();
     });
+
+    it("displays toolbar with documentation link", () => {
+      (
+        useVisualizationStore as unknown as ReturnType<typeof vi.fn>
+      ).mockReturnValue(
+        createMockStoreState({
+          databases: [],
+          graphs: [],
+          hasAnyDatabase: () => false,
+        }),
+      );
+
+      renderWithProviders(<App />);
+
+      // Check toolbar elements
+      expect(screen.getByText("Tulipa Energy Visualizer")).toBeInTheDocument();
+      expect(screen.getByText("Documentation")).toBeInTheDocument();
+    });
   });
 
   describe("Database Loading Flow", () => {
