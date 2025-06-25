@@ -6,7 +6,6 @@ import {
   ScrollArea,
   Button,
   Group,
-  Select,
   LoadingOverlay,
   Alert,
 } from "@mantine/core";
@@ -14,82 +13,31 @@ import { IconBook, IconInfoCircle } from "@tabler/icons-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
-import { invoke } from "@tauri-apps/api/core";
 import "highlight.js/styles/github.css"; // You can change this to other highlight.js themes
+import { readString } from "../gateway/io";
 
 interface DocumentationModalProps {
   opened: boolean;
   onClose: () => void;
 }
 
-interface DocFile {
-  name: string;
-  path: string;
-  label: string;
-}
-
-const DOC_FILES: DocFile[] = [
-  { name: "user-guide", path: "docs/user-guide.md", label: "User Guide" },
-  {
-    name: "api-reference",
-    path: "docs/api-reference.md",
-    label: "API Reference",
-  },
-  {
-    name: "developer-guide-frontend",
-    path: "docs/developer-guide-frontend.md",
-    label: "Frontend Developer Guide",
-  },
-  {
-    name: "developer-guide-backend",
-    path: "docs/developer-guide-backend.md",
-    label: "Backend Developer Guide",
-  },
-  { name: "testing", path: "docs/Testing.md", label: "Testing Guide" },
-  {
-    name: "analysis-data-processing",
-    path: "docs/analysis-and-data-processing.md",
-    label: "Analysis & Data Processing",
-  },
-  { name: "readme", path: "README.md", label: "Project Overview" },
-];
+const USER_DOC_PATH = "assets/docs/user-guide.md"
 
 const DocumentationModal: React.FC<DocumentationModalProps> = ({
   opened,
   onClose,
 }) => {
-  const [selectedDoc, setSelectedDoc] = useState<string>("user-guide");
   const [content, setContent] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [availableFiles, setAvailableFiles] = useState<string[]>([]);
 
-  const loadAvailableFiles = async () => {
-    try {
-      const files = await invoke<string[]>("get_available_documentation_files");
-      setAvailableFiles(files);
-    } catch (err) {
-      console.error("Error loading available documentation files:", err);
-      // Fallback to all defined files if the command fails
-      setAvailableFiles(DOC_FILES.map((doc) => doc.path));
-    }
-  };
-
-  const loadDocContent = async (docName: string) => {
+  const loadDocContent = async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const docFile = DOC_FILES.find((doc) => doc.name === docName);
-      if (!docFile) {
-        throw new Error("Documentation file not found");
-      }
-
-      // Use Tauri command to read the file
-      const content = await invoke<string>("read_documentation_file", {
-        filePath: docFile.path,
-      });
-
+      console.log("READ:")
+      const content = await readString(USER_DOC_PATH)
       setContent(content);
     } catch (err) {
       console.error("Error loading documentation:", err);
@@ -97,40 +45,7 @@ const DocumentationModal: React.FC<DocumentationModalProps> = ({
         err instanceof Error ? err.message : "Failed to load documentation",
       );
 
-      // Fallback content
-      const docFile = DOC_FILES.find((doc) => doc.name === docName);
-      setContent(`# ${docFile?.label || "Documentation"}
-
-## Welcome to Tulipa Energy Visualizer Documentation
-
-This documentation system allows you to access comprehensive guides and references for the Tulipa Energy Visualizer application.
-
-### Available Documentation Sections
-
-${DOC_FILES.map((doc) => `- **${doc.label}**: Comprehensive guide for ${doc.label.toLowerCase()}`).join("\n")}
-
-### Features
-
-- **Interactive Visualizations**: Create and customize energy model visualizations
-- **Multi-Database Support**: Work with multiple DuckDB files simultaneously  
-- **Geographic Analysis**: Analyze energy flows across European regions
-- **Economic Analysis**: Examine costs, prices, and financial metrics
-- **Flexible Time Resolution**: From hourly to yearly analysis capabilities
-
-### Getting Started
-
-1. **Load Data**: Upload your DuckDB files containing Tulipa Energy Model results
-2. **Create Visualizations**: Add graph cards and select chart types
-3. **Configure Analysis**: Set time periods, filters, and parameters
-4. **Export Results**: Save visualizations and analysis results
-
-### Support
-
-For technical support and additional resources, please refer to the complete documentation sections available in this viewer.
-
----
-
-*Note: Error loading file "${docFile?.path}". This is fallback content demonstrating the documentation system capabilities.*`);
+      setContent(`Error loading file at ${USER_DOC_PATH}. Please reach out to the developers.`);
     } finally {
       setLoading(false);
     }
@@ -138,26 +53,10 @@ For technical support and additional resources, please refer to the complete doc
 
   useEffect(() => {
     if (opened) {
-      loadAvailableFiles();
+      loadDocContent();
     }
   }, [opened]);
 
-  useEffect(() => {
-    if (opened && selectedDoc) {
-      loadDocContent(selectedDoc);
-    }
-  }, [opened, selectedDoc]);
-
-  const handleDocChange = (value: string | null) => {
-    if (value) {
-      setSelectedDoc(value);
-    }
-  };
-
-  // Filter available DOC_FILES based on what's actually available
-  const filteredDocFiles = DOC_FILES.filter((doc) =>
-    availableFiles.includes(doc.path),
-  );
 
   return (
     <Modal
@@ -166,43 +65,20 @@ For technical support and additional resources, please refer to the complete doc
       title={
         <Group>
           <IconBook size={20} />
-          <Title order={3}>Documentation</Title>
+          <Title order={3}>User Documentation</Title>
         </Group>
       }
       size="xl"
       overlayProps={{ backgroundOpacity: 0.55, blur: 3 }}
       styles={{
         body: { padding: 0 },
-        content: { maxHeight: "90vh" },
+        content: { marginTop: "30px" },
       }}
+      yOffset="80px" 
     >
-      <div style={{ position: "relative", minHeight: "60vh" }}>
+      <div style={{ position: "relative", minHeight: "60vh", padding:"0 50px" }}>
         <LoadingOverlay visible={loading} />
 
-        {/* Document Selector */}
-        <div style={{ padding: "1rem", borderBottom: "1px solid #e9ecef" }}>
-          <Select
-            label="Select Documentation"
-            placeholder="Choose a documentation section"
-            value={selectedDoc}
-            onChange={handleDocChange}
-            data={
-              filteredDocFiles.length > 0
-                ? filteredDocFiles.map((doc) => ({
-                    value: doc.name,
-                    label: doc.label,
-                  }))
-                : DOC_FILES.map((doc) => ({
-                    value: doc.name,
-                    label: doc.label,
-                  }))
-            }
-            comboboxProps={{ withinPortal: false }}
-          />
-        </div>
-
-        {/* Content Area */}
-        <ScrollArea h="calc(90vh - 120px)" p="md">
           {error && (
             <Alert
               icon={<IconInfoCircle size={16} />}
@@ -383,9 +259,7 @@ For technical support and additional resources, please refer to the complete doc
               {content}
             </ReactMarkdown>
           </div>
-        </ScrollArea>
 
-        {/* Footer */}
         <div
           style={{
             padding: "1rem",
