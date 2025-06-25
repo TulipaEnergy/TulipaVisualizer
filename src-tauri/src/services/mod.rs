@@ -8,4 +8,3 @@ pub mod system_cost;
 pub mod transport_price;
 pub mod query_builder;
 pub mod residual_load;
-pub mod documentation;
