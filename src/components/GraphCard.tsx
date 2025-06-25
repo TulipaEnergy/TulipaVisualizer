@@ -95,7 +95,7 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
   }, [graph.graphDBFilePath, graph.type]);
 
   useEffect(() => {
-    if (graph?.type == "database") {
+    if (graph?.type == "database" || graph?.type == "geo-imports-exports") {
       setHeight(1150);
       setIsFullWidth(true);
     } else {
