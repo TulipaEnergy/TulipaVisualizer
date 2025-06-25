@@ -11,7 +11,6 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             capacity::get_capacity,
-            capacity::get_available_years,
             import_export::get_all_aggregate_flows,
             import_export::get_all_detailed_flows,
             import_export::get_available_years_flows,

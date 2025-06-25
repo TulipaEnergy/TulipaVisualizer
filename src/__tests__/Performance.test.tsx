@@ -20,7 +20,6 @@ import StoragePrices from "../components/kpis/StoragePrices";
 vi.mock("../services/databaseOperations");
 vi.mock("../services/capacityQuery", () => ({
   getCapacity: vi.fn(),
-  fetchAvailableYears: vi.fn(),
 }));
 vi.mock("../services/systemCosts", () => ({
   getAssetCostsByYear: vi.fn(),
@@ -83,6 +82,7 @@ const measurePerformance = async (
 
 const mockLargeCapacityData = (size: number) => {
   return Array.from({ length: size }, (_, i) => ({
+    asset: `Asset${i}`,
     year: 2020 + i,
     final_capacity: Math.random() * 1000,
     initial_capacity: Math.random() * 900,
@@ -115,6 +115,7 @@ describe("Performance Testing", () => {
     // Default capacity service mocks
     vi.mocked(mockCapacityService.getCapacity).mockResolvedValue([
       {
+        asset: "TestAsset",
         year: 2020,
         final_capacity: 100,
         initial_capacity: 80,
@@ -122,15 +123,13 @@ describe("Performance Testing", () => {
         decommission: 5,
       },
       {
+        asset: "TestAsset",
         year: 2021,
         final_capacity: 120,
         initial_capacity: 100,
         investment: 25,
         decommission: 8,
       },
-    ]);
-    vi.mocked(mockCapacityService.fetchAvailableYears).mockResolvedValue([
-      2020, 2021, 2022,
     ]);
 
     // Default system costs service mocks
@@ -355,9 +354,6 @@ describe("Performance Testing", () => {
       vi.mocked(mockCapacityService.getCapacity).mockResolvedValue(
         largeDataset,
       );
-      vi.mocked(mockCapacityService.fetchAvailableYears).mockResolvedValue([
-        2020, 2021, 2022,
-      ]);
 
       vi.mocked(mockMetadataService.getAssets).mockResolvedValue(["TestAsset"]);
       vi.mocked(mockMetadataService.hasMetadata).mockResolvedValue(true);

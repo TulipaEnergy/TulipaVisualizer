@@ -73,6 +73,7 @@ const GraphCard: React.FC<GraphCardProps> = ({ graphId }) => {
 
       const chartsWithMetaFeatures = [
         "residual-load",
+        "capacity",
         "system-costs",
         "production-prices-duration-series",
         "storage-prices",
