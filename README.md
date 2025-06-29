@@ -1,5 +1,12 @@
 # GUI for Visualizing and Comparing Energy Scenarios - Tauri + React + Typescript
 
+Developed by:
+- C.A.Vasilescu@student.tudelft.nl
+- B.H.P.Dockx@student.tudelft.nl
+- T.B.Ilieva@student.tudelft.nl
+- D.Hu-4@student.tudelft.nl
+- F.Liu-14@student.tudelft.nl
+
 ## Table of Contents
 
 - [GUI for Visualizing and Comparing Energy Scenarios - Tauri + React + Typescript](#gui-for-visualizing-and-comparing-energy-scenarios---tauri--react--typescript)
