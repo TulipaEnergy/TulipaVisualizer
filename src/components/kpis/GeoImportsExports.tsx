@@ -60,7 +60,6 @@ const EnergyFlow: React.FC<EnergyFlowProps> = ({ graphId }) => {
 
   // Reset everything when database changes
   useEffect(() => {
-    console.log("ENERGY FLOW: DB CHANGED");
     // Reset data
     setErrorData(null);
     setEnergyData([]);
@@ -127,7 +126,6 @@ const EnergyFlow: React.FC<EnergyFlowProps> = ({ graphId }) => {
         const worldGeoJSON = await readJSON("assets/geo/world.geo.json");
         echarts.registerMap("world", worldGeoJSON);
         setWorldMapLoaded(true);
-        console.log("World map registered successfully");
 
         // Load EU provinces map for regions (level 0)
         const euGeoJSON = await readJSON("assets/geo/eu_provinces.geo.json");
@@ -135,9 +133,7 @@ const EnergyFlow: React.FC<EnergyFlowProps> = ({ graphId }) => {
         // No need to modify the properties structure
         echarts.registerMap("eu-provinces", euGeoJSON);
         setRegionalMapLoaded(true);
-        console.log("EU provinces map registered successfully");
       } catch (error) {
-        console.error("Failed to load maps:", error);
         setErrorData(`Failed to load maps: ${error}`);
       }
     };

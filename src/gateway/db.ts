@@ -7,7 +7,6 @@ const cache = new LRUCache<string, any>({
   maxSize: 5000,
   sizeCalculation: (value: any, _: string) => {
     const noRows = (value as Array<any>).length;
-    console.log(`Saving ${noRows} rows`);
     return noRows + 1;
   },
 });
@@ -33,7 +32,6 @@ export async function apacheIPC(
 
 function getCacheKey(cmd: string, args?: InvokeArgs): string {
   const key = `${cmd}::${JSON.stringify(args ?? {})}`;
-  console.log(`Key ${key}`);
   return key;
 }
 

@@ -30,4 +30,4 @@ analysis-reports/
 *.njsproj
 *.sln
 *.sw?
-*.cursorrules
+.cursorrules

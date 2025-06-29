@@ -3,6 +3,13 @@ import { apacheIPC, genericApacheIPC } from "../gateway/db";
 import { MetaTreeRootsByCategoryName } from "../types/metadata";
 import { TreeNode } from "primereact/treenode";
 
+type CategoryRow = {
+  id: number;
+  name: string;
+  parent_id: number;
+  level: number;
+};
+
 export async function getAssets(dbPath: string): Promise<string[]> {
   try {
     const res: Table<any> = await apacheIPC("get_assets", { dbPath: dbPath });
@@ -27,63 +34,53 @@ export async function getTables(dbPath: string): Promise<string[]> {
   }
 }
 
-// TODO use actual data
-export async function getAllMetadata(): Promise<MetaTreeRootsByCategoryName> {
-  const mockData: MetaTreeRootsByCategoryName = {
-    location: {
-      key: 1,
-      label: "location",
-      children: [
-        {
-          key: 2,
-          label: "Netherlands",
-          children: [
-            { key: 4, label: "South Holland", children: [] },
-            { key: 5, label: "North Holland", children: [] },
-          ],
-        },
-        {
-          key: 3,
-          label: "Belgium",
-          children: [{ key: 6, label: "Antwerp", children: [] }],
-        },
-      ],
-    },
-    technology: {
-      key: 7,
-      label: "technology",
-      children: [
-        {
-          key: 8,
-          label: "renewables",
-          children: [
-            { key: 10, label: "solar", children: [] },
-            {
-              key: 11,
-              label: "wind",
-              children: [
-                { key: 14, label: "off-shore", children: [] },
-                { key: 15, label: "on-shore", children: [] },
-              ],
-            },
-          ],
-        },
-        {
-          key: 9,
-          label: "fossil",
-          children: [
-            {
-              key: 12,
-              label: "ccgt",
-              children: [],
-            },
-            { key: 13, label: "nuclear", children: [] },
-          ],
-        },
-      ],
-    },
-  };
-  return Promise.resolve(mockData);
+export async function getAllMetadata(
+  dbPath: string,
+): Promise<MetaTreeRootsByCategoryName> {
+  try {
+    const categories = await genericApacheIPC<CategoryRow>("get_categories", {
+      dbPath,
+    });
+
+    const res: MetaTreeRootsByCategoryName = {};
+    const nodeMap: Map<number, TreeNode> = new Map();
+
+    categories.forEach((i) => {
+      const newNode: TreeNode = {
+        key: i.id,
+        label: i.name,
+        children: [],
+      };
+      nodeMap.set(i.id, newNode);
+    });
+
+    categories.forEach((i) => {
+      const currentNode = nodeMap.get(i.id)!;
+
+      if (i.level === -1) {
+        // This is a root category
+        res[i.name] = currentNode;
+      } else {
+        // This is a child category
+        const parentNode = nodeMap.get(i.parent_id);
+        if (parentNode) {
+          // Parent found, add current node to its children
+          parentNode.children!.push(currentNode); // ! because we initialized children in the first pass
+        } else {
+          // Handle error: parent not found. This means an invalid parent_id or a circular reference.
+          console.warn(
+            `Parent with ID ${i.parent_id} not found for category "${i.name}". Treating as a root.`,
+          );
+          res[i.name] = currentNode; // Add it as a new root if its parent is missing
+        }
+      }
+    });
+
+    return res;
+  } catch (error) {
+    console.error("Error fetching categories:", error);
+    return {};
+  }
 }
 
 export function mustGetKey(n: TreeNode): number {
@@ -91,12 +88,13 @@ export function mustGetKey(n: TreeNode): number {
 }
 
 export async function hasMetadata(dbPath: string): Promise<boolean> {
-  console.log(dbPath);
-  let res: boolean = false;
-  if (dbPath.endsWith("Enhanced.duckdb")) {
-    res = true;
-  }
-  return Promise.resolve(res);
+  const ress = await genericApacheIPC<{
+    has_category: boolean;
+    has_asset_category: boolean;
+  }>("has_metadata", {
+    dbPath,
+  });
+  return ress[0]?.has_category && ress[0]?.has_asset_category;
 }
 
 export async function getAssetsCarriers(

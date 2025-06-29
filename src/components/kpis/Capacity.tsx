@@ -376,7 +376,6 @@ const Capacity: React.FC<CapacityProps> = ({ graphId }) => {
 
   // Reset everything when database changes
   useEffect(() => {
-    console.log("DB CHANGED");
     // reset data
     setErrorData(null);
     setChartOptions(null);
@@ -386,14 +385,11 @@ const Capacity: React.FC<CapacityProps> = ({ graphId }) => {
   }, [dbFilePath, graph.lastApplyTimestamp]);
 
   const generateChart = async () => {
-    console.log("GENERATING GRAPH FOR ALL ASSETS");
-
     // Clear previous error and old chart
     setErrorData(null);
     setChartOptions(null);
 
     try {
-      console.log("GENERATING GRAPH for all assets");
       const option = await capacityGraphAllAssets(
         dbFilePath,
         graph.filtersByCategory,

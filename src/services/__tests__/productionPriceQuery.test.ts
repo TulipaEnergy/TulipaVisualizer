@@ -10,6 +10,11 @@ vi.mock("../../gateway/db", () => ({
   genericApacheIPC: vi.fn(),
 }));
 
+// Mock the metadata module
+vi.mock("../metadata", () => ({
+  hasMetadata: vi.fn(() => Promise.resolve(false)),
+}));
+
 // Mock the resolution module
 vi.mock("../../types/resolution", () => ({
   Resolution: {

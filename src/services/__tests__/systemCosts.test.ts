@@ -13,8 +13,9 @@ vi.mock("../../gateway/db", () => ({
   genericApacheIPC: vi.fn(),
 }));
 
-vi.mock("./metadata", () => ({
-  hasMetadata: vi.fn().mockReturnValue(false),
+// Mock the metadata module
+vi.mock("../metadata", () => ({
+  hasMetadata: vi.fn(() => Promise.resolve(false)),
 }));
 
 // Import mocked functions

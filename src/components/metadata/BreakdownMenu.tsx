@@ -5,7 +5,7 @@ import { TreeNode } from "primereact/treenode";
 import { useState } from "react";
 import useVisualizationStore from "../../store/visualizationStore";
 import { MetaTreeRootsByCategoryName } from "../../types/metadata";
-import { getAllMetadata } from "../../services/metadata";
+import { getAllMetadata, hasMetadata } from "../../services/metadata";
 import { IconArrowsSplit } from "@tabler/icons-react";
 
 interface SelectedBreakdownKeys {
@@ -22,11 +22,16 @@ const BreakdownMenu: React.FC<BreakdownProps> = ({ graphId }) => {
   const [selectorState, setSelectorState] = useState<SelectedBreakdownKeys>({});
   const { updateGraph, getGraphDatabase } = useVisualizationStore();
 
+  const dbPath = getGraphDatabase(graphId)!;
   useEffect(() => {
     (async () => {
-      setData(await getAllMetadata());
+      if (await hasMetadata(dbPath)) {
+        setData(await getAllMetadata(dbPath));
+      } else {
+        setData({});
+      }
     })();
-  }, []);
+  }, [dbPath]);
 
   useEffect(() => {
     setSelectorState({});
@@ -92,7 +97,11 @@ const BreakdownMenu: React.FC<BreakdownProps> = ({ graphId }) => {
 
               setSelectorState(selectorState);
             }}
-            options={metadataTree ? data[metadataTree].children : undefined}
+            options={
+              metadataTree && data[metadataTree]
+                ? data[metadataTree].children
+                : undefined
+            }
             selectionMode="multiple"
             display="chip"
             placeholder="Select Items"
