@@ -18,6 +18,8 @@ pub fn run() {
             metadata::get_tables,
             metadata::get_assets_carriers,
             metadata::get_years,
+            metadata::get_categories,
+            metadata::has_metadata,
             production_price::get_production_price_resolution,
             query::run_serialize_query_on_db,
             residual_load::get_supply,

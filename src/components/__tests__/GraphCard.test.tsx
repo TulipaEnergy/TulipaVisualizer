@@ -12,6 +12,11 @@ import {
 // Mock the store
 vi.mock("../../store/visualizationStore");
 
+// Mock the metadata module
+vi.mock("../../services/metadata", () => ({
+  hasMetadata: vi.fn(() => Promise.resolve(false)),
+}));
+
 // Mock all the sub-components to isolate GraphCard testing
 vi.mock("../DatabaseSelector", () => ({
   default: ({ graphId }: { graphId: string }) => (

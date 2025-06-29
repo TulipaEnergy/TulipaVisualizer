@@ -33,7 +33,6 @@ const DocumentationModal: React.FC<DocumentationModalProps> = ({
     setError(null);
 
     try {
-      console.log("READ:");
       const content = await readString(USER_DOC_PATH);
       setContent(content);
     } catch (err) {

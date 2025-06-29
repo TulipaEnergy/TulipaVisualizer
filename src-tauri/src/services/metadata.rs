@@ -1,4 +1,3 @@
-
 use duckdb::{ arrow::{array::RecordBatch, datatypes::Schema}, Row };
 use tauri::ipc::Response;
 use crate::duckdb_conn::{run_query_rb, run_query_row, serialize_recordbatch};
@@ -73,6 +72,19 @@ pub fn apply_carrier_filter(base_sql: &str, carrier: &str) -> String {
     }
 } 
 
+#[tauri::command]
+pub fn get_categories(db_path: String) -> Result<Response, String> {
+    let res: (Vec<RecordBatch>, Schema) = run_query_rb(db_path, CATEGORY_SQL.to_string(), [].to_vec())?;
+
+    return serialize_recordbatch(res.0, res.1);
+}
+
+#[tauri::command]
+pub fn has_metadata(db_path: String) -> Result<Response, String> {
+    let res: (Vec<RecordBatch>, Schema) = run_query_rb(db_path, HAS_META_SQL.to_string(), [].to_vec())?;
+    return serialize_recordbatch(res.0, res.1);
+}
+
 const ASSET_SQL: &str = "SELECT asset FROM asset;";
 const TABLES_SQL: &str = "SHOW TABLES";
 const TABLE_INFO_SQL: &str = "PRAGMA table_info({{1}});";
@@ -91,3 +103,14 @@ const YEARS_SQL: &str = "
     WHERE y.is_milestone = true
     ORDER BY year;
 ";
+const CATEGORY_SQL: &str = "SELECT id, name, parent_id, level FROM category ORDER BY level;";
+const HAS_META_SQL: &str = "SELECT EXISTS (
+    SELECT 1
+    FROM information_schema.tables
+    WHERE table_name = 'category'
+) AS has_category,
+EXISTS (
+    SELECT 1
+    FROM information_schema.tables
+    WHERE table_name = 'asset_category'
+) AS has_asset_category;";

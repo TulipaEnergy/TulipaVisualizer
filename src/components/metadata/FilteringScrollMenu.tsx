@@ -3,8 +3,9 @@ import { Group, ScrollArea } from "@mantine/core";
 import { IconFilter } from "@tabler/icons-react";
 import { useState } from "react";
 import FilterPerTree from "./FilterPerTree";
-import { getAllMetadata } from "../../services/metadata";
+import { getAllMetadata, hasMetadata } from "../../services/metadata";
 import { MetaTreeRootsByCategoryName } from "../../types/metadata";
+import useVisualizationStore from "../../store/visualizationStore";
 
 interface FilteringProps {
   graphId: string;
@@ -12,12 +13,18 @@ interface FilteringProps {
 
 const FilteringScrollMenu: React.FC<FilteringProps> = ({ graphId }) => {
   const [data, setData] = useState<MetaTreeRootsByCategoryName>({});
+  const { getGraphDatabase } = useVisualizationStore();
 
+  const dbPath = getGraphDatabase(graphId)!;
   useEffect(() => {
     (async () => {
-      setData(await getAllMetadata());
+      if (await hasMetadata(dbPath)) {
+        setData(await getAllMetadata(dbPath));
+      } else {
+        setData({});
+      }
     })();
-  }, []);
+  }, [dbPath]);
 
   return (
     <Group gap="xs" align="center" wrap="nowrap">
