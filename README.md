@@ -1,38 +1,5 @@
 # GUI for Visualizing and Comparing Energy Scenarios - Tauri + React + Typescript
 
-Developed by:
-- C.A.Vasilescu@student.tudelft.nl
-- B.H.P.Dockx@student.tudelft.nl
-- T.B.Ilieva@student.tudelft.nl
-- D.Hu-4@student.tudelft.nl
-- F.Liu-14@student.tudelft.nl
-
-## Table of Contents
-
-- [GUI for Visualizing and Comparing Energy Scenarios - Tauri + React + Typescript](#gui-for-visualizing-and-comparing-energy-scenarios---tauri--react--typescript)
-  - [Table of Contents](#table-of-contents)
-  - [About the Project](#about-the-project)
-  - [Recommended IDE Setup](#recommended-ide-setup)
-  - [Prerequisites](#prerequisites)
-  - [Setup Instructions, Development and Build](#setup-instructions-development-and-build)
-  - [How it works](#how-it-works)
-  - [Project Structure](#project-structure)
-  - [Development Commands](#development-commands)
-    - [Basic Commands](#basic-commands)
-    - [Testing Commands](#testing-commands)
-    - [Code Quality](#code-quality)
-    - [Updating Data Files](#updating-data-files)
-  - [Testing](#testing)
-  - [Contributing](#contributing)
-  - [License](#license)
-  - [Code Analysis \& Quality Metrics](#code-analysis--quality-metrics)
-    - [Quick Start](#quick-start)
-    - [Analysis Tools Included](#analysis-tools-included)
-    - [Advanced Metrics Analysis](#advanced-metrics-analysis)
-      - [Metrics Thresholds](#metrics-thresholds)
-      - [Report Structure](#report-structure)
-    - [Troubleshooting](#troubleshooting)
-
 ## About the Project
 
 This is a cross-platform desktop application for visualizing output data of the [Tulipa Energy Model](https://tulipaenergy.github.io/TulipaEnergyModel.jl/dev/), stored in a `.duckdb` file. Users can simply upload a file, and the app automatically runs SQL queries and renders the results as interactive visualizations (bar charts, line charts, etc.).
@@ -42,6 +9,13 @@ It is built using:
 - **Rust (Tauri backend)** – Handles file access, SQL execution, and secure communication with the frontend.
 - **React + TypeScript** – Provides a responsive and modern user interface.
 - **Apache ECharts** – Powers the data visualizations.
+
+Developed for the CSE2000 course, 2025, TU Delft, by:
+- C.A.Vasilescu@student.tudelft.nl
+- B.H.P.Dockx@student.tudelft.nl
+- T.B.Ilieva@student.tudelft.nl
+- D.Hu-4@student.tudelft.nl
+- F.Liu-14@student.tudelft.nl
 
 ---
 
